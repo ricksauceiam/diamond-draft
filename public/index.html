@@ -180,17 +180,21 @@
   .ch-header p { color: var(--muted); font-size: 13px; margin-top: 3px; }
   .ch-section { margin: 0 20px 20px; }
   .ch-section h3 { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-  .lineup-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .lineup-slot { aspect-ratio: 63/88; border-radius: 10px; border: 2px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; color: var(--muted); transition: border-color .2s; position: relative; overflow: hidden; background: var(--surface); }
+  .lineup-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .lineup-slot { aspect-ratio: 63/88; max-height: 90px; border-radius: 8px; border: 2px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 9px; color: var(--muted); transition: border-color .2s; position: relative; overflow: hidden; background: var(--surface); }
   .lineup-slot.filled { border-style: solid; border-color: transparent; }
-  .lineup-slot .slot-label { font-size: 9px; font-weight: 700; text-transform: uppercase; }
-  .lineup-slot .remove-x { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.7); border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; color: #fff; z-index: 10; }
-  .avail-cards-wrap { max-height: 220px; overflow-y: auto; }
-  .avail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  @media (min-width: 400px) { .avail-grid { grid-template-columns: repeat(5, 1fr); } }
-  .avail-card { aspect-ratio: 63/88; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: transform .15s, border-color .15s; position: relative; }
+  .lineup-slot .slot-label { font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .lineup-slot .remove-x { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; color: #fff; z-index: 10; }
+  .avail-cards-wrap { max-height: 200px; overflow-y: auto; }
+  .avail-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  @media (min-width: 400px) { .avail-grid { grid-template-columns: repeat(6, 1fr); } }
+  @media (min-width: 500px) { .avail-grid { grid-template-columns: repeat(7, 1fr); } }
+  .avail-card { aspect-ratio: 63/88; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: transform .15s, border-color .15s; position: relative; display: flex; flex-direction: column; }
   .avail-card:hover { transform: scale(1.05); }
   .avail-card.selected { border-color: var(--accent); }
+  .avail-card-bottom { padding: 2px 3px; background: rgba(0,0,0,0.85); flex-shrink: 0; }
+  .avail-card-name { font-size: 7px; font-weight: 800; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .avail-card-meta { font-size: 6px; color: rgba(255,255,255,0.5); }
   .rivals-list { display: flex; flex-direction: column; gap: 8px; }
   .rival-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color .2s; }
   .rival-item.selected { border-color: var(--accent); background: rgba(108,99,255,0.1); }
@@ -987,13 +991,13 @@ function renderChallenge() {
       const inLineup = lineup.includes(item.id);
       const color = RARITY_COLORS[p.rarity];
       return `<div class="avail-card${inLineup?' selected':''}" onclick="toggleLineup('${item.id}')" style="background:${p.background||'#1a1a26'};border-color:${inLineup?'var(--accent)':color+'22'}">
-        <div style="background:${color};height:3px"></div>
-        <div style="flex:1;overflow:hidden">
+        <div style="background:${color};height:2px;flex-shrink:0"></div>
+        <div style="flex:1;overflow:hidden;min-height:0">
           <img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block" loading="lazy" onerror="this.style.display='none'">
         </div>
-        <div style="padding:3px 5px;background:rgba(0,0,0,0.8)">
-          <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.lastName||p.name}</div>
-          <div style="font-size:8px;color:rgba(255,255,255,0.5)">${p.position||p.pos}</div>
+        <div class="avail-card-bottom">
+          <div class="avail-card-name">${p.lastName||p.name}</div>
+          <div class="avail-card-meta">${p.position||p.pos} · ${p.team}</div>
         </div>
       </div>`;
     }).join('');
@@ -1047,10 +1051,11 @@ function updateSlot(i) {
   slot.style.background = p.background || '#1a1a26';
   slot.innerHTML = `
     <div class="remove-x" onclick="event.stopPropagation();clearSlot(${i})">×</div>
-    <div style="background:${color};height:3px;width:100%;position:absolute;top:0"></div>
+    <div style="background:${color};height:2px;width:100%;position:absolute;top:0"></div>
     <img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block" onerror="this.style.display='none'">
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 5px;background:linear-gradient(to top,rgba(0,0,0,0.9),transparent)">
-      <div style="font-size:9px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.lastName||p.name}</div>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 4px;background:linear-gradient(to top,rgba(0,0,0,0.95),transparent)">
+      <div style="font-size:8px;font-weight:800;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.lastName||p.name}</div>
+      <div style="font-size:7px;color:rgba(255,255,255,0.6)">${p.position||p.pos} · ${p.team}</div>
     </div>`;
 }
 
