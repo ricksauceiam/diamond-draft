@@ -543,7 +543,7 @@ let revealedCards = [new Set(), new Set()];
 // ── LOAD PLAYERS ─────────────────────────────────────────────────────────────
 async function loadPlayers() {
   try {
-    const r = await fetch('/data/players.json');
+    const r = await fetch('/players.json');
     PLAYERS = await r.json();
   } catch(e) {
     console.error('Failed to load players', e);
