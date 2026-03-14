@@ -174,35 +174,39 @@
   .modal-close { position: absolute; top: 16px; right: 16px; background: var(--surface2); border: none; border-radius: 50%; width: 32px; height: 32px; color: var(--muted); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
 
   /* ── CHALLENGE ── */
-  #s-challenge { padding: 0 0 80px; }
-  .ch-header { padding: 20px; }
-  .ch-header h2 { font-size: 1.3rem; font-weight: 800; }
-  .ch-header p { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  #s-challenge { padding: 0 0 80px; display: flex; flex-direction: column; height: 100vh; }
+  .ch-header { padding: 14px 16px 10px; flex-shrink: 0; }
+  .ch-header h2 { font-size: 1.2rem; font-weight: 800; }
+  .ch-header p { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .ch-body { display: grid; grid-template-columns: 1fr 1fr; flex: 1; min-height: 0; gap: 0; border-top: 1px solid var(--border); }
+  .ch-left { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+  .ch-right { display: flex; flex-direction: column; overflow: hidden; }
+  .ch-col-header { padding: 10px 12px 8px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .ch-section { margin: 0 20px 20px; }
   .ch-section h3 { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-  .lineup-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .lineup-slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 10px; }
   .lineup-slot { aspect-ratio: 63/88; max-height: 90px; border-radius: 8px; border: 2px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 9px; color: var(--muted); transition: border-color .2s; position: relative; overflow: hidden; background: var(--surface); }
   .lineup-slot.filled { border-style: solid; border-color: transparent; }
   .lineup-slot .slot-label { font-size: 8px; font-weight: 700; text-transform: uppercase; }
   .lineup-slot .remove-x { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; color: #fff; z-index: 10; }
-  .avail-cards-wrap { max-height: 200px; overflow-y: auto; }
-  .avail-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  @media (min-width: 400px) { .avail-grid { grid-template-columns: repeat(6, 1fr); } }
-  @media (min-width: 500px) { .avail-grid { grid-template-columns: repeat(7, 1fr); } }
+  .avail-cards-wrap { flex: 1; overflow-y: auto; padding: 8px; }
+  .avail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+
+
   .avail-card { aspect-ratio: 63/88; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: transform .15s, border-color .15s; position: relative; display: flex; flex-direction: column; }
   .avail-card:hover { transform: scale(1.05); }
   .avail-card.selected { border-color: var(--accent); }
   .avail-card-bottom { padding: 2px 3px; background: rgba(0,0,0,0.85); flex-shrink: 0; }
   .avail-card-name { font-size: 7px; font-weight: 800; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .avail-card-meta { font-size: 6px; color: rgba(255,255,255,0.5); }
-  .rivals-list { display: flex; flex-direction: column; gap: 8px; }
-  .rival-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color .2s; }
+  .rivals-list { display: flex; flex-direction: column; gap: 6px; padding: 8px; overflow-y: auto; flex: 1; }
+  .rival-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color .2s; flex-shrink: 0; }
   .rival-item.selected { border-color: var(--accent); background: rgba(108,99,255,0.1); }
   .rival-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
   .rival-info h4 { font-size: 14px; font-weight: 700; }
   .rival-info p { color: var(--muted); font-size: 12px; margin-top: 2px; }
   .rival-power { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent); }
-  .launch-btn { margin: 0 20px; width: calc(100% - 40px); padding: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 800; cursor: pointer; letter-spacing: .5px; transition: opacity .2s; }
+  .launch-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; font-size: 15px; font-weight: 800; cursor: pointer; letter-spacing: .5px; transition: opacity .2s; flex-shrink: 0; }
   .launch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* ── BATTLE ── */
@@ -373,32 +377,32 @@
 <div id="s-challenge" class="screen">
   <div class="ch-header">
     <h2>⚔ Challenge</h2>
-    <p>Build your lineup and pick a rival</p>
+    <p>Build your lineup · pick a rival · battle</p>
   </div>
 
-  <div class="ch-section">
-    <h3>Your Lineup (1 pitcher + 3 batters)</h3>
-    <div class="lineup-slots" id="lineup-slots">
-      <div class="lineup-slot" id="slot-0" onclick="clearSlot(0)"><div class="slot-label">Pitcher</div></div>
-      <div class="lineup-slot" id="slot-1" onclick="clearSlot(1)"><div class="slot-label">Batter 1</div></div>
-      <div class="lineup-slot" id="slot-2" onclick="clearSlot(2)"><div class="slot-label">Batter 2</div></div>
-      <div class="lineup-slot" id="slot-3" onclick="clearSlot(3)"><div class="slot-label">Batter 3</div></div>
+  <div class="ch-body">
+    <!-- LEFT: Your cards + lineup -->
+    <div class="ch-left">
+      <div class="ch-col-header">⚾ Your Lineup</div>
+      <div class="lineup-slots" id="lineup-slots">
+        <div class="lineup-slot" id="slot-0" onclick="clearSlot(0)"><div class="slot-label">Pitcher</div></div>
+        <div class="lineup-slot" id="slot-1" onclick="clearSlot(1)"><div class="slot-label">Batter 1</div></div>
+        <div class="lineup-slot" id="slot-2" onclick="clearSlot(2)"><div class="slot-label">Batter 2</div></div>
+        <div class="lineup-slot" id="slot-3" onclick="clearSlot(3)"><div class="slot-label">Batter 3</div></div>
+      </div>
+      <div class="ch-col-header" style="margin-top:4px">🃏 Your Cards</div>
+      <div class="avail-cards-wrap">
+        <div class="avail-grid" id="avail-grid"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Pick rival + launch -->
+    <div class="ch-right">
+      <div class="ch-col-header">🎯 Pick a Rival</div>
+      <div class="rivals-list" id="rivals-list"></div>
+      <button class="launch-btn" id="launch-btn" onclick="launchBattle()" disabled>⚔ Launch Battle</button>
     </div>
   </div>
-
-  <div class="ch-section">
-    <h3>Your Cards</h3>
-    <div class="avail-cards-wrap">
-      <div class="avail-grid" id="avail-grid"></div>
-    </div>
-  </div>
-
-  <div class="ch-section">
-    <h3>Pick a Rival</h3>
-    <div class="rivals-list" id="rivals-list"></div>
-  </div>
-
-  <button class="launch-btn" id="launch-btn" onclick="launchBattle()" disabled>⚔ Launch Battle</button>
 </div>
 
 <!-- BATTLE -->
