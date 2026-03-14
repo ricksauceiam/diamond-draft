@@ -106,19 +106,28 @@
   .reveal-card { aspect-ratio: 63/88; max-height: 160px; border-radius: 10px; cursor: pointer; position: relative; overflow: hidden; background: var(--surface2); border: 2px solid var(--border); transition: transform .15s; display: flex; flex-direction: column; }
   .reveal-card:hover { transform: scale(1.03); }
   .reveal-card.flipped { border-color: transparent; }
-  .card-back { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-  .card-back-icon { font-size: 2rem; }
-  .card-back-text { font-size: 11px; color: var(--muted); }
-  .card-front { width: 100%; height: 100%; display: flex; flex-direction: column; }
-  .card-stripe { height: 4px; width: 100%; }
-  .card-art { flex: 1; overflow: hidden; position: relative; }
+  /* ── SHARED BASEBALL CARD DESIGN ── */
+  .card-back { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: repeating-linear-gradient(45deg,#1a1a2e,#1a1a2e 8px,#16162a 8px,#16162a 16px); border-radius: 8px; }
+  .card-back-icon { font-size: 1.8rem; }
+  .card-back-text { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .card-front { width: 100%; height: 100%; display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; }
+  /* Top color band with team color */
+  .card-header { height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 5px; position: relative; }
+  .card-header-team { font-size: 8px; font-weight: 900; color: rgba(0,0,0,0.8); text-transform: uppercase; letter-spacing: .5px; }
+  .card-header-rarity { font-size: 7px; font-weight: 800; color: rgba(0,0,0,0.7); text-transform: uppercase; letter-spacing: .3px; background: rgba(255,255,255,0.3); padding: 1px 4px; border-radius: 3px; }
+  /* Photo area */
+  .card-art { flex: 1; overflow: hidden; position: relative; min-height: 0; }
   .card-art img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; display: block; }
-  .card-bottom { padding: 6px 7px; background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.5)); }
-  .card-name { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-meta { font-size: 10px; color: rgba(255,255,255,0.65); margin-top: 2px; }
-  .card-rarity-badge { position: absolute; top: 6px; left: 6px; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 4px; text-transform: uppercase; letter-spacing: .3px; }
-  .new-badge { position: absolute; top: 6px; right: 6px; background: var(--success); color: #000; font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 4px; }
-  .copy-badge { position: absolute; top: 6px; right: 6px; background: var(--accent); color: #fff; font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 4px; }
+  .card-art-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 100%); pointer-events: none; }
+  /* Bottom name panel */
+  .card-bottom { flex-shrink: 0; padding: 4px 6px 5px; background: #0a0a0f; border-top: 2px solid; }
+  .card-name { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+  .card-meta { font-size: 9px; color: rgba(255,255,255,0.5); margin-top: 1px; letter-spacing: .3px; }
+  /* NEW / COPY badges */
+  .new-badge { position: absolute; top: 4px; right: 4px; background: var(--success); color: #000; font-size: 7px; font-weight: 900; padding: 2px 4px; border-radius: 3px; letter-spacing: .3px; z-index: 2; }
+  .copy-badge { position: absolute; top: 4px; right: 4px; background: var(--accent); color: #fff; font-size: 7px; font-weight: 900; padding: 2px 4px; border-radius: 3px; z-index: 2; }
+  /* Fuse-ready shimmer */
+  .card-front.fuse-shimmer::after { content: '⚗ FUSE'; position: absolute; bottom: 28px; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: 900; color: var(--legendary); letter-spacing: 1px; text-shadow: 0 0 6px var(--legendary); }
 
   .reveal-all-btn { margin: 20px; }
   .pack-switch { display: flex; gap: 10px; margin: 0 20px 16px; }
@@ -802,15 +811,18 @@ function renderPackCards(idx) {
         </div>
       </div>`;
     }
-    return `<div class="reveal-card flipped" id="rc-${idx}-${i}">
-      <div class="card-front" style="background:${card.background||'#1a1a26'}">
-        <div class="card-stripe" style="background:${color}"></div>
-        <div class="card-art">
+    return `<div class="reveal-card flipped" id="rc-${idx}-${i}" style="border:2px solid ${color}; border-radius:10px; box-shadow: 0 0 12px ${color}44;">
+      <div class="card-front">
+        <div class="card-header" style="background:${color}">
+          <span class="card-header-team">${card.team}</span>
+          <span class="card-header-rarity">${card.rarity}</span>
+        </div>
+        <div class="card-art" style="background:${card.background||'#1a1a26'}">
           <img src="${card.photoUrl}" alt="${card.name}" loading="lazy" onerror="this.style.display='none'">
-          <div class="card-rarity-badge" style="background:${color};color:#000">${card.rarity}</div>
+          <div class="card-art-overlay"></div>
           ${isNew ? '<div class="new-badge">NEW!</div>' : `<div class="copy-badge">+COPY</div>`}
         </div>
-        <div class="card-bottom">
+        <div class="card-bottom" style="border-top-color:${color}">
           <div class="card-name">${card.lastName || card.name}</div>
           <div class="card-meta">${card.position||card.pos} · ${card.team}</div>
         </div>
@@ -909,18 +921,22 @@ function renderCollection() {
     const need = NEED[p.rarity];
     const fuseReady = item.copies >= need && item.level < 5;
     const pct = Math.min(100, (item.copies/need)*100);
-    return `<div class="col-card${fuseReady?' fuse-ready':''}" onclick="openCardModal('${item.id}')" style="background:${p.background||'#1a1a26'};border-color:${color}22">
-      <div class="card-stripe" style="background:${color};height:3px"></div>
-      <div style="flex:1;overflow:hidden;position:relative">
+    return `<div class="col-card${fuseReady?' fuse-ready':''}" onclick="openCardModal('${item.id}')" style="border:2px solid ${color}; border-radius:10px; box-shadow:0 2px 8px ${color}33; display:flex; flex-direction:column; overflow:hidden;">
+      <div class="card-header" style="background:${color}">
+        <span class="card-header-team">${p.team}</span>
+        <span class="card-header-rarity">${rarityLabel(item.level)}</span>
+      </div>
+      <div class="card-art" style="background:${p.background||'#1a1a26'}">
         <img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block" loading="lazy" onerror="this.style.display='none'">
-        <div class="card-rarity-badge" style="background:${color};color:#000;top:4px;left:4px">${rarityLabel(item.level)}</div>
-        ${item.copies>1?`<div style="position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-size:8px;font-weight:800;padding:2px 5px;border-radius:4px">×${item.copies}</div>`:''}
+        <div class="card-art-overlay"></div>
+        ${item.copies>1?`<div class="copy-badge">×${item.copies}</div>`:''}
+        ${fuseReady?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:8px;font-weight:900;color:var(--legendary);text-shadow:0 0 6px var(--legendary)">⚗ FUSE</div>':''}
       </div>
-      <div style="padding:5px 6px;background:linear-gradient(to top,rgba(0,0,0,0.9),rgba(0,0,0,0.5))">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.lastName||p.name}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.65);margin-top:2px">${p.position||p.pos} · ${p.team}</div>
+      <div class="card-bottom" style="border-top-color:${color}; background:#0a0a0f;">
+        <div class="card-name">${p.lastName||p.name}</div>
+        <div class="card-meta">${p.position||p.pos} · ${p.team}</div>
       </div>
-      <div class="copy-progress"><div class="copy-bar" style="width:${pct}%"></div></div>
+      <div class="copy-progress"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>
     </div>`;
   }).join('');
 }
@@ -1001,14 +1017,16 @@ function renderChallenge() {
       const p = item.player;
       const inLineup = lineup.includes(item.id);
       const color = RARITY_COLORS[p.rarity];
-      return `<div class="avail-card${inLineup?' selected':''}" onclick="toggleLineup('${item.id}')" style="background:${p.background||'#1a1a26'};border-color:${inLineup?'var(--accent)':color+'22'}">
-        <div style="background:${color};height:2px;flex-shrink:0"></div>
-        <div style="flex:1;overflow:hidden;min-height:0">
+      return `<div class="avail-card${inLineup?' selected':''}" onclick="toggleLineup('${item.id}')" style="border:2px solid ${inLineup?'var(--accent)':color}; border-radius:7px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 2px 6px ${color}33;">
+        <div style="background:${color};height:14px;flex-shrink:0;display:flex;align-items:center;padding:0 3px;justify-content:space-between;">
+          <span style="font-size:6px;font-weight:900;color:rgba(0,0,0,0.8);text-transform:uppercase">${p.team}</span>
+          <span style="font-size:6px;font-weight:700;color:rgba(0,0,0,0.7);text-transform:uppercase">${p.position||p.pos}</span>
+        </div>
+        <div style="flex:1;overflow:hidden;min-height:0;background:${p.background||'#1a1a26'}">
           <img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block" loading="lazy" onerror="this.style.display='none'">
         </div>
-        <div class="avail-card-bottom">
+        <div style="padding:3px 4px;background:#0a0a0f;border-top:1px solid ${color}">
           <div class="avail-card-name">${p.lastName||p.name}</div>
-          <div class="avail-card-meta">${p.position||p.pos} · ${p.team}</div>
         </div>
       </div>`;
     }).join('');
@@ -1058,15 +1076,22 @@ function updateSlot(i) {
   if (!p) return;
   const color = RARITY_COLORS[p.rarity];
   slot.className = 'lineup-slot filled';
-  slot.style.borderColor = color;
-  slot.style.background = p.background || '#1a1a26';
+  slot.style.border = `2px solid ${color}`;
+  slot.style.borderRadius = '8px';
+  slot.style.boxShadow = `0 0 10px ${color}55`;
+  slot.style.background = '#0a0a0f';
+  slot.style.overflow = 'hidden';
   slot.innerHTML = `
     <div class="remove-x" onclick="event.stopPropagation();clearSlot(${i})">×</div>
-    <div style="background:${color};height:2px;width:100%;position:absolute;top:0"></div>
-    <img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block" onerror="this.style.display='none'">
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 4px;background:linear-gradient(to top,rgba(0,0,0,0.95),transparent)">
-      <div style="font-size:8px;font-weight:800;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.lastName||p.name}</div>
-      <div style="font-size:7px;color:rgba(255,255,255,0.6)">${p.position||p.pos} · ${p.team}</div>
+    <div style="background:${color};height:16px;width:100%;display:flex;align-items:center;padding:0 4px;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:7px;font-weight:900;color:rgba(0,0,0,0.8);text-transform:uppercase">${p.team}</span>
+      <span style="font-size:6px;font-weight:700;color:rgba(0,0,0,0.7)">${p.position||p.pos}</span>
+    </div>
+    <div style="flex:1;overflow:hidden;background:${p.background||'#1a1a26'}">
+      <img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block" onerror="this.style.display='none'">
+    </div>
+    <div style="padding:3px 5px;background:#0a0a0f;border-top:1px solid ${color}">
+      <div style="font-size:8px;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${p.lastName||p.name}</div>
     </div>`;
 }
 
