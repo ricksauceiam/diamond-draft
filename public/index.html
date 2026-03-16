@@ -378,17 +378,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
 
     <!-- COLLECTION -->
     <div class="tab-page" id="tab-collection">
-      <!-- Top bar: title + stash toggle button -->
-      <div class="col-topbar" style="padding:22px 20px 0;flex-shrink:0;">
-        <div style="flex:1">
-          <h2 style="font-size:1.45rem;font-weight:900;">My Collection</h2>
-          <p id="col-sub" style="color:var(--muted);font-size:13px;margin-top:3px;">Loading...</p>
-        </div>
-        <button class="stash-toggle-btn" onclick="toggleStashSidebar()">
-          📦 Stash <span class="stash-ct" id="stash-count">0</span>
-        </button>
-      </div>
-      <!-- Filters + search -->
+      <div class="pg-head"><h2>My Collection</h2><p id="col-sub">Loading...</p></div>
       <div class="col-filters">
         <div class="fc active" data-r="ALL" onclick="filterCol('ALL')">All</div>
         <div class="fc" data-r="MYTHIC" onclick="filterCol('MYTHIC')">Mythic</div>
@@ -398,35 +388,35 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <div class="fc" data-r="COMMON" onclick="filterCol('COMMON')">Common</div>
       </div>
       <div class="col-search"><input type="text" id="col-q" placeholder="Search name, team, position..." oninput="renderCollection()"></div>
-      <!-- Selection bar -->
       <div class="col-select-bar hidden" id="col-select-bar">
         <div class="col-select-info" id="col-select-info">0 selected</div>
         <button class="col-select-btn btn-stash-move" onclick="moveSelectedToStash()">📦 Move to Stash</button>
         <button class="col-select-btn btn-sel-cancel" onclick="clearSelection()">✕ Cancel</button>
       </div>
-      <!-- Main body: cards + stash sidebar -->
       <div class="col-body">
         <div class="col-main">
           <div class="colgrid" id="colgrid"></div>
         </div>
-        <!-- Stash sidebar (slides in from right) -->
-        <div class="stash-sidebar" id="stash-sidebar">
-          <div class="stash-sidebar-head">
-            <h3>📦 Stash Pile</h3>
-            <p>Drag cards here or select &amp; move</p>
-          </div>
-          <!-- Drop zone at top of sidebar -->
-          <div class="stash-drop-zone" id="stash-drop-zone"
+        <!-- Floating stash bucket (top-right corner) -->
+        <div class="stash-bucket">
+          <div class="stash-bucket-icon" id="stash-bucket-icon"
+            onclick="toggleStashPanel()"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
             ondrop="handleStashDrop(event)">
-            <div style="font-size:1.5rem">🗄️</div>
-            <div>Drop cards here</div>
+            <div class="bucket-emoji">📦</div>
+            <div class="bucket-count" id="stash-count">0</div>
           </div>
-          <!-- Stashed cards list -->
-          <div class="stash-cards-list" id="stash-cards-list"></div>
-          <div class="stash-sidebar-footer">
-            <button onclick="clearStash()" style="width:100%;padding:7px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;">Clear Stash</button>
+        </div>
+        <!-- Stash popover panel -->
+        <div class="stash-panel" id="stash-panel">
+          <div class="stash-panel-head">
+            <h4>📦 Stash Pile</h4>
+            <button class="stash-panel-close" onclick="toggleStashPanel()">✕</button>
+          </div>
+          <div class="stash-panel-list" id="stash-panel-list"></div>
+          <div class="stash-panel-footer">
+            <button onclick="clearStash()" style="width:100%;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;cursor:pointer;">Clear All</button>
           </div>
         </div>
       </div>
@@ -640,10 +630,10 @@ let colView='active';
 let selectedCards=new Set();
 let stashOpen=false;
 
-function toggleStashSidebar(){
+function toggleStashPanel(){
   stashOpen=!stashOpen;
-  document.getElementById('stash-sidebar').classList.toggle('open',stashOpen);
-  renderStashList();
+  document.getElementById('stash-panel').classList.toggle('open',stashOpen);
+  if(stashOpen)renderStashList();
 }
 function filterCol(r){colFilter=r;document.querySelectorAll('.fc').forEach(c=>c.classList.toggle('active',c.dataset.r===r));renderCollection();}
 function renderCollection(){
@@ -660,6 +650,8 @@ function renderCollection(){
   items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));
   document.getElementById('col-sub').textContent=`${items.length} active · ${userData.collection.length} total`;
   document.getElementById('stash-count').textContent=stashSet.size;
+  const ct=document.getElementById('stash-count');
+  ct.classList.toggle('has-items',stashSet.size>0);
   const grid=document.getElementById('colgrid');
   if(!items.length){grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>';return;}
   grid.innerHTML=items.map(item=>{
@@ -674,7 +666,7 @@ function renderCollection(){
 function renderStashList(){
   if(!userData?.stash)return;
   const stashSet=new Set(userData.stash);
-  const list=document.getElementById('stash-cards-list');
+  const list=document.getElementById('stash-panel-list');
   const stashedItems=userData.collection.filter(c=>stashSet.has(c.id)).map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
   if(!stashedItems.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No cards stashed yet</div>';return;}
   list.innerHTML=stashedItems.map(item=>{
@@ -714,7 +706,7 @@ function clearStash(){
 let dragCardId=null;
 function handleCardDragStart(e,id){dragCardId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);}
 function handleStashDrop(e){
-  e.preventDefault();document.getElementById('stash-drop-zone').classList.remove('drag-over');
+  e.preventDefault();document.getElementById('stash-bucket-icon').classList.remove('drag-over');
   const id=e.dataTransfer.getData('text/plain')||dragCardId;if(!id)return;
   if(!userData.stash)userData.stash=[];
   const stashSet=new Set(userData.stash);
