@@ -378,13 +378,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
 
     <!-- COLLECTION -->
     <div class="tab-page" id="tab-collection">
-      <div class="pg-head"><h2>My Collection</h2><p id="col-sub">Loading...</p></div>
-      <!-- View tabs: Active / Stash -->
-      <div class="col-view-tabs">
-        <div class="col-view-tab active" id="cvt-active" onclick="setColView('active')">⚡ Active</div>
-        <div class="col-view-tab" id="cvt-stash" onclick="setColView('stash')">📦 Stash Pile <span id="stash-count" style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:8px;font-size:11px;margin-left:3px;">0</span></div>
+      <!-- Top bar: title + stash toggle button -->
+      <div class="col-topbar" style="padding:22px 20px 0;flex-shrink:0;">
+        <div style="flex:1">
+          <h2 style="font-size:1.45rem;font-weight:900;">My Collection</h2>
+          <p id="col-sub" style="color:var(--muted);font-size:13px;margin-top:3px;">Loading...</p>
+        </div>
+        <button class="stash-toggle-btn" onclick="toggleStashSidebar()">
+          📦 Stash <span class="stash-ct" id="stash-count">0</span>
+        </button>
       </div>
-      <!-- Rarity filters -->
+      <!-- Filters + search -->
       <div class="col-filters">
         <div class="fc active" data-r="ALL" onclick="filterCol('ALL')">All</div>
         <div class="fc" data-r="MYTHIC" onclick="filterCol('MYTHIC')">Mythic</div>
@@ -394,20 +398,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <div class="fc" data-r="COMMON" onclick="filterCol('COMMON')">Common</div>
       </div>
       <div class="col-search"><input type="text" id="col-q" placeholder="Search name, team, position..." oninput="renderCollection()"></div>
-      <!-- Selection action bar (shown when cards selected) -->
+      <!-- Selection bar -->
       <div class="col-select-bar hidden" id="col-select-bar">
         <div class="col-select-info" id="col-select-info">0 selected</div>
-        <button class="col-select-btn btn-stash-move" id="col-stash-action-btn" onclick="moveSelectedToStash()">📦 Move to Stash</button>
-        <button class="col-select-btn btn-sel-cancel" onclick="clearSelection()">Cancel</button>
+        <button class="col-select-btn btn-stash-move" onclick="moveSelectedToStash()">📦 Move to Stash</button>
+        <button class="col-select-btn btn-sel-cancel" onclick="clearSelection()">✕ Cancel</button>
       </div>
-      <!-- Drop zone (only shown in stash view) -->
-      <div class="stash-drop-zone hidden" id="stash-drop-zone"
-        ondragover="event.preventDefault();this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="handleStashDrop(event)">
-        🗄️ Drag cards here to add to Stash Pile
+      <!-- Main body: cards + stash sidebar -->
+      <div class="col-body">
+        <div class="col-main">
+          <div class="colgrid" id="colgrid"></div>
+        </div>
+        <!-- Stash sidebar (slides in from right) -->
+        <div class="stash-sidebar" id="stash-sidebar">
+          <div class="stash-sidebar-head">
+            <h3>📦 Stash Pile</h3>
+            <p>Drag cards here or select &amp; move</p>
+          </div>
+          <!-- Drop zone at top of sidebar -->
+          <div class="stash-drop-zone" id="stash-drop-zone"
+            ondragover="event.preventDefault();this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+            ondrop="handleStashDrop(event)">
+            <div style="font-size:1.5rem">🗄️</div>
+            <div>Drop cards here</div>
+          </div>
+          <!-- Stashed cards list -->
+          <div class="stash-cards-list" id="stash-cards-list"></div>
+          <div class="stash-sidebar-footer">
+            <button onclick="clearStash()" style="width:100%;padding:7px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;">Clear Stash</button>
+          </div>
+        </div>
       </div>
-      <div class="colgrid" id="colgrid"></div>
     </div>
 
     <!-- MATCHUPS -->
@@ -616,14 +638,12 @@ function awardCard(raw){const col=userData.collection,ex=col.find(c=>c.id===raw.
 // ── STASH & COLLECTION STATE ──────────────────────────────────────────────────
 let colView='active';
 let selectedCards=new Set();
+let stashOpen=false;
 
-function setColView(v){
-  colView=v;selectedCards.clear();
-  document.getElementById('cvt-active').classList.toggle('active',v==='active');
-  document.getElementById('cvt-stash').classList.toggle('active',v==='stash');
-  document.getElementById('stash-drop-zone').classList.toggle('hidden',v!=='stash');
-  document.getElementById('col-stash-action-btn').textContent=v==='active'?'📦 Move to Stash':'⚡ Move to Active';
-  updateSelectBar();renderCollection();
+function toggleStashSidebar(){
+  stashOpen=!stashOpen;
+  document.getElementById('stash-sidebar').classList.toggle('open',stashOpen);
+  renderStashList();
 }
 function filterCol(r){colFilter=r;document.querySelectorAll('.fc').forEach(c=>c.classList.toggle('active',c.dataset.r===r));renderCollection();}
 function renderCollection(){
@@ -633,20 +653,37 @@ function renderCollection(){
   const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};
   const stashSet=new Set(userData.stash);
   let items=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-  if(colView==='active')items=items.filter(c=>!stashSet.has(c.id));
-  else items=items.filter(c=>stashSet.has(c.id));
+  // Active view always shows non-stashed cards
+  items=items.filter(c=>!stashSet.has(c.id));
   if(colFilter!=='ALL')items=items.filter(c=>c.player.rarity===colFilter);
   if(q)items=items.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});
   items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));
-  document.getElementById('col-sub').textContent=colView==='active'?`${items.length} active · ${userData.collection.length} total`:`${items.length} stashed`;
+  document.getElementById('col-sub').textContent=`${items.length} active · ${userData.collection.length} total`;
   document.getElementById('stash-count').textContent=stashSet.size;
   const grid=document.getElementById('colgrid');
-  if(!items.length){grid.innerHTML=colView==='active'?'<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>':'<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">Stash is empty</p><span>Select cards in Active view and send them here.</span></div>';return;}
+  if(!items.length){grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>';return;}
   grid.innerHTML=items.map(item=>{
     const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;
     const isSel=selectedCards.has(item.id);
     const card=chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:'',extraStyle:fr?'animation:fuseGlow 2s infinite;':''});
     return `<div class="col-card-wrap${isSel?' selected':''}" draggable="true" ondragstart="handleCardDragStart(event,'${item.id}')" onclick="toggleCardSelect('${item.id}',event)" ondblclick="openCardModal('${item.id}')" title="Click to select · Double-click to view">${card}</div>`;
+  }).join('');
+  if(stashOpen)renderStashList();
+}
+
+function renderStashList(){
+  if(!userData?.stash)return;
+  const stashSet=new Set(userData.stash);
+  const list=document.getElementById('stash-cards-list');
+  const stashedItems=userData.collection.filter(c=>stashSet.has(c.id)).map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
+  if(!stashedItems.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No cards stashed yet</div>';return;}
+  list.innerHTML=stashedItems.map(item=>{
+    const p=item.player,color=RARITY_COLORS[p.rarity]||'#8899AA';
+    return `<div class="stash-mini-card" style="border-left:3px solid ${color}">
+      <div class="stash-mini-img"><img src="${p.photoUrl}" onerror="this.style.display='none'" loading="lazy"></div>
+      <div class="stash-mini-info"><div class="stash-mini-name">${p.lastName||p.name}</div><div class="stash-mini-pos" style="color:${color}">${p.position||p.pos} · ${p.team}</div></div>
+      <div class="stash-mini-remove" onclick="removeFromStash('${item.id}')" title="Move back to Active">↩</div>
+    </div>`;
   }).join('');
 }
 function toggleCardSelect(id,e){e.stopPropagation();if(selectedCards.has(id))selectedCards.delete(id);else selectedCards.add(id);updateSelectBar();renderCollection();}
@@ -655,9 +692,24 @@ function clearSelection(){selectedCards.clear();updateSelectBar();renderCollecti
 function moveSelectedToStash(){
   if(!userData.stash)userData.stash=[];
   const stashSet=new Set(userData.stash);
-  if(colView==='active'){selectedCards.forEach(id=>stashSet.add(id));showToast(`📦 ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Stash`);}
-  else{selectedCards.forEach(id=>stashSet.delete(id));showToast(`⚡ ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Active`);}
-  userData.stash=[...stashSet];selectedCards.clear();saveData();updateSelectBar();renderCollection();
+  selectedCards.forEach(id=>stashSet.add(id));
+  userData.stash=[...stashSet];
+  showToast(`📦 ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Stash`);
+  selectedCards.clear();saveData();updateSelectBar();renderCollection();
+  if(stashOpen)renderStashList();
+}
+
+function removeFromStash(id){
+  if(!userData.stash)return;
+  userData.stash=userData.stash.filter(s=>s!==id);
+  saveData();renderCollection();renderStashList();
+  showToast('⚡ Card moved back to Active');
+}
+
+function clearStash(){
+  if(!userData.stash||!userData.stash.length)return;
+  userData.stash=[];saveData();renderCollection();renderStashList();
+  showToast('Stash cleared');
 }
 let dragCardId=null;
 function handleCardDragStart(e,id){dragCardId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);}
