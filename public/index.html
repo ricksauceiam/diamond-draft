@@ -603,7 +603,7 @@ async function loadScores(){
     renderScores();
   }catch(e){
     console.error('Scores error:',e);
-    document.getElementById('scores-list').innerHTML='<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">Could not load scores</p><span>Check your connection and try again.</span></div>';
+    document.getElementById('scores-list').innerHTML=`<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">Could not load scores</p><span style="font-size:11px;color:var(--danger)">${e.message}</span></div>`;
   }
 }
 
