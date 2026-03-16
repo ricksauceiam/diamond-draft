@@ -1,5 +1,11 @@
 {
+  "functions": {
+    "api/scores.js": {
+      "runtime": "edge"
+    }
+  },
   "rewrites": [
+    { "source": "/api/scores", "destination": "/api/scores.js" },
     { "source": "/(.*)", "destination": "/public/index.html" }
   ]
 }
