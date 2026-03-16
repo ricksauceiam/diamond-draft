@@ -379,6 +379,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
     <!-- COLLECTION -->
     <div class="tab-page" id="tab-collection">
       <div class="pg-head"><h2>My Collection</h2><p id="col-sub">Loading...</p></div>
+      <!-- View tabs: Active / Stash -->
+      <div class="col-view-tabs">
+        <div class="col-view-tab active" id="cvt-active" onclick="setColView('active')">⚡ Active</div>
+        <div class="col-view-tab" id="cvt-stash" onclick="setColView('stash')">📦 Stash Pile <span id="stash-count" style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:8px;font-size:11px;margin-left:3px;">0</span></div>
+      </div>
+      <!-- Rarity filters -->
       <div class="col-filters">
         <div class="fc active" data-r="ALL" onclick="filterCol('ALL')">All</div>
         <div class="fc" data-r="MYTHIC" onclick="filterCol('MYTHIC')">Mythic</div>
@@ -388,6 +394,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <div class="fc" data-r="COMMON" onclick="filterCol('COMMON')">Common</div>
       </div>
       <div class="col-search"><input type="text" id="col-q" placeholder="Search name, team, position..." oninput="renderCollection()"></div>
+      <!-- Selection action bar (shown when cards selected) -->
+      <div class="col-select-bar hidden" id="col-select-bar">
+        <div class="col-select-info" id="col-select-info">0 selected</div>
+        <button class="col-select-btn btn-stash-move" id="col-stash-action-btn" onclick="moveSelectedToStash()">📦 Move to Stash</button>
+        <button class="col-select-btn btn-sel-cancel" onclick="clearSelection()">Cancel</button>
+      </div>
+      <!-- Drop zone (only shown in stash view) -->
+      <div class="stash-drop-zone hidden" id="stash-drop-zone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleStashDrop(event)">
+        🗄️ Drag cards here to add to Stash Pile
+      </div>
       <div class="colgrid" id="colgrid"></div>
     </div>
 
@@ -594,8 +613,63 @@ function flipCard(i){if(revealedCards[curPackIdx].has(i))return;revealedCards[cu
 function revealAll(){packResults[curPackIdx].forEach((_,i)=>revealedCards[curPackIdx].add(i));savePackSession();renderPackGrid();}
 function claimPack(){if(userData.packsOpened[curPackIdx])return;packResults[curPackIdx].forEach(card=>awardCard(card));userData.packsOpened[curPackIdx]=true;const today=todayStr();if(userData.packsOpened[0]&&userData.packsOpened[1]&&userData.lastStreakDate!==today){userData.streak=(userData.streak||0)+1;userData.lastStreakDate=today;}saveData();showToast(`Pack ${curPackIdx+1} claimed! 5 cards added ✨`);renderPackGrid();renderHome();}
 function awardCard(raw){const col=userData.collection,ex=col.find(c=>c.id===raw.id);if(ex){ex.copies=(ex.copies||1)+1;}else{col.push({id:raw.id,rarity:raw.rarity,level:1,copies:1,mult:1.0});}}
+// ── STASH & COLLECTION STATE ──────────────────────────────────────────────────
+let colView='active';
+let selectedCards=new Set();
+
+function setColView(v){
+  colView=v;selectedCards.clear();
+  document.getElementById('cvt-active').classList.toggle('active',v==='active');
+  document.getElementById('cvt-stash').classList.toggle('active',v==='stash');
+  document.getElementById('stash-drop-zone').classList.toggle('hidden',v!=='stash');
+  document.getElementById('col-stash-action-btn').textContent=v==='active'?'📦 Move to Stash':'⚡ Move to Active';
+  updateSelectBar();renderCollection();
+}
 function filterCol(r){colFilter=r;document.querySelectorAll('.fc').forEach(c=>c.classList.toggle('active',c.dataset.r===r));renderCollection();}
-function renderCollection(){if(!userData)return;const q=(document.getElementById('col-q')?.value||'').toLowerCase();const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};let items=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);if(colFilter!=='ALL')items=items.filter(c=>c.player.rarity===colFilter);if(q)items=items.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));document.getElementById('col-sub').textContent=`${items.length} card${items.length!==1?'s':''} · ${userData.collection.length} unique`;const grid=document.getElementById('colgrid');if(!items.length){grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open your daily packs to start collecting.</span></div>';return;}grid.innerHTML=items.map(item=>{const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;return chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:`openCardModal('${item.id}')`,extraStyle:fr?'animation:fuseGlow 2s infinite;':''});}).join('');}
+function renderCollection(){
+  if(!userData)return;
+  if(!userData.stash)userData.stash=[];
+  const q=(document.getElementById('col-q')?.value||'').toLowerCase();
+  const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};
+  const stashSet=new Set(userData.stash);
+  let items=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
+  if(colView==='active')items=items.filter(c=>!stashSet.has(c.id));
+  else items=items.filter(c=>stashSet.has(c.id));
+  if(colFilter!=='ALL')items=items.filter(c=>c.player.rarity===colFilter);
+  if(q)items=items.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});
+  items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));
+  document.getElementById('col-sub').textContent=colView==='active'?`${items.length} active · ${userData.collection.length} total`:`${items.length} stashed`;
+  document.getElementById('stash-count').textContent=stashSet.size;
+  const grid=document.getElementById('colgrid');
+  if(!items.length){grid.innerHTML=colView==='active'?'<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>':'<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">Stash is empty</p><span>Select cards in Active view and send them here.</span></div>';return;}
+  grid.innerHTML=items.map(item=>{
+    const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;
+    const isSel=selectedCards.has(item.id);
+    const card=chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:'',extraStyle:fr?'animation:fuseGlow 2s infinite;':''});
+    return `<div class="col-card-wrap${isSel?' selected':''}" draggable="true" ondragstart="handleCardDragStart(event,'${item.id}')" onclick="toggleCardSelect('${item.id}',event)" ondblclick="openCardModal('${item.id}')" title="Click to select · Double-click to view">${card}</div>`;
+  }).join('');
+}
+function toggleCardSelect(id,e){e.stopPropagation();if(selectedCards.has(id))selectedCards.delete(id);else selectedCards.add(id);updateSelectBar();renderCollection();}
+function updateSelectBar(){const bar=document.getElementById('col-select-bar');if(selectedCards.size>0){bar.classList.remove('hidden');document.getElementById('col-select-info').textContent=`${selectedCards.size} card${selectedCards.size!==1?'s':''} selected`;}else{bar.classList.add('hidden');}}
+function clearSelection(){selectedCards.clear();updateSelectBar();renderCollection();}
+function moveSelectedToStash(){
+  if(!userData.stash)userData.stash=[];
+  const stashSet=new Set(userData.stash);
+  if(colView==='active'){selectedCards.forEach(id=>stashSet.add(id));showToast(`📦 ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Stash`);}
+  else{selectedCards.forEach(id=>stashSet.delete(id));showToast(`⚡ ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Active`);}
+  userData.stash=[...stashSet];selectedCards.clear();saveData();updateSelectBar();renderCollection();
+}
+let dragCardId=null;
+function handleCardDragStart(e,id){dragCardId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);}
+function handleStashDrop(e){
+  e.preventDefault();document.getElementById('stash-drop-zone').classList.remove('drag-over');
+  const id=e.dataTransfer.getData('text/plain')||dragCardId;if(!id)return;
+  if(!userData.stash)userData.stash=[];
+  const stashSet=new Set(userData.stash);
+  if(colView==='stash'){stashSet.delete(id);showToast('⚡ Card moved to Active');}
+  else{stashSet.add(id);showToast('📦 Card moved to Stash');}
+  userData.stash=[...stashSet];dragCardId=null;saveData();renderCollection();
+}
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.textContent=rarityLabel(col.level);b.style.background=color;b.style.color='#000';document.getElementById('m-power').textContent=`${(col.mult||1.0).toFixed(2)}× power`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.disabled=!fr;fb.textContent=fr?`⚗ Fuse → ${RARITY_ORDER[col.level]||'MAX'}`:col.level>=5?'✨ Max Rarity!':'⚗ Need '+(need-col.copies)+' more copies';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
 function renderMatchups(){
