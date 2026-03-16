@@ -271,6 +271,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   .scores-empty{text-align:center;padding:60px 20px;color:var(--muted);}
   .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pendingPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -316,7 +317,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <span class="nav-badge" style="background:var(--danger)">3</span>
       </button>
       <button class="nav-item" data-tab="scores" onclick="goTab('scores')">
-        <span class="nav-icon">⚾</span><span>MLB Scores</span>
+        <span class="nav-icon">⚾</span><span>Today's Games</span>
       </button>
       <button class="nav-item" data-tab="leaderboard" onclick="goTab('leaderboard')">
         <span class="nav-icon">🏆</span><span>Top Collectors</span>
@@ -482,6 +483,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   </div>
 </div>
 
+<!-- PENDING CHALLENGE OVERLAY -->
+<div class="overlay" id="pending-ov">
+  <div class="ov-box" style="max-width:400px;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:12px" id="pending-rival-emoji">⚾</div>
+    <div style="font-size:1.3rem;font-weight:900;margin-bottom:8px;color:var(--accent)">Challenge Sent!</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:6px;">Your lineup is locked in.</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:20px;">Waiting for <span id="pending-rival-name" style="color:var(--text)">Rival</span> to accept...</div>
+    <!-- animated waiting dots -->
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:24px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pendingPulse 1.4s infinite 0s;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pendingPulse 1.4s infinite 0.2s;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pendingPulse 1.4s infinite 0.4s;"></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:20px;font-size:12px;color:var(--muted);line-height:1.6;">
+      📬 Your challenge has been sent.<br>You'll be notified when they accept.<br>Check <b style="color:var(--text)">Matchups</b> to see pending challenges.
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-p" style="flex:1;padding:12px;font-size:14px" onclick="document.getElementById('pending-ov').classList.remove('open');goTab('matchups')">View Matchups</button>
+      <button style="flex:1;padding:12px;font-size:14px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer" onclick="document.getElementById('pending-ov').classList.remove('open');goTab('home')">🏠 Home</button>
+    </div>
+  </div>
+</div>
+
 <!-- BATTLE OVERLAY -->
 <div class="overlay" id="battle-ov">
   <div class="ov-box" style="max-width:680px">
@@ -574,11 +598,60 @@ function filterCol(r){colFilter=r;document.querySelectorAll('.fc').forEach(c=>c.
 function renderCollection(){if(!userData)return;const q=(document.getElementById('col-q')?.value||'').toLowerCase();const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};let items=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);if(colFilter!=='ALL')items=items.filter(c=>c.player.rarity===colFilter);if(q)items=items.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));document.getElementById('col-sub').textContent=`${items.length} card${items.length!==1?'s':''} · ${userData.collection.length} unique`;const grid=document.getElementById('colgrid');if(!items.length){grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open your daily packs to start collecting.</span></div>';return;}grid.innerHTML=items.map(item=>{const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;return chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:`openCardModal('${item.id}')`,extraStyle:fr?'animation:fuseGlow 2s infinite;':''});}).join('');}
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.textContent=rarityLabel(col.level);b.style.background=color;b.style.color='#000';document.getElementById('m-power').textContent=`${(col.mult||1.0).toFixed(2)}× power`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.disabled=!fr;fb.textContent=fr?`⚗ Fuse → ${RARITY_ORDER[col.level]||'MAX'}`:col.level>=5?'✨ Max Rarity!':'⚗ Need '+(need-col.copies)+' more copies';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
-function renderMatchups(){document.getElementById('sw').textContent=battleRecord.wins||0;document.getElementById('sl').textContent=battleRecord.losses||0;document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;document.getElementById('mlist').innerHTML=MOCK_MATCHUPS.map(m=>{const sc=m.status==='live'?'live':m.status==='done'?'done':'upcoming';const sl=m.status==='live'?'🔴 LIVE':m.status==='done'?'✅ Final':'🕐 Upcoming';return`<div class="mbig"><div class="mbig-head"><span style="font-size:13px;font-weight:700">Battle</span><span class="mb-status ${sc}">${sl}</span></div><div class="mbig-teams"><div class="mbt"><div class="mbt-name">${m.you}</div><div class="mbt-sub">Challenger</div></div><div class="mbt-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="mbt r"><div class="mbt-name">${m.rival}</div><div class="mbt-sub">Defender</div></div></div><div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">${m.inn}</div></div>`;}).join('');}
+function renderMatchups(){
+  document.getElementById('sw').textContent=battleRecord.wins||0;
+  document.getElementById('sl').textContent=battleRecord.losses||0;
+  document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;
+  const pending=userData?.pendingMatchups||[];
+  const pendingHTML=pending.map(m=>`
+    <div class="mbig" style="border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.05);">
+      <div class="mbig-head">
+        <span style="font-size:13px;font-weight:700">${m.rivalEmoji||'⚾'} ${m.rival}</span>
+        <span class="mb-status upcoming" style="display:flex;align-items:center;gap:5px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pendingPulse 1.4s infinite;"></span>
+          Awaiting Response
+        </span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">Sent ${new Date(m.sentAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+        <button onclick="cancelChallenge('${m.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;">Cancel</button>
+      </div>
+    </div>`).join('');
+  const mockHTML=MOCK_MATCHUPS.map(m=>{const sc=m.status==='live'?'live':m.status==='done'?'done':'upcoming';const sl=m.status==='live'?'🔴 LIVE':m.status==='done'?'✅ Final':'🕐 Upcoming';return`<div class="mbig"><div class="mbig-head"><span style="font-size:13px;font-weight:700">Battle</span><span class="mb-status ${sc}">${sl}</span></div><div class="mbig-teams"><div class="mbt"><div class="mbt-name">${m.you}</div><div class="mbt-sub">Challenger</div></div><div class="mbt-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="mbt r"><div class="mbt-name">${m.rival}</div><div class="mbt-sub">Defender</div></div></div><div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">${m.inn}</div></div>`;}).join('');
+  document.getElementById('mlist').innerHTML=pendingHTML+mockHTML;
+}
+
+function cancelChallenge(id){
+  if(!userData.pendingMatchups)return;
+  userData.pendingMatchups=userData.pendingMatchups.filter(m=>String(m.id)!==String(id));
+  saveData();
+  renderMatchups();
+  showToast('Challenge cancelled.');
+}
 function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');}
-function renderChallengeOv(){const slots=document.getElementById('ch-slots');slots.innerHTML=lineup.map((id,i)=>{if(!id)return`<div style="aspect-ratio:63/88;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:3px;background:var(--surface2)"><span style="font-size:.9rem">${i===0?'⚾':'🏏'}</span><span>${i===0?'P':'B'+(i)}</span></div>`;const p=getPlayer(id);return`<div style="position:relative">${chromeCard({player:p,rarity:p.rarity,level:1,onclick:'',extraStyle:'aspect-ratio:63/88'})}<div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.8);border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10">×</div></div>`;}).join('');const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);document.getElementById('ch-avail').innerHTML=col.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:item.level,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`});}).join('');document.getElementById('ch-rivals').innerHTML=RIVALS.map(r=>`<div onclick="selectedRival='${r.name}';renderChallengeOv()" style="background:${selectedRival===r.name?'rgba(108,99,255,.1)':'var(--surface)'};border:1px solid ${selectedRival===r.name?'var(--accent)':'var(--border)'};border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;cursor:pointer"><div style="font-size:1.4rem">${r.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${r.name}</div><div style="font-size:11px;color:var(--muted)">${r.desc}</div></div><div style="font-size:12px;font-weight:700;color:var(--accent)">${r.power}pts</div></div>`).join('');const filled=lineup.filter(Boolean).length;const btn=document.getElementById('ch-launch');btn.disabled=filled<4||!selectedRival;btn.textContent=filled<4?`Pick ${4-filled} more`:!selectedRival?'Pick a rival':'⚔️ Launch Battle!';}
+function renderChallengeOv(){const slots=document.getElementById('ch-slots');slots.innerHTML=lineup.map((id,i)=>{if(!id)return`<div style="aspect-ratio:63/88;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:3px;background:var(--surface2)"><span style="font-size:.9rem">${i===0?'⚾':'🏏'}</span><span>${i===0?'P':'B'+(i)}</span></div>`;const p=getPlayer(id);return`<div style="position:relative">${chromeCard({player:p,rarity:p.rarity,level:1,onclick:'',extraStyle:'aspect-ratio:63/88'})}<div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.8);border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10">×</div></div>`;}).join('');const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);document.getElementById('ch-avail').innerHTML=col.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:item.level,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`});}).join('');document.getElementById('ch-rivals').innerHTML=RIVALS.map(r=>`<div onclick="selectedRival='${r.name}';renderChallengeOv()" style="background:${selectedRival===r.name?'rgba(108,99,255,.1)':'var(--surface)'};border:1px solid ${selectedRival===r.name?'var(--accent)':'var(--border)'};border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;cursor:pointer"><div style="font-size:1.4rem">${r.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${r.name}</div><div style="font-size:11px;color:var(--muted)">${r.desc}</div></div><div style="font-size:12px;font-weight:700;color:var(--accent)">${r.power}pts</div></div>`).join('');const filled=lineup.filter(Boolean).length;const btn=document.getElementById('ch-launch');btn.disabled=filled<4||!selectedRival;btn.textContent=filled<4?`Pick ${4-filled} more`:!selectedRival?'Pick a rival':'📨 Send Challenge';}
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
-function launchBattle(){if(lineup.filter(Boolean).length<4||!selectedRival)return;const rival=RIVALS.find(r=>r.name===selectedRival);const myCards=lineup.map(id=>{const p=getPlayer(id);const col=userData.collection.find(c=>c.id===id);return{...p,mult:col?.mult||1.0};}).filter(Boolean);const pool=[...PLAYERS].sort(()=>Math.random()-.5);const rP=pool.filter(p=>PITCHER_POS.has(p.position||p.pos));const rB=pool.filter(p=>!PITCHER_POS.has(p.position||p.pos));const rivalCards=[rP[0]||pool[0],rB[0]||pool[1],rB[1]||pool[2],rB[2]||pool[3]].map(p=>({...p,mult:1.0}));battleState={you:{name:'You',lineup:myCards,scores:[0,0,0,0],total:0},rival:{name:rival.name,lineup:rivalCards,scores:[0,0,0,0],total:0},inning:0,maxInnings:9,done:false};document.getElementById('ch-ov').classList.remove('open');document.getElementById('battle-ov').classList.add('open');document.getElementById('b-title').textContent=`You vs ${rival.name}`;document.getElementById('b-rival-lbl').textContent=rival.name;document.getElementById('bs-you').textContent='0';document.getElementById('bs-rival').textContent='0';document.getElementById('b-prog').style.width='0%';document.getElementById('b-pbp').innerHTML='';document.getElementById('b-over').style.display='none';['you','rival'].forEach(side=>{document.getElementById(`b-${side}`).innerHTML=battleState[side].lineup.map((c,i)=>`<div style="display:flex;align-items:center;gap:7px;background:var(--surface2);border-radius:8px;padding:6px 9px;margin-bottom:5px"><div style="width:26px;height:26px;border-radius:5px;overflow:hidden;flex-shrink:0"><img src="${c.photoUrl}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%" onerror="this.style.display='none'"></div><div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.lastName||c.name}</div><div style="font-size:9px;color:var(--muted)">${c.position||c.pos}</div></div><div style="font-size:13px;font-weight:900;color:var(--accent)" id="bpt-${side}-${i}">0</div></div>`).join('');});clearTimeout(battleTimer);battleTimer=setTimeout(runBattle,600);}
+function launchBattle(){
+  if(lineup.filter(Boolean).length<4||!selectedRival)return;
+  const rival=RIVALS.find(r=>r.name===selectedRival);
+  // Close challenge overlay
+  document.getElementById('ch-ov').classList.remove('open');
+  // Show pending screen
+  showChallengePending(rival);
+  // Save pending matchup to user data
+  const pending={id:Date.now(),rival:rival.name,rivalEmoji:rival.emoji,lineup:lineup.filter(Boolean),sentAt:new Date().toISOString(),status:'pending'};
+  if(!userData.pendingMatchups)userData.pendingMatchups=[];
+  userData.pendingMatchups.push(pending);
+  saveData();
+  renderMatchups();
+}
+
+function showChallengePending(rival){
+  const ov=document.getElementById('pending-ov');
+  document.getElementById('pending-rival-name').textContent=rival.name;
+  document.getElementById('pending-rival-emoji').textContent=rival.emoji;
+  ov.classList.add('open');
+}
 function runBattle(){if(!battleState||battleState.done)return;const bs=battleState;bs.inning++;document.getElementById('b-prog').style.width=Math.round((bs.inning/bs.maxInnings)*100)+'%';['you','rival'].forEach(side=>{const ci=Math.floor(Math.random()*4),card=bs[side].lineup[ci];if(!card)return;const pts=Math.floor(Math.random()*18)+3;bs[side].scores[ci]+=pts;bs[side].total+=pts;const pe=document.getElementById(`bpt-${side}-${ci}`);if(pe){pe.textContent=bs[side].scores[ci];pe.style.transform='scale(1.4)';setTimeout(()=>pe.style.transform='',300);}document.getElementById(`bs-${side}`).textContent=bs[side].total;const plays=['⚾ Home run!','💥 RBI double!','🔥 Strikeout!','🎯 Solid hit!','⚡ Stolen base!','💪 RBI single!'];const pbp=document.getElementById('b-pbp');const el=document.createElement('div');el.style.cssText='background:var(--surface2);border-radius:7px;padding:6px 9px;font-size:12px;display:flex;align-items:center;gap:7px';el.innerHTML=`<span>${plays[Math.floor(Math.random()*plays.length)].split(' ')[0]}</span><span><b>${card.lastName||card.name}</b> +${pts} pts</span>`;pbp.insertBefore(el,pbp.firstChild);if(pbp.children.length>8)pbp.removeChild(pbp.lastChild);});if(bs.inning>=bs.maxInnings){endBattle();}else{battleTimer=setTimeout(runBattle,650+Math.random()*400);}}
 function endBattle(){if(!battleState)return;battleState.done=true;const bs=battleState,won=bs.you.total>bs.rival.total;if(won){battleRecord.wins=(battleRecord.wins||0)+1;}else{battleRecord.losses=(battleRecord.losses||0)+1;}saveData();document.getElementById('b-res').textContent=won?'🏆 VICTORY!':'💀 DEFEAT';document.getElementById('b-res').style.color=won?'var(--success)':'var(--danger)';document.getElementById('b-res-sub').textContent=won?`You beat ${bs.rival.name} ${bs.you.total}–${bs.rival.total}!`:`${bs.rival.name} wins ${bs.rival.total}–${bs.you.total}.`;document.getElementById('b-over').style.display='block';if(won){const bonus=PLAYERS[Math.floor(Math.random()*PLAYERS.length)];awardCard(bonus);saveData();setTimeout(()=>showToast(`🎁 Bonus: ${bonus.fullName||bonus.displayName}!`),400);}}
 function renderLeaderboard(){const uname=(currentUser?.email||'').split('@')[0];const me={name:uname,pts:Math.max(0,(userData?.collection?.length||0)*120+(battleRecord.wins||0)*500),cards:userData?.collection?.length||0,wins:battleRecord.wins||0,avatar:uname[0]?.toUpperCase()||'?',color:'var(--accent)',isMe:true};const all=[...LEADERBOARD];const mi=all.findIndex(e=>e.pts<=me.pts);if(mi>=0)all.splice(mi,0,me);else all.push(me);const pc=['#FFD700','#C0C0C0','#CD7F32'];const ph=[88,68,52];const po=[1,0,2];const top3=all.slice(0,3);document.getElementById('podium').innerHTML=po.map(i=>{const e=top3[i];if(!e)return'';const r=i+1;return`<div class="pod-item"><div class="pod-avatar" style="width:${46-i*4}px;height:${46-i*4}px;background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="pod-name">${e.name}</div><div class="pod-pts">${e.pts.toLocaleString()}</div><div class="pod-block" style="background:${pc[i]};height:${ph[i]}px;color:#000;font-size:.95rem">#${r}</div></div>`;}).join('');document.getElementById('lb-list').innerHTML=all.map((e,i)=>`<div class="lb-row${e.isMe?' me':''}"><div class="lb-rank">${i+1}</div><div class="lb-avatar" style="background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="lb-info"><h4>${e.name}${e.isMe?' (you)':''}</h4><p>${e.wins} wins · ${e.cards} cards</p></div><div class="lb-pts"><div class="pts">${e.pts.toLocaleString()}</div><div class="sub">points</div></div></div>`).join('');}
