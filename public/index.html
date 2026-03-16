@@ -265,12 +265,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <span class="nav-badge" id="pack-badge" style="display:none">2</span>
       </button>
       <button class="nav-item" data-tab="collection" onclick="goTab('collection')">
-        <span class="nav-icon">🃏</span><span>Collection</span>
+        <span class="nav-icon">🃏</span><span>Card Collection</span>
       </button>
       <div class="nav-div"></div>
       <button class="nav-item" data-tab="matchups" onclick="goTab('matchups')">
         <span class="nav-icon">⚔️</span><span>Matchups</span>
         <span class="nav-badge" style="background:var(--danger)">3</span>
+      </button>
+      <button class="nav-item" data-tab="scores" onclick="goTab('scores')">
+        <span class="nav-icon">⚾</span><span>MLB Scores</span>
       </button>
       <button class="nav-item" data-tab="leaderboard" onclick="goTab('leaderboard')">
         <span class="nav-icon">🏆</span><span>Top Collectors</span>
@@ -375,6 +378,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <div class="podium" id="podium"></div>
         <div class="sec-title">Full Rankings</div>
         <div class="lb-list" id="lb-list"></div>
+      </div>
+    </div>
+
+    <!-- MLB SCORES TAB -->
+    <div class="tab-page" id="tab-scores">
+      <div class="pg-head"><h2>⚾ MLB Scores</h2><p id="scores-subtitle">Today's games</p></div>
+      <div class="scores-body">
+        <div class="scores-date-nav">
+          <button onclick="scoresChangeDate(-1)">← Prev</button>
+          <div class="scores-date-label" id="scores-date-label">Today</div>
+          <button onclick="scoresChangeDate(1)">Next →</button>
+        </div>
+        <div class="scores-status-row">
+          <div class="scores-filter active" data-sf="all" onclick="scoresFilter('all')">All Games</div>
+          <div class="scores-filter" data-sf="live" onclick="scoresFilter('live')">🔴 Live</div>
+          <div class="scores-filter" data-sf="final" onclick="scoresFilter('final')">Final</div>
+          <div class="scores-filter" data-sf="scheduled" onclick="scoresFilter('scheduled')">Upcoming</div>
+        </div>
+        <div id="scores-list"><div class="scores-loading"><div class="spinner"></div> Loading games...</div></div>
       </div>
     </div>
   </main>
@@ -492,7 +514,7 @@ function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;lo
 function savePackSession(){const t=todayStr();sessionStorage.setItem(`ddp_${currentUser.id}_${t}`,JSON.stringify({packResults,revealedCards:revealedCards.map(s=>[...s])}));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
-function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups')renderMatchups();if(id==='leaderboard')renderLeaderboard();}
+function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups')renderMatchups();if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened.filter(p=>!p).length;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1].forEach(i=>{const opened=userData.packsOpened[i];const btn=document.getElementById(`pb${i+1}`);const card=document.getElementById(`hp${i+1}`);if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(i);}else{card.classList.remove('claimed');btn.textContent=`Open Pack ${i+1}`;btn.className='pack-cta';btn.onclick=()=>openPackOv(i);}});const ml=document.getElementById('home-matchups');ml.innerHTML=MOCK_MATCHUPS.filter(m=>m.status==='live').map(m=>`<div class="matchup-row"><div class="m-side"><div class="m-name">${m.you}</div><div class="m-rec">Challenger</div></div><div class="m-score-wrap"><div class="m-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="m-inning">${m.inn}</div></div><div class="m-side r"><div class="m-name">${m.rival}</div><div class="m-rec">Defender</div></div></div>`).join('')||'<div style="color:var(--muted);font-size:13px;padding:14px 0">No live matchups. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
 function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';return `<div ${cl} class="${extraClass}" style="border:2px solid ${color};border-radius:10px;box-shadow:0 0 14px ${glow};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${p?.photoUrl||''}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:${color}">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
@@ -519,6 +541,136 @@ function endBattle(){if(!battleState)return;battleState.done=true;const bs=battl
 function renderLeaderboard(){const uname=(currentUser?.email||'').split('@')[0];const me={name:uname,pts:Math.max(0,(userData?.collection?.length||0)*120+(battleRecord.wins||0)*500),cards:userData?.collection?.length||0,wins:battleRecord.wins||0,avatar:uname[0]?.toUpperCase()||'?',color:'var(--accent)',isMe:true};const all=[...LEADERBOARD];const mi=all.findIndex(e=>e.pts<=me.pts);if(mi>=0)all.splice(mi,0,me);else all.push(me);const pc=['#FFD700','#C0C0C0','#CD7F32'];const ph=[88,68,52];const po=[1,0,2];const top3=all.slice(0,3);document.getElementById('podium').innerHTML=po.map(i=>{const e=top3[i];if(!e)return'';const r=i+1;return`<div class="pod-item"><div class="pod-avatar" style="width:${46-i*4}px;height:${46-i*4}px;background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="pod-name">${e.name}</div><div class="pod-pts">${e.pts.toLocaleString()}</div><div class="pod-block" style="background:${pc[i]};height:${ph[i]}px;color:#000;font-size:.95rem">#${r}</div></div>`;}).join('');document.getElementById('lb-list').innerHTML=all.map((e,i)=>`<div class="lb-row${e.isMe?' me':''}"><div class="lb-rank">${i+1}</div><div class="lb-avatar" style="background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="lb-info"><h4>${e.name}${e.isMe?' (you)':''}</h4><p>${e.wins} wins · ${e.cards} cards</p></div><div class="lb-pts"><div class="pts">${e.pts.toLocaleString()}</div><div class="sub">points</div></div></div>`).join('');}
 function getPlayer(id){return PLAYERS.find(p=>String(p.id)===String(id));}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ── MLB SCORES ────────────────────────────────────────────────────────────────
+let scoresDate = new Date();
+let scoresGameFilter = 'all';
+let scoresData = [];
+
+const MLB_TEAMS = {
+  108:{name:'Angels',abbr:'LAA',emoji:'😇'},109:{name:'D-backs',abbr:'ARI',emoji:'🐍'},
+  110:{name:'Orioles',abbr:'BAL',emoji:'🐦'},111:{name:'Red Sox',abbr:'BOS',emoji:'🧦'},
+  112:{name:'Cubs',abbr:'CHC',emoji:'🐻'},113:{name:'Reds',abbr:'CIN',emoji:'🔴'},
+  114:{name:'Guardians',abbr:'CLE',emoji:'⚡'},115:{name:'Rockies',abbr:'COL',emoji:'🏔️'},
+  116:{name:'Tigers',abbr:'DET',emoji:'🐯'},117:{name:'Astros',abbr:'HOU',emoji:'🚀'},
+  118:{name:'Royals',abbr:'KC',emoji:'👑'},119:{name:'Dodgers',abbr:'LAD',emoji:'💙'},
+  120:{name:'Nationals',abbr:'WSH',emoji:'🌟'},121:{name:'Mets',abbr:'NYM',emoji:'🌉'},
+  133:{name:'Athletics',abbr:'OAK',emoji:'🐘'},134:{name:'Pirates',abbr:'PIT',emoji:'☠️'},
+  135:{name:'Padres',abbr:'SD',emoji:'🤌'},136:{name:'Mariners',abbr:'SEA',emoji:'🧭'},
+  137:{name:'Giants',abbr:'SF',emoji:'🧡'},138:{name:'Cardinals',abbr:'STL',emoji:'🐦‍🔴'},
+  139:{name:'Rays',abbr:'TB',emoji:'☀️'},140:{name:'Rangers',abbr:'TEX',emoji:'⭐'},
+  141:{name:'Blue Jays',abbr:'TOR',emoji:'🦜'},142:{name:'Twins',abbr:'MIN',emoji:'🎗️'},
+  143:{name:'Phillies',abbr:'PHI',emoji:'🔔'},144:{name:'Braves',abbr:'ATL',emoji:'🪓'},
+  145:{name:'White Sox',abbr:'CWS',emoji:'⚡'},146:{name:'Marlins',abbr:'MIA',emoji:'🐬'},
+  147:{name:'Yankees',abbr:'NYY',emoji:'🗽'},158:{name:'Brewers',abbr:'MIL',emoji:'🍺'},
+};
+
+function getTeam(id){return MLB_TEAMS[id]||{name:'TBD',abbr:'TBD',emoji:'⚾'};}
+
+function scoresDateStr(d){
+  return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+function scoresApiDate(d){
+  return d.toISOString().split('T')[0];
+}
+
+function scoresChangeDate(delta){
+  scoresDate.setDate(scoresDate.getDate()+delta);
+  loadScores();
+}
+function scoresFilter(f){
+  scoresGameFilter=f;
+  document.querySelectorAll('.scores-filter').forEach(el=>el.classList.toggle('active',el.dataset.sf===f));
+  renderScores();
+}
+
+async function loadScores(){
+  document.getElementById('scores-list').innerHTML='<div class="scores-loading"><div class="spinner"></div> Loading games...</div>';
+  const dateStr=scoresApiDate(scoresDate);
+  const today=scoresApiDate(new Date());
+  const label=dateStr===today?'Today':scoresDateStr(scoresDate);
+  document.getElementById('scores-date-label').textContent=label;
+  document.getElementById('scores-subtitle').textContent=`MLB games · ${scoresDateStr(scoresDate)}`;
+  try{
+    const r=await fetch(`/api/scores?date=${dateStr}`);
+    const data=await r.json();
+    scoresData=[];
+    if(data.dates&&data.dates.length>0){
+      scoresData=data.dates[0].games||[];
+    }
+    renderScores();
+  }catch(e){
+    console.error('Scores error:',e);
+    document.getElementById('scores-list').innerHTML='<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">Could not load scores</p><span>Check your connection and try again.</span></div>';
+  }
+}
+
+function renderScores(){
+  const list=document.getElementById('scores-list');
+  let games=scoresData;
+  if(scoresGameFilter!=='all'){
+    games=games.filter(g=>{
+      const s=g.status?.detailedState||'';
+      if(scoresGameFilter==='live')return s.includes('In Progress')||s.includes('Warmup')||s.includes('Delayed: Start');
+      if(scoresGameFilter==='final')return s.includes('Final')||s.includes('Completed');
+      if(scoresGameFilter==='scheduled')return s.includes('Scheduled')||s.includes('Pre-Game');
+      return true;
+    });
+  }
+  if(!games.length){
+    list.innerHTML='<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">No games found</p><span>Try a different date or filter.</span></div>';
+    return;
+  }
+  list.innerHTML=games.map(game=>{
+    const away=game.teams?.away;
+    const home=game.teams?.home;
+    const awayTeam=getTeam(away?.team?.id);
+    const homeTeam=getTeam(home?.team?.id);
+    const awayScore=away?.score??'';
+    const homeScore=home?.score??'';
+    const status=game.status?.detailedState||'Scheduled';
+    const isLive=status.includes('In Progress')||status.includes('Warmup');
+    const isFinal=status.includes('Final')||status.includes('Completed');
+    const isPost=status.includes('Postponed')||status.includes('Suspended');
+    let statusClass=isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
+    let statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'Postponed':`🕐 ${game.gameDate?new Date(game.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'TBD'}`;
+    const inning=game.linescore?.currentInningOrdinal||'';
+    const inningHalf=game.linescore?.inningHalf||'';
+    const awayRec=away?.leagueRecord?`${away.leagueRecord.wins}-${away.leagueRecord.losses}`:'';
+    const homeRec=home?.leagueRecord?`${home.leagueRecord.wins}-${home.leagueRecord.losses}`:'';
+    const awayHits=game.linescore?.teams?.away?.hits??'';
+    const homeHits=game.linescore?.teams?.home?.hits??'';
+    const awayErrors=game.linescore?.teams?.away?.errors??'';
+    const homeErrors=game.linescore?.teams?.home?.errors??'';
+    const scoreDisplay=(awayScore!==''&&homeScore!=='')?`<div class="game-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`:
+      `<div style="font-size:13px;color:var(--muted);font-weight:600">VS</div>`;
+    return `<div class="game-card ${statusClass}">
+      <div class="game-header">
+        <span style="font-size:11px;color:var(--muted)">${awayTeam.abbr} @ ${homeTeam.abbr}</span>
+        <span class="game-status-badge ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="game-teams">
+        <div class="game-team away">
+          <div class="team-logo">${awayTeam.emoji}</div>
+          <div class="team-info"><div class="team-name">${awayTeam.name}</div><div class="team-record">${awayRec}</div></div>
+        </div>
+        <div class="game-score-center">
+          ${scoreDisplay}
+          ${isLive&&inning?`<div class="game-inning">${inningHalf} ${inning}</div>`:''}
+        </div>
+        <div class="game-team home">
+          <div class="team-logo">${homeTeam.emoji}</div>
+          <div class="team-info"><div class="team-name">${homeTeam.name}</div><div class="team-record">${homeRec}</div></div>
+        </div>
+      </div>
+      ${(awayHits!=='')?`<div class="game-details">
+        <div class="game-detail">H: <span>${awayHits}–${homeHits}</span></div>
+        <div class="game-detail">E: <span>${awayErrors}–${homeErrors}</span></div>
+        ${game.venue?.name?`<div class="game-detail">📍 <span>${game.venue.name}</span></div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}
 init();
 </script>
