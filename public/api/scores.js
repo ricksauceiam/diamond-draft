@@ -1,39 +1,33 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+export const config = { runtime: 'edge' };
 
-  const date = req.query.date || new Date().toISOString().split('T')[0];
+export default async function handler(req) {
+  const url = new URL(req.url);
+  const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  };
 
   try {
-    // sportId=1 = MLB regular season, sportId=17 = spring training
-    // Fetch both and merge so we always get games regardless of time of year
-    const [regularRes, springRes] = await Promise.all([
-      fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore,team`, {
-        headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
-      }),
-      fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=17&date=${date}&hydrate=linescore,team`, {
-        headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
-      })
+    const [r1, r2] = await Promise.all([
+      fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore,team`),
+      fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=17&date=${date}&hydrate=linescore,team`),
     ]);
 
-    const [regularData, springData] = await Promise.all([
-      regularRes.json(),
-      springRes.json()
-    ]);
+    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
 
-    // Merge games from both
-    const regularGames = regularData?.dates?.[0]?.games || [];
-    const springGames = springData?.dates?.[0]?.games || [];
-    const allGames = [...regularGames, ...springGames];
+    const games1 = d1?.dates?.[0]?.games || [];
+    const games2 = d2?.dates?.[0]?.games || [];
+    const allGames = [...games1, ...games2];
 
-    // Return in same format the frontend expects
-    const merged = {
+    const result = {
       dates: allGames.length > 0 ? [{ date, games: allGames }] : [],
-      isSpringTraining: springGames.length > 0 && regularGames.length === 0
+      isSpringTraining: games2.length > 0 && games1.length === 0,
     };
 
-    res.status(200).json(merged);
+    return new Response(JSON.stringify(result), { headers });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    return new Response(JSON.stringify({ error: e.message, dates: [] }), { status: 500, headers });
   }
 }
