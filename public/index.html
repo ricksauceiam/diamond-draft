@@ -592,13 +592,40 @@ async function loadScores(){
   document.getElementById('scores-date-label').textContent=label;
   document.getElementById('scores-subtitle').textContent=`MLB games · ${scoresDateStr(scoresDate)}`;
   try{
-    const r=await fetch(`/api/scores?date=${dateStr}`);
-    if(!r.ok) throw new Error(`API returned ${r.status}`);
-    const data=await r.json();
-    const games1=data?.dates?.[0]?.games||[];
-    scoresData=games1;
-    const isSpring=data.isSpringTraining||false;
-    document.getElementById('scores-subtitle').textContent=`${isSpring?'🌴 Spring Training':'⚾ MLB games'} · ${scoresDateStr(scoresDate)}`;
+    // Use Anthropic API to fetch MLB scores (bypasses CORS)
+    const today = scoresApiDate(new Date());
+    const isToday = dateStr === today;
+    const prompt = `Fetch today's MLB and spring training scores for ${dateStr}. Return ONLY a JSON object with this exact structure, no other text:
+{"games":[{"away":"TEAM","home":"TEAM","awayScore":0,"homeScore":0,"status":"Final|Live|Scheduled","inning":"9th","awayRecord":"10-5","homeRecord":"8-7","venue":"Stadium Name"}]}
+If no games today return {"games":[]}. Use real current scores if available.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{type:'web_search_20250305',name:'web_search'}],
+        messages: [{role:'user',content: prompt}]
+      })
+    });
+    const aiData = await resp.json();
+    // Extract text content from response
+    const textBlock = aiData.content?.find(b => b.type === 'text');
+    if (!textBlock) throw new Error('No response from AI');
+    const raw = textBlock.text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    scoresData = (parsed.games || []).map((g,i) => ({
+      gamePk: i,
+      teams: {
+        away: {team:{id:i*2,name:g.away}, score:g.awayScore, leagueRecord:{wins:parseInt(g.awayRecord)||0, losses:0}},
+        home: {team:{id:i*2+1,name:g.home}, score:g.homeScore, leagueRecord:{wins:parseInt(g.homeRecord)||0, losses:0}}
+      },
+      status: {detailedState: g.status||'Scheduled'},
+      linescore: {currentInningOrdinal:g.inning||'', inningHalf:''},
+      venue: {name:g.venue||''}
+    }));
+    document.getElementById('scores-subtitle').textContent=`🌴 Spring Training · ${scoresDateStr(scoresDate)}`;
     renderScores();
   }catch(e){
     console.error('Scores error:',e);
@@ -625,50 +652,46 @@ function renderScores(){
   list.innerHTML=games.map(game=>{
     const away=game.teams?.away;
     const home=game.teams?.home;
-    const awayTeam=getTeam(away?.team?.id);
-    const homeTeam=getTeam(home?.team?.id);
+    // Support both team name string and team object
+    const awayName=away?.team?.name||'Away';
+    const homeName=home?.team?.name||'Home';
+    // Find emoji from our team map by name match
+    const awayTeamObj=Object.values(MLB_TEAMS).find(t=>awayName.includes(t.name))||{emoji:'⚾',abbr:awayName.slice(0,3).toUpperCase()};
+    const homeTeamObj=Object.values(MLB_TEAMS).find(t=>homeName.includes(t.name))||{emoji:'⚾',abbr:homeName.slice(0,3).toUpperCase()};
     const awayScore=away?.score??'';
     const homeScore=home?.score??'';
     const status=game.status?.detailedState||'Scheduled';
-    const isLive=status.includes('In Progress')||status.includes('Warmup');
+    const isLive=status.includes('In Progress')||status.includes('Warmup')||status==='Live';
     const isFinal=status.includes('Final')||status.includes('Completed');
     const isPost=status.includes('Postponed')||status.includes('Suspended');
-    let statusClass=isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
-    let statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'Postponed':`🕐 ${game.gameDate?new Date(game.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'TBD'}`;
+    const statusClass=isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
+    const statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'⚠️ Postponed':`🕐 ${game.gameDate?new Date(game.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'Scheduled'}`;
     const inning=game.linescore?.currentInningOrdinal||'';
     const inningHalf=game.linescore?.inningHalf||'';
     const awayRec=away?.leagueRecord?`${away.leagueRecord.wins}-${away.leagueRecord.losses}`:'';
     const homeRec=home?.leagueRecord?`${home.leagueRecord.wins}-${home.leagueRecord.losses}`:'';
-    const awayHits=game.linescore?.teams?.away?.hits??'';
-    const homeHits=game.linescore?.teams?.home?.hits??'';
-    const awayErrors=game.linescore?.teams?.away?.errors??'';
-    const homeErrors=game.linescore?.teams?.home?.errors??'';
-    const scoreDisplay=(awayScore!==''&&homeScore!=='')?`<div class="game-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`:
-      `<div style="font-size:13px;color:var(--muted);font-weight:600">VS</div>`;
+    const venue=game.venue?.name||'';
+    const scoreDisplay=(awayScore!==''&&homeScore!=='')?`<div class="game-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`:`<div style="font-size:13px;color:var(--muted);font-weight:600">VS</div>`;
     return `<div class="game-card ${statusClass}">
       <div class="game-header">
-        <span style="font-size:11px;color:var(--muted)">${awayTeam.abbr} @ ${homeTeam.abbr}</span>
+        <span style="font-size:11px;color:var(--muted)">${awayTeamObj.abbr||awayName} @ ${homeTeamObj.abbr||homeName}</span>
         <span class="game-status-badge ${statusClass}">${statusLabel}</span>
       </div>
       <div class="game-teams">
         <div class="game-team away">
-          <div class="team-logo">${awayTeam.emoji}</div>
-          <div class="team-info"><div class="team-name">${awayTeam.name}</div><div class="team-record">${awayRec}</div></div>
+          <div class="team-logo">${awayTeamObj.emoji}</div>
+          <div class="team-info"><div class="team-name">${awayName}</div>${awayRec?`<div class="team-record">${awayRec}</div>`:''}</div>
         </div>
         <div class="game-score-center">
           ${scoreDisplay}
           ${isLive&&inning?`<div class="game-inning">${inningHalf} ${inning}</div>`:''}
         </div>
         <div class="game-team home">
-          <div class="team-logo">${homeTeam.emoji}</div>
-          <div class="team-info"><div class="team-name">${homeTeam.name}</div><div class="team-record">${homeRec}</div></div>
+          <div class="team-logo">${homeTeamObj.emoji}</div>
+          <div class="team-info"><div class="team-name">${homeName}</div>${homeRec?`<div class="team-record">${homeRec}</div>`:''}</div>
         </div>
       </div>
-      ${(awayHits!=='')?`<div class="game-details">
-        <div class="game-detail">H: <span>${awayHits}–${homeHits}</span></div>
-        <div class="game-detail">E: <span>${awayErrors}–${homeErrors}</span></div>
-        ${game.venue?.name?`<div class="game-detail">📍 <span>${game.venue.name}</span></div>`:''}
-      </div>`:''}
+      ${venue?`<div class="game-details"><div class="game-detail">📍 <span>${venue}</span></div></div>`:''}
     </div>`;
   }).join('');
 }
