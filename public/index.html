@@ -598,6 +598,8 @@ async function loadScores(){
     if(data.dates&&data.dates.length>0){
       scoresData=data.dates[0].games||[];
     }
+    const isSpring=data.isSpringTraining||false;
+    document.getElementById('scores-subtitle').textContent=`${isSpring?'Spring Training':'MLB games'} · ${scoresDateStr(scoresDate)}`;
     renderScores();
   }catch(e){
     console.error('Scores error:',e);
