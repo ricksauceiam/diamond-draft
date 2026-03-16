@@ -585,51 +585,49 @@ function scoresFilter(f){
 }
 
 async function loadScores(){
-  document.getElementById('scores-list').innerHTML='<div class="scores-loading"><div class="spinner"></div> Loading games...</div>';
   const dateStr=scoresApiDate(scoresDate);
   const today=scoresApiDate(new Date());
   const label=dateStr===today?'Today':scoresDateStr(scoresDate);
   document.getElementById('scores-date-label').textContent=label;
-  document.getElementById('scores-subtitle').textContent=`MLB games · ${scoresDateStr(scoresDate)}`;
-  try{
-    // Use Anthropic API to fetch MLB scores (bypasses CORS)
-    const today = scoresApiDate(new Date());
-    const isToday = dateStr === today;
-    const prompt = `Fetch today's MLB and spring training scores for ${dateStr}. Return ONLY a JSON object with this exact structure, no other text:
-{"games":[{"away":"TEAM","home":"TEAM","awayScore":0,"homeScore":0,"status":"Final|Live|Scheduled","inning":"9th","awayRecord":"10-5","homeRecord":"8-7","venue":"Stadium Name"}]}
-If no games today return {"games":[]}. Use real current scores if available.`;
+  document.getElementById('scores-subtitle').textContent=`🌴 Spring Training · ${scoresDateStr(scoresDate)}`;
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        tools: [{type:'web_search_20250305',name:'web_search'}],
-        messages: [{role:'user',content: prompt}]
-      })
-    });
-    const aiData = await resp.json();
-    // Extract text content from response
-    const textBlock = aiData.content?.find(b => b.type === 'text');
-    if (!textBlock) throw new Error('No response from AI');
-    const raw = textBlock.text.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(raw);
-    scoresData = (parsed.games || []).map((g,i) => ({
-      gamePk: i,
-      teams: {
-        away: {team:{id:i*2,name:g.away}, score:g.awayScore, leagueRecord:{wins:parseInt(g.awayRecord)||0, losses:0}},
-        home: {team:{id:i*2+1,name:g.home}, score:g.homeScore, leagueRecord:{wins:parseInt(g.homeRecord)||0, losses:0}}
+  // Show today's known spring training games (hardcoded today, link for other dates)
+  const todayGames = [
+    {away:'Giants',home:'Padres',awayScore:'',homeScore:'',status:'Scheduled',time:'1:10 PM PT',venue:'Peoria Sports Complex'},
+    {away:'Cubs',home:'Guardians',awayScore:'',homeScore:'',status:'Scheduled',time:'4:05 PM PT',venue:'Goodyear Ballpark'},
+    {away:'Reds',home:'D-backs',awayScore:'',homeScore:'',status:'Scheduled',time:'1:10 PM PT',venue:'Salt River Fields'},
+    {away:'Brewers',home:'Dodgers',awayScore:'',homeScore:'',status:'Scheduled',time:'1:05 PM PT',venue:'Camelback Ranch'},
+    {away:'Angels',home:'Athletics',awayScore:'',homeScore:'',status:'Scheduled',time:'1:05 PM PT',venue:'Hohokam Stadium'},
+    {away:'White Sox',home:'Rangers',awayScore:'',homeScore:'',status:'Scheduled',time:'3:05 PM PT',venue:'Surprise Stadium'},
+  ];
+
+  const list = document.getElementById('scores-list');
+
+  if(dateStr === today) {
+    scoresData = todayGames.map((g,i)=>({
+      gamePk:i,
+      teams:{
+        away:{team:{name:g.away},score:g.awayScore},
+        home:{team:{name:g.home},score:g.homeScore}
       },
-      status: {detailedState: g.status||'Scheduled'},
-      linescore: {currentInningOrdinal:g.inning||'', inningHalf:''},
-      venue: {name:g.venue||''}
+      status:{detailedState:g.status},
+      gameDate: null,
+      gameTime: g.time,
+      venue:{name:g.venue}
     }));
-    document.getElementById('scores-subtitle').textContent=`🌴 Spring Training · ${scoresDateStr(scoresDate)}`;
     renderScores();
-  }catch(e){
-    console.error('Scores error:',e);
-    document.getElementById('scores-list').innerHTML=`<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">Could not load scores</p><span style="font-size:11px;color:var(--danger)">${e.message}</span></div>`;
+
+    // Add live scores link at bottom
+    const link = document.createElement('div');
+    link.style.cssText='text-align:center;padding:16px;';
+    link.innerHTML=`<a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
+    list.appendChild(link);
+  } else {
+    // For other dates, show a link
+    list.innerHTML=`<div style="text-align:center;padding:40px 20px;">
+      <p style="color:var(--muted);margin-bottom:16px;font-size:14px;">Scores for ${scoresDateStr(scoresDate)}</p>
+      <a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:12px 24px;border-radius:10px;display:inline-block;">View on MLB.com →</a>
+    </div>`;
   }
 }
 
@@ -665,7 +663,7 @@ function renderScores(){
     const isFinal=status.includes('Final')||status.includes('Completed');
     const isPost=status.includes('Postponed')||status.includes('Suspended');
     const statusClass=isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
-    const statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'⚠️ Postponed':`🕐 ${game.gameDate?new Date(game.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'Scheduled'}`;
+    const statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'⚠️ Postponed':`🕐 ${game.gameTime||'TBD'}`;
     const inning=game.linescore?.currentInningOrdinal||'';
     const inningHalf=game.linescore?.inningHalf||'';
     const awayRec=away?.leagueRecord?`${away.leagueRecord.wins}-${away.leagueRecord.losses}`:'';
