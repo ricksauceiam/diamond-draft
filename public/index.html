@@ -228,6 +228,49 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   .colgrid{padding:10px 14px 18px;}
   .packs-row{grid-template-columns:1fr;}
 }
+
+  /* ── MLB SCORES ── */
+  .scores-body{padding:18px 26px 26px;flex:1;overflow-y:auto;}
+  .scores-date-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;}
+  .scores-date-nav button{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+  .scores-date-nav button:hover{border-color:var(--accent);color:var(--accent);}
+  .scores-date-label{font-size:14px;font-weight:700;flex:1;text-align:center;color:var(--text);}
+  .scores-status-row{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap;}
+  .scores-filter{padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+  .scores-filter.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  /* GRID layout for game tiles */
+  .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+  .game-tile{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .2s,transform .15s;}
+  .game-tile:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .game-tile.live{border-color:var(--danger);box-shadow:0 0 12px rgba(255,71,87,.15);}
+  .game-tile.final{opacity:.9;}
+  /* tile header strip */
+  .gt-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}
+  .gt-matchup{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+  .gt-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;}
+  .gt-badge.live{background:rgba(255,71,87,.15);color:var(--danger);}
+  .gt-badge.final{background:rgba(0,212,138,.1);color:var(--success);}
+  .gt-badge.scheduled{background:rgba(108,99,255,.15);color:var(--accent);}
+  .gt-badge.postponed{background:rgba(255,165,0,.15);color:#FFA500;}
+  /* tile body */
+  .gt-body{padding:14px 12px;}
+  .gt-teams{display:grid;grid-template-columns:1fr 56px 1fr;align-items:center;gap:6px;}
+  .gt-team{display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .gt-emoji{font-size:1.8rem;line-height:1;}
+  .gt-name{font-size:11px;font-weight:700;text-align:center;color:var(--text);}
+  .gt-rec{font-size:10px;color:var(--muted);text-align:center;}
+  .gt-score-box{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .gt-score{font-size:1.5rem;font-weight:900;letter-spacing:2px;color:var(--text);}
+  .gt-score .sep{color:var(--muted);}
+  .gt-vs{font-size:11px;font-weight:700;color:var(--muted);}
+  .gt-inning{font-size:9px;color:var(--danger);font-weight:700;margin-top:2px;text-align:center;}
+  /* tile footer */
+  .gt-footer{padding:7px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;}
+  .gt-venue{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .scores-loading{display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted);font-size:14px;gap:10px;}
+  .scores-empty{text-align:center;padding:60px 20px;color:var(--muted);}
+  .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -616,8 +659,7 @@ async function loadScores(){
       venue:{name:g.venue}
     }));
     renderScores();
-
-    // Add live scores link at bottom
+    // Add live scores link below the grid
     const link = document.createElement('div');
     link.style.cssText='text-align:center;padding:16px;';
     link.innerHTML=`<a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
@@ -647,15 +689,13 @@ function renderScores(){
     list.innerHTML='<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">No games found</p><span>Try a different date or filter.</span></div>';
     return;
   }
-  list.innerHTML=games.map(game=>{
+  const tilesHTML = games.map(game=>{
     const away=game.teams?.away;
     const home=game.teams?.home;
-    // Support both team name string and team object
     const awayName=away?.team?.name||'Away';
     const homeName=home?.team?.name||'Home';
-    // Find emoji from our team map by name match
-    const awayTeamObj=Object.values(MLB_TEAMS).find(t=>awayName.includes(t.name))||{emoji:'⚾',abbr:awayName.slice(0,3).toUpperCase()};
-    const homeTeamObj=Object.values(MLB_TEAMS).find(t=>homeName.includes(t.name))||{emoji:'⚾',abbr:homeName.slice(0,3).toUpperCase()};
+    const awayObj=Object.values(MLB_TEAMS).find(t=>awayName.includes(t.name))||{emoji:'⚾',abbr:awayName.slice(0,3).toUpperCase()};
+    const homeObj=Object.values(MLB_TEAMS).find(t=>homeName.includes(t.name))||{emoji:'⚾',abbr:homeName.slice(0,3).toUpperCase()};
     const awayScore=away?.score??'';
     const homeScore=home?.score??'';
     const status=game.status?.detailedState||'Scheduled';
@@ -669,29 +709,45 @@ function renderScores(){
     const awayRec=away?.leagueRecord?`${away.leagueRecord.wins}-${away.leagueRecord.losses}`:'';
     const homeRec=home?.leagueRecord?`${home.leagueRecord.wins}-${home.leagueRecord.losses}`:'';
     const venue=game.venue?.name||'';
-    const scoreDisplay=(awayScore!==''&&homeScore!=='')?`<div class="game-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`:`<div style="font-size:13px;color:var(--muted);font-weight:600">VS</div>`;
-    return `<div class="game-card ${statusClass}">
-      <div class="game-header">
-        <span style="font-size:11px;color:var(--muted)">${awayTeamObj.abbr||awayName} @ ${homeTeamObj.abbr||homeName}</span>
-        <span class="game-status-badge ${statusClass}">${statusLabel}</span>
+    const hasScore=awayScore!==''&&homeScore!=='';
+    return `<div class="game-tile ${statusClass}">
+      <div class="gt-header">
+        <span class="gt-matchup">${awayObj.abbr} @ ${homeObj.abbr}</span>
+        <span class="gt-badge ${statusClass}">${statusLabel}</span>
       </div>
-      <div class="game-teams">
-        <div class="game-team away">
-          <div class="team-logo">${awayTeamObj.emoji}</div>
-          <div class="team-info"><div class="team-name">${awayName}</div>${awayRec?`<div class="team-record">${awayRec}</div>`:''}</div>
-        </div>
-        <div class="game-score-center">
-          ${scoreDisplay}
-          ${isLive&&inning?`<div class="game-inning">${inningHalf} ${inning}</div>`:''}
-        </div>
-        <div class="game-team home">
-          <div class="team-logo">${homeTeamObj.emoji}</div>
-          <div class="team-info"><div class="team-name">${homeName}</div>${homeRec?`<div class="team-record">${homeRec}</div>`:''}</div>
+      <div class="gt-body">
+        <div class="gt-teams">
+          <div class="gt-team">
+            <div class="gt-emoji">${awayObj.emoji}</div>
+            <div class="gt-name">${awayName}</div>
+            ${awayRec?`<div class="gt-rec">${awayRec}</div>`:''}
+          </div>
+          <div class="gt-score-box">
+            ${hasScore
+              ? `<div class="gt-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`
+              : `<div class="gt-vs">VS</div>`}
+            ${isLive&&inning?`<div class="gt-inning">${inningHalf} ${inning}</div>`:''}
+          </div>
+          <div class="gt-team">
+            <div class="gt-emoji">${homeObj.emoji}</div>
+            <div class="gt-name">${homeName}</div>
+            ${homeRec?`<div class="gt-rec">${homeRec}</div>`:''}
+          </div>
         </div>
       </div>
-      ${venue?`<div class="game-details"><div class="game-detail">📍 <span>${venue}</span></div></div>`:''}
+      ${venue?`<div class="gt-footer"><span style="font-size:10px;margin-right:3px">📍</span><span class="gt-venue">${venue}</span></div>`:''}
     </div>`;
   }).join('');
+
+  // Wrap in grid, preserve the MLB link if it was there
+  const existingLink = list.querySelector('a[href*="mlb.com"]');
+  list.innerHTML = `<div class="games-grid">${tilesHTML}</div>`;
+  if(existingLink){
+    const linkWrap = document.createElement('div');
+    linkWrap.style.cssText='text-align:center;padding:16px;';
+    linkWrap.innerHTML=`<a href="${existingLink.href}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
+    list.appendChild(linkWrap);
+  }
 }
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}
 init();
