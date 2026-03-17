@@ -286,6 +286,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   /* card selection overlay */
   .col-card-wrap{position:relative;cursor:pointer;}
   .col-card-wrap.selected::after{content:'✓';position:absolute;inset:0;background:rgba(108,99,255,.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:900;color:#fff;border:3px solid var(--accent);z-index:3;}
+  /* drag-over zones */
+  .colgrid.drag-over{outline:2px dashed var(--accent);outline-offset:-4px;background:rgba(108,99,255,.05);border-radius:12px;}
+  .stashgrid-wrap.drag-over{outline:2px dashed var(--success);outline-offset:-4px;background:rgba(0,212,138,.05);border-radius:12px;}
   /* stash section divider */
   .stash-section-header{display:flex;align-items:center;gap:12px;padding:18px 26px 10px;flex-shrink:0;}
   .stash-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
@@ -421,17 +424,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
       </div>
       <!-- Scrollable content: active grid + stash section -->
       <div id="col-scroll" style="flex:1;overflow-y:auto;padding-bottom:24px;">
-        <!-- Active cards -->
-        <div class="colgrid" id="colgrid"></div>
+        <!-- Active cards drop zone -->
+        <div id="active-drop-wrap"
+          ondragover="event.preventDefault();document.getElementById('active-drop-wrap').classList.add('drag-over')"
+          ondragleave="document.getElementById('active-drop-wrap').classList.remove('drag-over')"
+          ondrop="handleDropOnActive(event)">
+          <div class="colgrid" id="colgrid"></div>
+        </div>
         <!-- Stash section divider -->
         <div class="stash-section-header" id="stash-section-header" style="display:none">
           <div class="stash-section-title">📦 Stash Pile</div>
           <div class="stash-section-count" id="stash-count">0</div>
           <div class="stash-section-line"></div>
-          <span style="font-size:11px;color:var(--muted)">Click to select · move back to active</span>
+          <span style="font-size:11px;color:var(--muted)">Drag cards here · or click to select</span>
         </div>
-        <!-- Stash cards grid (same layout, grayscale) -->
-        <div class="colgrid" id="stashgrid" style="padding-top:0"></div>
+        <!-- Stash cards drop zone -->
+        <div id="stash-drop-wrap"
+          ondragover="event.preventDefault();document.getElementById('stash-drop-wrap').classList.add('drag-over')"
+          ondragleave="document.getElementById('stash-drop-wrap').classList.remove('drag-over')"
+          ondrop="handleDropOnStash(event)">
+          <div class="colgrid" id="stashgrid" style="padding-top:0;min-height:80px;"></div>
+        </div>
       </div>
     </div>
 
@@ -678,7 +691,7 @@ function renderCollection(){
     sgrid.innerHTML=stashItems.map(item=>makeCardWrap(item,true)).join('');
   } else {
     header.style.display='none';
-    sgrid.innerHTML='';
+    sgrid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:28px 20px;color:var(--muted);font-size:13px;border:2px dashed var(--border);border-radius:12px;margin:0 0 8px;">📦 Drag cards here to stash them</div>';
   }
 }
 
@@ -687,11 +700,12 @@ function makeCardWrap(item, isStashed){
   const isSel=selectedCards.has(item.id);
   const card=chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:'',extraStyle:fr?'animation:fuseGlow 2s infinite;':''});
   const cls=['col-card-wrap',isSel?'selected':'',isStashed?'stashed':''].filter(Boolean).join(' ');
-  return `<div class="${cls}" draggable="true"
+  return `<div class="${cls}" draggable="true" data-id="${item.id}"
     ondragstart="handleCardDragStart(event,'${item.id}',${isStashed})"
+    ondragend="document.querySelectorAll('.col-card-wrap').forEach(w=>w.style.opacity='')"
     onclick="toggleCardSelect('${item.id}',event,${isStashed})"
     ondblclick="openCardModal('${item.id}')"
-    title="${isStashed?'Stashed — click to select':'Click to select · Double-click to view'}">${card}</div>`;
+    title="${isStashed?'Drag to Active area or click to select':'Drag to Stash area or click to select'}">${card}</div>`;
 }
 
 function toggleCardSelect(id, e, isStashed){
@@ -741,10 +755,51 @@ function moveSelectedCards(){
 
 let dragCardId=null;
 let dragIsStashed=false;
+
 function handleCardDragStart(e,id,isStashed){
-  dragCardId=id;dragIsStashed=isStashed;
+  dragCardId=id;
+  dragIsStashed=isStashed;
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',id);
+  // visual feedback on dragged card
+  setTimeout(()=>{
+    const wraps=document.querySelectorAll('.col-card-wrap');
+    wraps.forEach(w=>{if(w.getAttribute('data-id')===id)w.style.opacity='0.4';});
+  },0);
+}
+
+function handleDropOnStash(e){
+  e.preventDefault();
+  document.getElementById('stash-drop-wrap').classList.remove('drag-over');
+  const id=e.dataTransfer.getData('text/plain')||dragCardId;
+  if(!id)return;
+  if(!userData.stash)userData.stash=[];
+  const stashSet=new Set(userData.stash);
+  if(!stashSet.has(id)){
+    stashSet.add(id);
+    userData.stash=[...stashSet];
+    saveData();
+    showToast('📦 Moved to Stash');
+    renderCollection();
+  }
+  dragCardId=null;
+}
+
+function handleDropOnActive(e){
+  e.preventDefault();
+  document.getElementById('active-drop-wrap').classList.remove('drag-over');
+  const id=e.dataTransfer.getData('text/plain')||dragCardId;
+  if(!id)return;
+  if(!userData.stash)userData.stash=[];
+  const stashSet=new Set(userData.stash);
+  if(stashSet.has(id)){
+    stashSet.delete(id);
+    userData.stash=[...stashSet];
+    saveData();
+    showToast('⚡ Moved to Active');
+    renderCollection();
+  }
+  dragCardId=null;
 }
 
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.textContent=rarityLabel(col.level);b.style.background=color;b.style.color='#000';document.getElementById('m-power').textContent=`${(col.mult||1.0).toFixed(2)}× power`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.disabled=!fr;fb.textContent=fr?`⚗ Fuse → ${RARITY_ORDER[col.level]||'MAX'}`:col.level>=5?'✨ Max Rarity!':'⚗ Need '+(need-col.copies)+' more copies';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
