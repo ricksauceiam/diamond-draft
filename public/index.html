@@ -273,31 +273,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes pendingPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
 
-  .col-body{display:flex;flex:1;min-height:0;overflow:hidden;position:relative;}
-  .col-main{display:flex;flex-direction:column;flex:1;min-width:0;overflow-y:auto;}
 
+
+  /* ── COLLECTION TAB ── */
+  .col-select-bar{display:flex;align-items:center;gap:8px;padding:7px 26px;background:rgba(108,99,255,.1);border-bottom:1px solid rgba(108,99,255,.2);flex-shrink:0;}
   .col-select-bar.hidden{display:none!important;}
-  .stash-bucket{position:fixed;bottom:30px;right:30px;z-index:500;display:none;flex-direction:column;align-items:center;gap:0;}
-  .stash-bucket-icon{width:64px;height:64px;border-radius:20px;background:var(--surface2);border:2px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 6px 24px rgba(0,0,0,0.6);gap:3px;}
-  .stash-bucket-icon:hover,.stash-bucket-icon:focus{border-color:var(--accent);box-shadow:0 0 20px rgba(108,99,255,0.4);}
-  .stash-bucket-icon.drag-over{border-color:var(--accent);background:rgba(108,99,255,.2);transform:scale(1.12);box-shadow:0 0 28px rgba(108,99,255,.6);}
-  .stash-bucket-icon .bucket-emoji{font-size:1.8rem;line-height:1;}
-  .stash-bucket-icon .bucket-count{font-size:11px;font-weight:800;color:var(--muted);line-height:1;}
-  .stash-bucket-icon .bucket-count.has-items{color:var(--accent);}
-  .stash-panel{position:fixed;bottom:110px;right:30px;z-index:501;width:260px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.8);display:none;flex-direction:column;max-height:400px;overflow:hidden;}
-  .stash-panel.open{display:flex;}
-  .stash-panel-head{padding:13px 14px 9px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
-  .stash-panel-head h4{font-size:13px;font-weight:800;}
-  .stash-panel-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0;}
-  .stash-panel-list{overflow-y:auto;padding:8px;flex:1;}
-  .stash-mini-card{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:var(--surface2);margin-bottom:5px;}
-  .stash-mini-img{width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#111;}
-  .stash-mini-img img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}
-  .stash-mini-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
-  .stash-mini-remove{font-size:15px;color:var(--muted);cursor:pointer;flex-shrink:0;background:none;border:none;padding:0;}
-  .stash-mini-remove:hover{color:var(--danger);}
-  .stash-panel-footer{padding:9px 10px;border-top:1px solid var(--border);flex-shrink:0;}
-  .stash-empty-msg{text-align:center;padding:24px 12px;color:var(--muted);font-size:12px;}
+  .col-select-info{font-size:12px;font-weight:700;color:var(--accent);flex:1;}
+  .col-select-btn{padding:5px 13px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:opacity .2s;}
+  .btn-stash-move{background:var(--accent);color:#fff;}
+  .btn-stash-move:hover{opacity:.85;}
+  .btn-sel-cancel{background:var(--surface2);color:var(--muted);border:1px solid var(--border)!important;}
+  /* card selection overlay */
+  .col-card-wrap{position:relative;cursor:pointer;}
+  .col-card-wrap.selected::after{content:'✓';position:absolute;inset:0;background:rgba(108,99,255,.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:900;color:#fff;border:3px solid var(--accent);z-index:3;}
+  /* stash section divider */
+  .stash-section-header{display:flex;align-items:center;gap:12px;padding:18px 26px 10px;flex-shrink:0;}
+  .stash-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .stash-section-count{background:var(--surface2);color:var(--muted);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;}
+  .stash-section-line{flex:1;height:1px;background:var(--border);}
+  /* grayscale stash cards */
+  .col-card-wrap.stashed .card-chrome-bar{filter:grayscale(1);}
+  .col-card-wrap.stashed img{filter:grayscale(1);opacity:.75;}
+  .col-card-wrap.stashed{opacity:.85;}
+  .col-card-wrap.stashed:hover{opacity:1;}
+  .col-card-wrap.stashed.selected::after{background:rgba(0,212,138,.4);border-color:var(--success);}
 </style>
 </head>
 <body>
@@ -414,37 +413,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <div class="fc" data-r="COMMON" onclick="filterCol('COMMON')">Common</div>
       </div>
       <div class="col-search"><input type="text" id="col-q" placeholder="Search name, team, position..." oninput="renderCollection()"></div>
+      <!-- Selection action bar -->
       <div class="col-select-bar hidden" id="col-select-bar">
         <div class="col-select-info" id="col-select-info">0 selected</div>
-        <button class="col-select-btn btn-stash-move" onclick="moveSelectedToStash()">📦 Move to Stash</button>
+        <button class="col-select-btn btn-stash-move" id="col-stash-action-btn" onclick="moveSelectedCards()">📦 Move to Stash</button>
         <button class="col-select-btn btn-sel-cancel" onclick="clearSelection()">✕ Cancel</button>
       </div>
-      <div class="col-body">
-        <div class="col-main">
-          <div class="colgrid" id="colgrid"></div>
+      <!-- Scrollable content: active grid + stash section -->
+      <div id="col-scroll" style="flex:1;overflow-y:auto;padding-bottom:24px;">
+        <!-- Active cards -->
+        <div class="colgrid" id="colgrid"></div>
+        <!-- Stash section divider -->
+        <div class="stash-section-header" id="stash-section-header" style="display:none">
+          <div class="stash-section-title">📦 Stash Pile</div>
+          <div class="stash-section-count" id="stash-count">0</div>
+          <div class="stash-section-line"></div>
+          <span style="font-size:11px;color:var(--muted)">Click to select · move back to active</span>
         </div>
-        <!-- Floating stash bucket (top-right corner) -->
-        <div class="stash-bucket" style="display:none">
-          <div class="stash-bucket-icon" id="stash-bucket-icon"
-            onclick="toggleStashPanel()"
-            ondragover="event.preventDefault();this.classList.add('drag-over')"
-            ondragleave="this.classList.remove('drag-over')"
-            ondrop="handleStashDrop(event)">
-            <div class="bucket-emoji">📦</div>
-            <div class="bucket-count" id="stash-count">0</div>
-          </div>
-        </div>
-        <!-- Stash popover panel -->
-        <div class="stash-panel" id="stash-panel">
-          <div class="stash-panel-head">
-            <h4>📦 Stash Pile</h4>
-            <button class="stash-panel-close" onclick="toggleStashPanel()">✕</button>
-          </div>
-          <div class="stash-panel-list" id="stash-panel-list"></div>
-          <div class="stash-panel-footer">
-            <button onclick="clearStash()" style="width:100%;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;cursor:pointer;">Clear All</button>
-          </div>
-        </div>
+        <!-- Stash cards grid (same layout, grayscale) -->
+        <div class="colgrid" id="stashgrid" style="padding-top:0"></div>
       </div>
     </div>
 
@@ -638,7 +625,7 @@ function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;lo
 function savePackSession(){const t=todayStr();sessionStorage.setItem(`ddp_${currentUser.id}_${t}`,JSON.stringify({packResults,revealedCards:revealedCards.map(s=>[...s])}));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
-function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection'){renderCollection();document.getElementById('stash-bucket').style.display='flex';}else{document.getElementById('stash-bucket').style.display='none';document.getElementById('stash-panel').classList.remove('open');}if(id==='matchups')renderMatchups();if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
+function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups')renderMatchups();if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened.filter(p=>!p).length;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1].forEach(i=>{const opened=userData.packsOpened[i];const btn=document.getElementById(`pb${i+1}`);const card=document.getElementById(`hp${i+1}`);if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(i);}else{card.classList.remove('claimed');btn.textContent=`Open Pack ${i+1}`;btn.className='pack-cta';btn.onclick=()=>openPackOv(i);}});const ml=document.getElementById('home-matchups');ml.innerHTML=MOCK_MATCHUPS.filter(m=>m.status==='live').map(m=>`<div class="matchup-row"><div class="m-side"><div class="m-name">${m.you}</div><div class="m-rec">Challenger</div></div><div class="m-score-wrap"><div class="m-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="m-inning">${m.inn}</div></div><div class="m-side r"><div class="m-name">${m.rival}</div><div class="m-rec">Defender</div></div></div>`).join('')||'<div style="color:var(--muted);font-size:13px;padding:14px 0">No live matchups. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
 function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';return `<div ${cl} class="${extraClass}" style="border:2px solid ${color};border-radius:10px;box-shadow:0 0 14px ${glow};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${p?.photoUrl||''}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:${color}">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
@@ -651,95 +638,115 @@ function flipCard(i){if(revealedCards[curPackIdx].has(i))return;revealedCards[cu
 function revealAll(){packResults[curPackIdx].forEach((_,i)=>revealedCards[curPackIdx].add(i));savePackSession();renderPackGrid();}
 function claimPack(){if(userData.packsOpened[curPackIdx])return;packResults[curPackIdx].forEach(card=>awardCard(card));userData.packsOpened[curPackIdx]=true;const today=todayStr();if(userData.packsOpened[0]&&userData.packsOpened[1]&&userData.lastStreakDate!==today){userData.streak=(userData.streak||0)+1;userData.lastStreakDate=today;}saveData();showToast(`Pack ${curPackIdx+1} claimed! 5 cards added ✨`);renderPackGrid();renderHome();}
 function awardCard(raw){const col=userData.collection,ex=col.find(c=>c.id===raw.id);if(ex){ex.copies=(ex.copies||1)+1;}else{col.push({id:raw.id,rarity:raw.rarity,level:1,copies:1,mult:1.0});}}
-// ── STASH & COLLECTION STATE ──────────────────────────────────────────────────
-let colView='active';
-let selectedCards=new Set();
-let stashOpen=false;
+// ── COLLECTION & STASH ───────────────────────────────────────────────────────
+let selectedCards = new Set();
+let stashSelecting = false; // true when selecting stash cards to move back
 
-function toggleStashPanel(){
-  stashOpen=!stashOpen;
-  document.getElementById('stash-panel').classList.toggle('open',stashOpen);
-  if(stashOpen)renderStashList();
-}
 function filterCol(r){colFilter=r;document.querySelectorAll('.fc').forEach(c=>c.classList.toggle('active',c.dataset.r===r));renderCollection();}
+
 function renderCollection(){
   if(!userData)return;
   if(!userData.stash)userData.stash=[];
   const q=(document.getElementById('col-q')?.value||'').toLowerCase();
   const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};
   const stashSet=new Set(userData.stash);
-  let items=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-  // Active view always shows non-stashed cards
-  items=items.filter(c=>!stashSet.has(c.id));
-  if(colFilter!=='ALL')items=items.filter(c=>c.player.rarity===colFilter);
-  if(q)items=items.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});
-  items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));
-  document.getElementById('col-sub').textContent=`${items.length} active · ${userData.collection.length} total`;
-  document.getElementById('stash-count').textContent=stashSet.size;
-  const ct=document.getElementById('stash-count');
-  ct.classList.toggle('has-items',stashSet.size>0);
+
+  let allItems=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
+  if(colFilter!=='ALL')allItems=allItems.filter(c=>c.player.rarity===colFilter);
+  if(q)allItems=allItems.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});
+  allItems.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));
+
+  const activeItems=allItems.filter(c=>!stashSet.has(c.id));
+  const stashItems=allItems.filter(c=>stashSet.has(c.id));
+
+  document.getElementById('col-sub').textContent=`${activeItems.length} active · ${userData.collection.length} total`;
+  document.getElementById('stash-count').textContent=stashItems.length;
+
+  // Active grid
   const grid=document.getElementById('colgrid');
-  if(!items.length){grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>';return;}
-  grid.innerHTML=items.map(item=>{
-    const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;
-    const isSel=selectedCards.has(item.id);
-    const card=chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:'',extraStyle:fr?'animation:fuseGlow 2s infinite;':''});
-    return `<div class="col-card-wrap${isSel?' selected':''}" draggable="true" ondragstart="handleCardDragStart(event,'${item.id}')" onclick="toggleCardSelect('${item.id}',event)" ondblclick="openCardModal('${item.id}')" title="Click to select · Double-click to view">${card}</div>`;
-  }).join('');
-  if(stashOpen)renderStashList();
+  if(!activeItems.length){
+    grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>';
+  } else {
+    grid.innerHTML=activeItems.map(item=>makeCardWrap(item,false)).join('');
+  }
+
+  // Stash section
+  const header=document.getElementById('stash-section-header');
+  const sgrid=document.getElementById('stashgrid');
+  if(stashItems.length>0){
+    header.style.display='flex';
+    sgrid.innerHTML=stashItems.map(item=>makeCardWrap(item,true)).join('');
+  } else {
+    header.style.display='none';
+    sgrid.innerHTML='';
+  }
 }
 
-function renderStashList(){
-  if(!userData?.stash)return;
-  const stashSet=new Set(userData.stash);
-  const list=document.getElementById('stash-panel-list');
-  const stashedItems=userData.collection.filter(c=>stashSet.has(c.id)).map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-  if(!stashedItems.length){list.innerHTML='<div class="stash-empty-msg">📭 No cards stashed yet.<br>Drag cards onto the 📦 icon.</div>';return;}
-  list.innerHTML=stashedItems.map(item=>{
-    const p=item.player,color=RARITY_COLORS[p.rarity]||'#8899AA';
-    return `<div class="stash-mini-card" style="border-left:3px solid ${color}">
-      <div class="stash-mini-img"><img src="${p.photoUrl}" onerror="this.style.display='none'" loading="lazy"></div>
-      <div class="stash-mini-info"><div class="stash-mini-name">${p.lastName||p.name}</div><div class="stash-mini-pos" style="color:${color}">${p.position||p.pos} · ${p.team}</div></div>
-      <div class="stash-mini-remove" onclick="removeFromStash('${item.id}')" title="Move back to Active">↩</div>
-    </div>`;
-  }).join('');
+function makeCardWrap(item, isStashed){
+  const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;
+  const isSel=selectedCards.has(item.id);
+  const card=chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:'',extraStyle:fr?'animation:fuseGlow 2s infinite;':''});
+  const cls=['col-card-wrap',isSel?'selected':'',isStashed?'stashed':''].filter(Boolean).join(' ');
+  return `<div class="${cls}" draggable="true"
+    ondragstart="handleCardDragStart(event,'${item.id}',${isStashed})"
+    onclick="toggleCardSelect('${item.id}',event,${isStashed})"
+    ondblclick="openCardModal('${item.id}')"
+    title="${isStashed?'Stashed — click to select':'Click to select · Double-click to view'}">${card}</div>`;
 }
-function toggleCardSelect(id,e){e.stopPropagation();if(selectedCards.has(id))selectedCards.delete(id);else selectedCards.add(id);updateSelectBar();renderCollection();}
-function updateSelectBar(){const bar=document.getElementById('col-select-bar');if(selectedCards.size>0){bar.classList.remove('hidden');document.getElementById('col-select-info').textContent=`${selectedCards.size} card${selectedCards.size!==1?'s':''} selected`;}else{bar.classList.add('hidden');}}
-function clearSelection(){selectedCards.clear();updateSelectBar();renderCollection();}
-function moveSelectedToStash(){
+
+function toggleCardSelect(id, e, isStashed){
+  e.stopPropagation();
+  // If mixing active/stash, clear and restart
+  if(selectedCards.size>0 && stashSelecting !== isStashed){
+    selectedCards.clear();
+  }
+  stashSelecting = isStashed;
+  if(selectedCards.has(id))selectedCards.delete(id);
+  else selectedCards.add(id);
+  updateSelectBar();
+  renderCollection();
+}
+
+function updateSelectBar(){
+  const bar=document.getElementById('col-select-bar');
+  const btn=document.getElementById('col-stash-action-btn');
+  if(selectedCards.size>0){
+    bar.classList.remove('hidden');
+    document.getElementById('col-select-info').textContent=`${selectedCards.size} card${selectedCards.size!==1?'s':''} selected`;
+    btn.textContent=stashSelecting?'⚡ Move to Active':'📦 Move to Stash';
+    btn.style.background=stashSelecting?'var(--success)':'var(--accent)';
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+function clearSelection(){selectedCards.clear();stashSelecting=false;updateSelectBar();renderCollection();}
+
+function moveSelectedCards(){
   if(!userData.stash)userData.stash=[];
   const stashSet=new Set(userData.stash);
-  selectedCards.forEach(id=>stashSet.add(id));
+  if(stashSelecting){
+    // Move from stash → active
+    selectedCards.forEach(id=>stashSet.delete(id));
+    showToast(`⚡ ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Active`);
+  } else {
+    // Move from active → stash
+    selectedCards.forEach(id=>stashSet.add(id));
+    showToast(`📦 ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Stash`);
+  }
   userData.stash=[...stashSet];
-  showToast(`📦 ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Stash`);
-  selectedCards.clear();saveData();updateSelectBar();renderCollection();
-  if(stashOpen)renderStashList();
+  selectedCards.clear();stashSelecting=false;
+  saveData();updateSelectBar();renderCollection();
 }
 
-function removeFromStash(id){
-  if(!userData.stash)return;
-  userData.stash=userData.stash.filter(s=>s!==id);
-  saveData();renderCollection();renderStashList();
-  showToast('⚡ Card moved back to Active');
-}
-
-function clearStash(){
-  if(!userData.stash||!userData.stash.length)return;
-  userData.stash=[];saveData();renderCollection();renderStashList();
-  showToast('Stash cleared');
-}
 let dragCardId=null;
-function handleCardDragStart(e,id){dragCardId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);}
-function handleStashDrop(e){
-  e.preventDefault();document.getElementById('stash-bucket-icon').classList.remove('drag-over');
-  const id=e.dataTransfer.getData('text/plain')||dragCardId;if(!id)return;
-  if(!userData.stash)userData.stash=[];
-  const stashSet=new Set(userData.stash);
-  if(colView==='stash'){stashSet.delete(id);showToast('⚡ Card moved to Active');}
-  else{stashSet.add(id);showToast('📦 Card moved to Stash');}
-  userData.stash=[...stashSet];dragCardId=null;saveData();renderCollection();
+let dragIsStashed=false;
+function handleCardDragStart(e,id,isStashed){
+  dragCardId=id;dragIsStashed=isStashed;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',id);
 }
+
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.textContent=rarityLabel(col.level);b.style.background=color;b.style.color='#000';document.getElementById('m-power').textContent=`${(col.mult||1.0).toFixed(2)}× power`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.disabled=!fr;fb.textContent=fr?`⚗ Fuse → ${RARITY_ORDER[col.level]||'MAX'}`:col.level>=5?'✨ Max Rarity!':'⚗ Need '+(need-col.copies)+' more copies';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
 function renderMatchups(){
