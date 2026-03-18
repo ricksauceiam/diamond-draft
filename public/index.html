@@ -308,6 +308,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   .col-card-wrap.stashed{opacity:.85;}
   .col-card-wrap.stashed:hover{opacity:1;}
   .col-card-wrap.stashed.selected::after{background:rgba(0,212,138,.4);border-color:var(--success);}
+
+  /* ── MATCHUP SYSTEM ── */
+  .user-search-result{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all .2s;margin-bottom:6px;}
+  .user-search-result:hover{border-color:var(--accent);}
+  .user-avatar-sm{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}
+  .challenge-card{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:18px;margin-bottom:12px;position:relative;}
+  .challenge-card.incoming{border-color:var(--danger);}
+  .ch-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;}
+  .ch-badge.incoming{background:rgba(255,71,87,.15);color:var(--danger);}
+  .ch-badge.sent{background:rgba(108,99,255,.15);color:var(--accent);}
+  .ch-badge.accepted{background:rgba(0,212,138,.1);color:var(--success);}
+  .ch-lineup{display:flex;gap:5px;margin:10px 0;}
+  .ch-mini{width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);flex-shrink:0;}
+  .ch-mini img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}
+  .ch-actions{display:flex;gap:8px;margin-top:12px;}
+  .btn-accept{flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;}
+  .btn-decline{padding:9px 14px;background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;}
+  .no-matchups{text-align:center;padding:40px 20px;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -371,7 +389,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
   <main class="main">
     <!-- HOME -->
     <div class="tab-page active" id="tab-home">
-      <div class="pg-head"><h2 id="home-greet">Welcome!</h2><p id="home-date"></p></div>
+      <div class="pg-head" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><h2 id="home-greet">Welcome!</h2><p id="home-date"></p></div>
+        <button id="inbox-btn" onclick="goTab('matchups')" style="position:relative;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--muted);transition:all .2s;margin-top:4px;" onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          <span style="font-size:1.3rem">📬</span>
+          <span id="inbox-label">Inbox</span>
+          <span id="inbox-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:10px;animation:pulse 1.2s infinite;"></span>
+        </button>
+      </div>
       <div class="home-body">
         <div class="streak-bar">
           <div style="font-size:1.8rem">🔥</div>
@@ -464,25 +489,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
 
     <!-- MATCHUPS -->
     <div class="tab-page" id="tab-matchups">
-      <div class="pg-head"><h2>⚔️ Matchups</h2><p>Challenge rivals and track your battles</p></div>
+      <div class="pg-head" style="display:flex;justify-content:space-between;align-items:center;">
+        <div><h2>⚔️ Matchups</h2><p>Challenge real players head-to-head</p></div>
+        <button class="btn-p" style="padding:9px 18px;font-size:13px;white-space:nowrap" onclick="openChallengeOv()">+ New Challenge</button>
+      </div>
       <div class="mt-body">
-        <div class="mt-top">
-          <div class="mt-action">
-            <h3>🎯 Start a Challenge</h3>
-            <p>Pick 1 pitcher + 3 batters and battle a rival head-to-head.</p>
-            <button class="btn-p" style="padding:10px;font-size:13px" onclick="openChallengeOv()">Build Lineup →</button>
+        <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:var(--success)" id="sw">0</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">Wins</div>
           </div>
-          <div class="mt-action">
-            <h3>📊 Your Record</h3>
-            <p id="mt-rec">0 wins · 0 losses</p>
-            <div style="margin-top:10px;display:flex;gap:8px">
-              <div style="flex:1;background:var(--surface2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:1.3rem;font-weight:900;color:var(--success)" id="sw">0</div><div style="font-size:10px;color:var(--muted)">Wins</div></div>
-              <div style="flex:1;background:var(--surface2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:1.3rem;font-weight:900;color:var(--danger)" id="sl">0</div><div style="font-size:10px;color:var(--muted)">Losses</div></div>
-            </div>
+          <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:var(--danger)" id="sl">0</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">Losses</div>
+          </div>
+          <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:var(--accent)" id="mt-pending-count">0</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">Pending</div>
           </div>
         </div>
-        <div class="sec-title"><div class="live-dot"></div>Active &amp; Recent</div>
-        <div class="mlist" id="mlist"></div>
+        <!-- Incoming challenges section -->
+        <div id="incoming-section" style="display:none">
+          <div class="sec-title" style="margin-bottom:10px;"><div class="live-dot"></div>Incoming Challenges</div>
+          <div id="incoming-list"></div>
+        </div>
+        <!-- Sent / active section -->
+        <div class="sec-title" style="margin-bottom:10px;">All Matchups</div>
+        <div id="mlist"></div>
       </div>
     </div>
 
@@ -546,9 +579,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe 
         <div style="max-height:210px;overflow-y:auto"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="ch-avail"></div></div>
       </div>
       <div style="display:flex;flex-direction:column">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Pick a Rival</div>
-        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px;max-height:300px" id="ch-rivals"></div>
-        <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="margin-top:12px;padding:13px;font-size:14px">⚔️ Launch Battle</button>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Find a Player</div>
+        <input id="user-search-inp" type="text" placeholder="Search by username / email..." oninput="searchUsers(this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px;">
+        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;max-height:260px;" id="ch-rivals"></div>
+        <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="margin-top:12px;padding:13px;font-size:14px">📨 Send Challenge</button>
       </div>
     </div>
   </div>
@@ -638,21 +672,26 @@ const PITCHER_POS=new Set(['SP','RP','CP','P','CL','SP/RP','RP/SP']);
 const PACK_WEIGHTS=[{rarity:'COMMON',weight:55},{rarity:'RARE',weight:28},{rarity:'EPIC',weight:12},{rarity:'LEGENDARY',weight:4},{rarity:'MYTHIC',weight:1}];
 const CHROME_BARS={COMMON:'linear-gradient(90deg,#8899AA,#aabbcc,#8899AA)',RARE:'linear-gradient(90deg,#00F5FF,#6c63ff,#00F5FF)',EPIC:'linear-gradient(90deg,#BF40FF,#ff6b9d,#BF40FF)',LEGENDARY:'linear-gradient(90deg,#FFD700,#FF8C00,#FFD700)',MYTHIC:'linear-gradient(90deg,#FF006E,#ff4500,#FF006E)'};
 const CHROME_GLOW={COMMON:'rgba(136,153,170,0.2)',RARE:'rgba(0,245,255,0.3)',EPIC:'rgba(191,64,255,0.3)',LEGENDARY:'rgba(255,215,0,0.35)',MYTHIC:'rgba(255,0,110,0.4)'};
-const RIVALS=[{name:'SluggerKing',emoji:'⚾',power:820,desc:'Power hitter specialist'},{name:'AceHunter',emoji:'🎯',power:910,desc:'Stacked pitching rotation'},{name:'SpeedDemon',emoji:'💨',power:760,desc:'Built around stolen bases'},{name:'TheVeteran',emoji:'🏆',power:1050,desc:'10 seasons of experience'},{name:'Rookie2024',emoji:'🌟',power:620,desc:'Just getting started'}];
+// RIVALS replaced by real Supabase users
 const LEADERBOARD=[{name:'CardKing99',pts:14820,cards:312,wins:48,avatar:'CK',color:'#FFD700'},{name:'SluggerKing',pts:12440,cards:287,wins:41,avatar:'SK',color:'#FF006E'},{name:'AceHunter',pts:11200,cards:264,wins:38,avatar:'AH',color:'#BF40FF'},{name:'DiamondPro',pts:9880,cards:241,wins:33,avatar:'DP',color:'#00F5FF'},{name:'BaseballGod',pts:8760,cards:219,wins:29,avatar:'BG',color:'#FF8C00'},{name:'TheVeteran',pts:7450,cards:198,wins:26,avatar:'TV',color:'#6c63ff'},{name:'SpeedDemon',pts:6320,cards:177,wins:22,avatar:'SD',color:'#00d48a'},{name:'Rookie2024',pts:2140,cards:88,wins:8,avatar:'RK',color:'#8899AA'}];
-const MOCK_MATCHUPS=[{you:'SluggerKing',rival:'AceHunter',sy:142,sr:118,status:'live',inn:'7th Inning'},{you:'TheVeteran',rival:'SpeedDemon',sy:201,sr:201,status:'live',inn:'9th Inning'},{you:'CardKing99',rival:'DiamondPro',sy:188,sr:156,status:'done',inn:'Final'},{you:'Rookie2024',rival:'BaseballGod',sy:0,sr:0,status:'upcoming',inn:'Starts in 2h'}];
+// MOCK_MATCHUPS removed — using Supabase
 let PLAYERS=[],currentUser=null,userData=null,colFilter='ALL',packResults=[null,null],revealedCards=[new Set(),new Set()],curPackIdx=0,currentModalCard=null,lineup=[null,null,null,null],selectedRival=null,battleState=null,battleTimer=null,battleRecord={wins:0,losses:0};
 async function loadPlayers(){try{const r=await fetch('/players.json');PLAYERS=await r.json();}catch(e){console.error(e);PLAYERS=[];}}
 function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>a.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));document.getElementById('login-form').style.display=t==='login'?'':'none';document.getElementById('register-form').style.display=t==='register'?'':'none';document.getElementById('auth-err').textContent='';}
 async function doLogin(){const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;document.getElementById('auth-err').textContent='';const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doRegister(){const e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;document.getElementById('auth-err').textContent='';if(p.length<6){document.getElementById('auth-err').textContent='Password must be 6+ characters';return;}const{data,error}=await sb.auth.signUp({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doLogout(){await sb.auth.signOut();currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}
-async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false,false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){const wy=userData.lastPackDate===yesterdayStr();userData.packsOpened=[false,false];userData.lastPackDate=today;if(!wy)userData.streak=0;packResults=[null,null];revealedCards=[new Set(),new Set()];saveData();}else{const ps=sessionStorage.getItem(`ddp_${currentUser.id}_${today}`);if(ps){const p=JSON.parse(ps);packResults=p.packResults||[null,null];revealedCards=(p.revealedCards||[[],[]]).map(a=>new Set(a));}}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');}
+async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false,false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){const wy=userData.lastPackDate===yesterdayStr();userData.packsOpened=[false,false];userData.lastPackDate=today;if(!wy)userData.streak=0;packResults=[null,null];revealedCards=[new Set(),new Set()];saveData();}else{const ps=sessionStorage.getItem(`ddp_${currentUser.id}_${today}`);if(ps){const p=JSON.parse(ps);packResults=p.packResults||[null,null];revealedCards=(p.revealedCards||[[],[]]).map(a=>new Set(a));}}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');
+  await upsertProfile();
+  await loadMatchups();
+  // Poll for new challenges every 30 seconds
+  setInterval(loadMatchups, 30000);
+}
 function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;localStorage.setItem(`dd_${currentUser.id}`,JSON.stringify(userData));}
 function savePackSession(){const t=todayStr();sessionStorage.setItem(`ddp_${currentUser.id}_${t}`,JSON.stringify({packResults,revealedCards:revealedCards.map(s=>[...s])}));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
-function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups')renderMatchups();if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
+function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups')loadMatchups();if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened.filter(p=>!p).length;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1].forEach(i=>{const opened=userData.packsOpened[i];const btn=document.getElementById(`pb${i+1}`);const card=document.getElementById(`hp${i+1}`);if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(i);}else{card.classList.remove('claimed');btn.textContent=`Open Pack ${i+1}`;btn.className='pack-cta';btn.onclick=()=>openPackOv(i);}});const ml=document.getElementById('home-matchups');ml.innerHTML=MOCK_MATCHUPS.filter(m=>m.status==='live').map(m=>`<div class="matchup-row"><div class="m-side"><div class="m-name">${m.you}</div><div class="m-rec">Challenger</div></div><div class="m-score-wrap"><div class="m-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="m-inning">${m.inn}</div></div><div class="m-side r"><div class="m-name">${m.rival}</div><div class="m-rec">Defender</div></div></div>`).join('')||'<div style="color:var(--muted);font-size:13px;padding:14px 0">No live matchups. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
 function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';return `<div ${cl} class="${extraClass}" style="border:2px solid ${color};border-radius:10px;box-shadow:0 0 14px ${glow};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${p?.photoUrl||''}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:${color}">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
@@ -845,115 +884,258 @@ function openCardModal(cardId){const col=userData.collection.find(c=>c.id===card
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
 function miniCard(player, isRival){
   if(!player) return `<div class="mbig-mini-card" style="background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:1.2rem">⚾</span></div>`;
-  const color = RARITY_COLORS[player.rarity||'COMMON'];
-  const pos = player.position||player.pos||'';
-  const filter = isRival ? 'filter:hue-rotate(180deg) saturate(0.7)' : '';
-  return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${color}55;border-color:${color}66;">
+  const color=RARITY_COLORS[player.rarity||'COMMON'];
+  const pos=player.position||player.pos||'';
+  const glow=color+'55', border=color+'66';
+  return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${glow};border-color:${border};">
     <img src="${player.photoUrl||''}" onerror="this.parentElement.style.background='var(--surface2)';this.style.display='none'" loading="lazy">
     <div class="mc-pos">${pos}</div>
     <div class="mc-bar" style="background:${color}"></div>
   </div>`;
 }
 
-function renderMatchups(){
-  document.getElementById('sw').textContent=battleRecord.wins||0;
-  document.getElementById('sl').textContent=battleRecord.losses||0;
-  document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;
+// ── SUPABASE MATCHUP SYSTEM ────────────────────────────────────────────────
+// Tables needed in Supabase:
+//   challenges: id, from_id, from_name, to_id, to_name, lineup(json), status, created_at
+//   profiles:   id (= auth.uid), username, card_count
+// Run this SQL in Supabase dashboard:
+//   create table challenges (id uuid default gen_random_uuid() primary key, from_id uuid, from_name text, to_id uuid, to_name text, lineup jsonb, to_lineup jsonb, status text default 'pending', created_at timestamptz default now());
+//   create table profiles (id uuid primary key references auth.users, username text unique, card_count int default 0);
+//   alter table challenges enable row level security;
+//   alter table profiles enable row level security;
+//   create policy "Anyone can read profiles" on profiles for select using (true);
+//   create policy "Own challenges" on challenges for all using (auth.uid() = from_id or auth.uid() = to_id);
+//   create policy "Insert challenges" on challenges for insert with check (auth.uid() = from_id);
+//   create policy "Read profiles" on profiles for select using (true);
+//   create policy "Insert own profile" on profiles for insert with check (auth.uid() = id);
+//   create policy "Update own profile" on profiles for update using (auth.uid() = id);
 
-  // Get user's best 4 cards for display (pitcher + 3 batters)
+let allChallenges = [];
+let incomingCount = 0;
+
+async function upsertProfile(){
+  if(!currentUser) return;
+  const uname=(currentUser.email||'').split('@')[0];
+  const cardCount=userData?.collection?.length||0;
+  await sb.from('profiles').upsert({id:currentUser.id, username:uname, card_count:cardCount},{onConflict:'id'});
+}
+
+async function searchUsers(query){
+  const rivals=document.getElementById('ch-rivals');
+  if(!query||query.length<2){rivals.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;">Type to search for players...</div>';return;}
+  rivals.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;">Searching...</div>';
+  const {data,error}=await sb.from('profiles').select('id,username,card_count').ilike('username','%'+query+'%').neq('id',currentUser.id).limit(8);
+  if(error||!data?.length){rivals.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;">No players found</div>';return;}
+  rivals.innerHTML=data.map(u=>`
+    <div class="user-search-result" onclick="selectRivalUser('${u.id}','${u.username}')" id="usr-${u.id}" style="${selectedRival===u.id?'border-color:var(--accent);background:rgba(108,99,255,.08);':''}">
+      <div class="user-avatar-sm">${u.username[0]?.toUpperCase()||'?'}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700;">${u.username}</div><div style="font-size:11px;color:var(--muted);">${u.card_count||0} cards</div></div>
+      ${selectedRival===u.id?'<span style="color:var(--accent);font-size:13px;">✓</span>':''}
+    </div>`).join('');
+}
+
+let selectedRivalId=null;
+let selectedRivalName=null;
+
+function selectRivalUser(id,name){
+  selectedRivalId=id;
+  selectedRivalName=name;
+  selectedRival=id; // keep compat
+  // Re-render search results to show selection
+  document.querySelectorAll('.user-search-result').forEach(el=>{
+    const isSelected=el.id===`usr-${id}`;
+    el.style.borderColor=isSelected?'var(--accent)':'var(--border)';
+    el.style.background=isSelected?'rgba(108,99,255,.08)':'';
+  });
+  const filled=lineup.filter(Boolean).length;
+  const btn=document.getElementById('ch-launch');
+  btn.disabled=filled<4;
+  btn.textContent=filled<4?`Pick ${4-filled} more`:'📨 Send Challenge';
+}
+
+async function launchBattle(){
+  if(lineup.filter(Boolean).length<4||!selectedRivalId)return;
+  const btn=document.getElementById('ch-launch');
+  btn.disabled=true;btn.textContent='Sending...';
+  const myName=(currentUser.email||'').split('@')[0];
+  const lineupIds=lineup.filter(Boolean);
+  const {error}=await sb.from('challenges').insert({
+    from_id:currentUser.id,
+    from_name:myName,
+    to_id:selectedRivalId,
+    to_name:selectedRivalName,
+    lineup:lineupIds,
+    status:'pending'
+  });
+  if(error){
+    console.error(error);
+    // If table doesn't exist yet, show setup message
+    showToast('⚠️ Set up Supabase table first — see console');
+    console.log('Run this SQL in Supabase:\n'+
+      'create table if not exists challenges (id uuid default gen_random_uuid() primary key, from_id uuid, from_name text, to_id uuid, to_name text, lineup jsonb, to_lineup jsonb, status text default \'pending\', created_at timestamptz default now());\n'+
+      'alter table challenges enable row level security;\n'+
+      'create policy "challenges_policy" on challenges for all using (auth.uid() = from_id or auth.uid() = to_id) with check (auth.uid() = from_id);\n'+
+      'create table if not exists profiles (id uuid primary key references auth.users on delete cascade, username text, card_count int default 0);\n'+
+      'alter table profiles enable row level security;\n'+
+      'create policy "profiles_read" on profiles for select using (true);\n'+
+      'create policy "profiles_write" on profiles for all using (auth.uid() = id) with check (auth.uid() = id);'
+    );
+    btn.disabled=false;btn.textContent='📨 Send Challenge';
+    return;
+  }
+  document.getElementById('ch-ov').classList.remove('open');
+  showChallengePending({name:selectedRivalName,emoji:'⚔️'});
+  await loadMatchups();
+}
+
+async function loadMatchups(){
+  if(!currentUser) return;
+  const {data,error}=await sb.from('challenges')
+    .select('*')
+    .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
+    .order('created_at',{ascending:false});
+  if(error){console.error('loadMatchups:',error);allChallenges=[];renderMatchups();return;}
+  allChallenges=data||[];
+  renderMatchups();
+  updateInboxBadge();
+}
+
+function updateInboxBadge(){
+  const myId=currentUser?.id;
+  const incoming=allChallenges.filter(c=>c.to_id===myId&&c.status==='pending');
+  incomingCount=incoming.length;
+  const badge=document.getElementById('inbox-badge');
+  const label=document.getElementById('inbox-label');
+  if(badge){
+    if(incomingCount>0){
+      badge.style.display='block';
+      badge.textContent=incomingCount;
+      label.textContent='Inbox';
+    } else {
+      badge.style.display='none';
+      label.textContent='Inbox';
+    }
+  }
+}
+
+async function acceptChallenge(id){
+  const myName=(currentUser.email||'').split('@')[0];
+  const lineupIds=lineup.filter(Boolean);
+  // If they have cards, use their best lineup; else random
   const col=userData?.collection||[];
   const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};
   const sorted=[...col].sort((a,b)=>(ORDER[getPlayer(a.id)?.rarity]||4)-(ORDER[getPlayer(b.id)?.rarity]||4));
-  const pitchers=sorted.filter(c=>PITCHER_POS.has(getPlayer(c.id)?.position||getPlayer(c.id)?.pos||'')).slice(0,1);
-  const batters=sorted.filter(c=>!PITCHER_POS.has(getPlayer(c.id)?.position||getPlayer(c.id)?.pos||'')).slice(0,3);
-  const myLineup=[...pitchers,...batters].map(c=>getPlayer(c.id)).filter(Boolean);
-  while(myLineup.length<4) myLineup.push(null);
-
-  // Pending challenges with lineup cards
-  const pending=userData?.pendingMatchups||[];
-  const pendingHTML=pending.map(m=>{
-    const pLineup=m.lineup?.map(id=>getPlayer(id)).filter(Boolean)||[];
-    while(pLineup.length<4) pLineup.push(null);
-    const rivalPool=[...PLAYERS].filter(p=>!PITCHER_POS.has(p.position||p.pos||'')).slice(0,3);
-    const rivalPitcher=PLAYERS.filter(p=>PITCHER_POS.has(p.position||p.pos||'')).slice(0,1);
-    const rLineup=[...rivalPitcher,...rivalPool].slice(0,4);
-    return `<div class="mbig" style="border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.05);">
-      <div class="mbig-head">
-        <span style="font-size:13px;font-weight:700">${m.rivalEmoji||'⚾'} vs ${m.rival}</span>
-        <span class="mb-status upcoming" style="display:flex;align-items:center;gap:5px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pendingPulse 1.4s infinite;"></span>
-          Awaiting Response
-        </span>
-      </div>
-      <div class="mbig-lineups">
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">${(currentUser?.email||'').split('@')[0]}</div>
-          <div class="mbig-cards">${pLineup.map(p=>miniCard(p,false)).join('')}</div>
-        </div>
-        <div class="mbig-score-center">
-          <div style="font-size:11px;color:var(--muted);font-weight:700;">📨 Sent</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px;">${new Date(m.sentAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;text-align:right;">${m.rival}</div>
-          <div class="mbig-cards right">${rLineup.map(p=>miniCard(p,true)).join('')}</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;">
-        <button onclick="cancelChallenge('${m.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:11px;color:var(--muted);cursor:pointer;">Cancel</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Mock matchups with lineup cards
-  const mockHTML=MOCK_MATCHUPS.map(m=>{
-    const sc=m.status==='live'?'live':m.status==='done'?'done':'upcoming';
-    const sl=m.status==='live'?'🔴 LIVE':m.status==='done'?'✅ Final':'🕐 Upcoming';
-    // Pick 4 random-ish players from pool for display
-    const seed=m.you.length+m.rival.length;
-    const pool=[...PLAYERS];
-    const rPit=pool.filter(p=>PITCHER_POS.has(p.position||p.pos||''));
-    const rBat=pool.filter(p=>!PITCHER_POS.has(p.position||p.pos||''));
-    const youLineup=[rPit[seed%rPit.length], rBat[seed%rBat.length], rBat[(seed+7)%rBat.length], rBat[(seed+14)%rBat.length]];
-    const rivLineup=[rPit[(seed+3)%rPit.length], rBat[(seed+5)%rBat.length], rBat[(seed+12)%rBat.length], rBat[(seed+19)%rBat.length]];
-    // For user's own live matchups, use their actual best cards
-    const isYou = m.you === (currentUser?.email||'').split('@')[0];
-    const displayYou = isYou ? myLineup : youLineup;
-
-    return `<div class="mbig">
-      <div class="mbig-head">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">⚔️ Battle</span>
-        <span class="mb-status ${sc}">${sl}</span>
-      </div>
-      <div class="mbig-lineups">
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">${m.you}</div>
-          <div class="mbig-cards">${displayYou.map(p=>miniCard(p,false)).join('')}</div>
-        </div>
-        <div class="mbig-score-center">
-          <div class="mbt-score" style="font-size:1.5rem;font-weight:900;letter-spacing:2px;">${m.sy}<span style="color:var(--muted);">–</span>${m.sr}</div>
-          <div style="font-size:10px;color:var(--accent);font-weight:700;margin-top:3px;">${m.inn}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;text-align:right;">${m.rival}</div>
-          <div class="mbig-cards right">${rivLineup.map(p=>miniCard(p,true)).join('')}</div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('mlist').innerHTML=pendingHTML+mockHTML;
+  const pit=sorted.filter(c=>PITCHER_POS.has(getPlayer(c.id)?.position||getPlayer(c.id)?.pos||'')).slice(0,1).map(c=>c.id);
+  const bat=sorted.filter(c=>!PITCHER_POS.has(getPlayer(c.id)?.position||getPlayer(c.id)?.pos||'')).slice(0,3).map(c=>c.id);
+  const myLineupIds=[...pit,...bat];
+  const {error}=await sb.from('challenges').update({status:'accepted',to_lineup:myLineupIds}).eq('id',id);
+  if(error){showToast('Error accepting');return;}
+  showToast('✅ Challenge accepted! Battle starts now.');
+  await loadMatchups();
 }
 
-function cancelChallenge(id){
-  if(!userData.pendingMatchups)return;
-  userData.pendingMatchups=userData.pendingMatchups.filter(m=>String(m.id)!==String(id));
-  saveData();
-  renderMatchups();
+async function declineChallenge(id){
+  await sb.from('challenges').update({status:'declined'}).eq('id',id);
+  showToast('Challenge declined.');
+  await loadMatchups();
+}
+
+async function cancelChallenge(id){
+  await sb.from('challenges').delete().eq('id',id);
   showToast('Challenge cancelled.');
+  await loadMatchups();
 }
-function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');}
-function renderChallengeOv(){const slots=document.getElementById('ch-slots');slots.innerHTML=lineup.map((id,i)=>{if(!id)return`<div style="aspect-ratio:63/88;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:3px;background:var(--surface2)"><span style="font-size:.9rem">${i===0?'⚾':'🏏'}</span><span>${i===0?'P':'B'+(i)}</span></div>`;const p=getPlayer(id);return`<div style="position:relative">${chromeCard({player:p,rarity:p.rarity,level:1,onclick:'',extraStyle:'aspect-ratio:63/88'})}<div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.8);border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10">×</div></div>`;}).join('');const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);document.getElementById('ch-avail').innerHTML=col.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:item.level,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`});}).join('');document.getElementById('ch-rivals').innerHTML=RIVALS.map(r=>`<div onclick="selectedRival='${r.name}';renderChallengeOv()" style="background:${selectedRival===r.name?'rgba(108,99,255,.1)':'var(--surface)'};border:1px solid ${selectedRival===r.name?'var(--accent)':'var(--border)'};border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;cursor:pointer"><div style="font-size:1.4rem">${r.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${r.name}</div><div style="font-size:11px;color:var(--muted)">${r.desc}</div></div><div style="font-size:12px;font-weight:700;color:var(--accent)">${r.power}pts</div></div>`).join('');const filled=lineup.filter(Boolean).length;const btn=document.getElementById('ch-launch');btn.disabled=filled<4||!selectedRival;btn.textContent=filled<4?`Pick ${4-filled} more`:!selectedRival?'Pick a rival':'📨 Send Challenge';}
+
+function renderMatchups(){
+  document.getElementById('sw').textContent=battleRecord.wins||0;
+  document.getElementById('sl').textContent=battleRecord.losses||0;
+  const myId=currentUser?.id;
+  const myName=(currentUser?.email||'').split('@')[0];
+
+  const incoming=allChallenges.filter(c=>c.to_id===myId&&c.status==='pending');
+  const sent=allChallenges.filter(c=>c.from_id===myId&&c.status==='pending');
+  const active=allChallenges.filter(c=>c.status==='accepted');
+  const done=allChallenges.filter(c=>['declined','completed'].includes(c.status));
+
+  document.getElementById('mt-pending-count').textContent=incoming.length+sent.length;
+
+  // Incoming
+  const incomingSection=document.getElementById('incoming-section');
+  const incomingList=document.getElementById('incoming-list');
+  if(incoming.length>0){
+    incomingSection.style.display='block';
+    incomingList.innerHTML=incoming.map(c=>{
+      const theirLineup=(c.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
+      return `<div class="challenge-card incoming">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div style="font-size:15px;font-weight:800;">⚔️ ${c.from_name} challenged you!</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${new Date(c.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>
+          </div>
+          <span class="ch-badge incoming">🔴 Incoming</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Their Lineup</div>
+        <div class="ch-lineup">${theirLineup.slice(0,4).map(p=>`<div class="ch-mini"><img src="${p.photoUrl||''}" onerror="this.style.display='none'"></div>`).join('')}</div>
+        <div class="ch-actions">
+          <button class="btn-accept" onclick="acceptChallenge('${c.id}')">✅ Accept Challenge</button>
+          <button class="btn-decline" onclick="declineChallenge('${c.id}')">Decline</button>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    incomingSection.style.display='none';
+  }
+
+  // All matchups list
+  const allList=[...sent,...active,...done];
+  if(!allList.length && !incoming.length){
+    document.getElementById('mlist').innerHTML=`<div class="no-matchups">
+      <div style="font-size:2.5rem;margin-bottom:10px;">⚔️</div>
+      <p style="font-size:1rem;font-weight:700;margin-bottom:6px;">No matchups yet</p>
+      <p style="font-size:13px;">Challenge another player to start competing!</p>
+      <button class="btn-p" style="margin-top:14px;padding:10px 22px;font-size:13px;" onclick="openChallengeOv()">Find a Player →</button>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('mlist').innerHTML=allList.map(c=>{
+    const isSent=c.from_id===myId;
+    const opponent=isSent?c.to_name:c.from_name;
+    const theirLineup=(isSent?(c.lineup||[]):(c.lineup||[])).map(id=>getPlayer(id)).filter(Boolean);
+    const myLineupCards=((isSent?c.lineup:c.to_lineup)||[]).map(id=>getPlayer(id)).filter(Boolean);
+    let badgeClass='sent',badgeText='📨 Sent';
+    if(c.status==='accepted'){badgeClass='accepted';badgeText='⚔️ Active';}
+    if(c.status==='declined'){badgeClass='';badgeText='❌ Declined';}
+    if(c.status==='completed'){badgeClass='accepted';badgeText='✅ Done';}
+    if(!isSent&&c.status==='pending'){badgeClass='incoming';badgeText='🔴 Incoming';}
+
+    const lineupToShow=isSent?(c.lineup||[]):(c.to_lineup||c.lineup||[]);
+    const oppLineup=isSent?(c.to_lineup||c.lineup||[]):(c.lineup||[]);
+
+    return `<div class="mbig" style="${c.status==='pending'?'border-color:rgba(108,99,255,.3);':''}">
+      <div class="mbig-head">
+        <span style="font-size:13px;font-weight:800;">vs ${opponent}</span>
+        <span class="ch-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="mbig-lineups">
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">${myName}</div>
+          <div class="mbig-cards">${lineupToShow.slice(0,4).map(id=>miniCard(getPlayer(id),false)).join('')}</div>
+        </div>
+        <div class="mbig-score-center">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${new Date(c.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;text-align:right;">${opponent}</div>
+          <div class="mbig-cards right">${oppLineup.slice(0,4).map(id=>miniCard(getPlayer(id),true)).join('')}</div>
+        </div>
+      </div>
+      ${isSent&&c.status==='pending'?`<div style="display:flex;justify-content:flex-end;margin-top:8px;"><button onclick="cancelChallenge('${c.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:11px;color:var(--muted);cursor:pointer;">Cancel</button></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderChallengeOv(){const slots=document.getElementById('ch-slots');slots.innerHTML=lineup.map((id,i)=>{if(!id)return`<div style="aspect-ratio:63/88;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:3px;background:var(--surface2)"><span style="font-size:.9rem">${i===0?'⚾':'🏏'}</span><span>${i===0?'P':'B'+(i)}</span></div>`;const p=getPlayer(id);return`<div style="position:relative">${chromeCard({player:p,rarity:p.rarity,level:1,onclick:'',extraStyle:'aspect-ratio:63/88'})}<div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.8);border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10">×</div></div>`;}).join('');const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);document.getElementById('ch-avail').innerHTML=col.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:item.level,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`});}).join('');// rivals rendered dynamically via searchUsers()const filled=lineup.filter(Boolean).length;const btn=document.getElementById('ch-launch');btn.disabled=filled<4||!selectedRivalId;btn.textContent=filled<4?`Pick ${4-filled} more`:!selectedRivalId?'Search for a player above':'📨 Send Challenge';}
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
 function launchBattle(){
   if(lineup.filter(Boolean).length<4||!selectedRival)return;
@@ -963,11 +1145,7 @@ function launchBattle(){
   // Show pending screen
   showChallengePending(rival);
   // Save pending matchup to user data
-  const pending={id:Date.now(),rival:rival.name,rivalEmoji:rival.emoji,lineup:lineup.filter(Boolean),sentAt:new Date().toISOString(),status:'pending'};
-  if(!userData.pendingMatchups)userData.pendingMatchups=[];
-  userData.pendingMatchups.push(pending);
-  saveData();
-  renderMatchups();
+  // now handled by Supabase in launchBattle()
 }
 
 function showChallengePending(rival){
