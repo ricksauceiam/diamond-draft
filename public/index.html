@@ -536,6 +536,52 @@
   </div>
 </div>
 
+<!-- CHALLENGE OVERLAY -->
+<div class="overlay" id="ch-ov" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="ov-box" style="max-width:900px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;">
+    <!-- Header -->
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div>
+        <div style="font-size:1.1rem;font-weight:900;">⚔️ Build Your Lineup</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Pick 1 pitcher + 3 batters · then find a rival</div>
+      </div>
+      <button class="ov-close" style="position:static;" onclick="document.getElementById('ch-ov').classList.remove('open')">×</button>
+    </div>
+    <!-- Lineup slots -->
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Your Lineup</div>
+      <div style="display:flex;gap:8px;align-items:center;" id="ch-slots"></div>
+    </div>
+    <!-- 3 columns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 220px;flex:1;min-height:0;overflow:hidden;">
+      <!-- Pitchers -->
+      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🔥 Pitchers</div>
+        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-pitchers"></div>
+      </div>
+      <!-- Hitters -->
+      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🏏 Hitters</div>
+        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-hitters"></div>
+      </div>
+      <!-- Rival search -->
+      <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">Find Rival</div>
+        <div style="padding:0 10px 8px;flex-shrink:0;">
+          <input id="rival-search" type="text" placeholder="Search username..." oninput="searchRivals(this.value)"
+            style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;">
+        </div>
+        <div style="overflow-y:auto;flex:1;padding:0 10px;" id="ch-rivals">
+          <div style="color:var(--muted);font-size:12px;padding:4px;">Type to search...</div>
+        </div>
+        <div style="padding:10px;border-top:1px solid var(--border);flex-shrink:0;">
+          <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="padding:11px;font-size:13px;">⚔️ Send Challenge</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PENDING CHALLENGE OVERLAY -->
 <div class="overlay" id="pending-ov" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="ov-box" style="max-width:460px;position:relative;">
