@@ -2340,7 +2340,9 @@ async function adminFetchMLB(){
     const data=await r.json();
     if(data.error)throw new Error(data.error);
     _adminMLBLookup=data;
-    status.innerHTML=`<span style="color:var(--success)">✓ Got ${data.total} MLB players</span>`;
+    console.log('MLB data keys:',Object.keys(data));
+    const byFullCount=Object.keys(data.byFull||{}).length;
+    status.innerHTML=`<span style="color:var(--success)">✓ Got ${data.total} MLB players (byFull: ${byFullCount} entries)</span>`;
     document.getElementById('admin-step2').style.display='block';
     document.getElementById('admin-stats').innerHTML=`<span style="color:var(--muted);font-size:12px;">${data.total} MLB players · ${PLAYERS.length} in our DB</span>`;
   } catch(e){
