@@ -83,6 +83,9 @@
       <button class="nav-item" data-tab="leaderboard" onclick="goTab('leaderboard')">
         <span class="nav-icon">🏆</span><span>Top Collectors</span>
       </button>
+      <button class="nav-item" data-tab="admin" onclick="goTab('admin')" style="display:none;">
+        <span class="nav-icon">🔧</span><span>Admin</span>
+      </button>
     </nav>
     <div class="sb-footer">
       <div class="user-chip">
@@ -215,6 +218,29 @@
     </div>
 
     <!-- LEADERBOARD -->
+    <!-- ADMIN: Player ID Fixer -->
+    <div class="tab-page" id="tab-admin">
+      <div class="pg-head"><h2>🔧 Fix Player IDs</h2><p>Match MLB Stats API IDs to our database</p></div>
+      <div style="padding:18px 26px;overflow-y:auto;flex:1;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;">
+          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 1 — Fetch from MLB</h3>
+          <button onclick="adminFetchMLB()" id="admin-btn-fetch" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;">🔄 Fetch MLB Players</button>
+          <div id="admin-status" style="font-size:13px;color:var(--muted);margin-top:10px;"></div>
+        </div>
+        <div id="admin-step2" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;">
+          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 2 — Run Fix</h3>
+          <div id="admin-stats" style="margin-bottom:12px;"></div>
+          <button onclick="adminFixPlayers()" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;">🔧 Fix IDs</button>
+          <div id="admin-log" style="margin-top:12px;background:var(--bg);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;max-height:260px;overflow-y:auto;line-height:1.8;display:none;"></div>
+        </div>
+        <div id="admin-step3" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;">
+          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 3 — Download Fixed players.json</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Upload this to GitHub at <code>public/players.json</code></p>
+          <button onclick="adminDownload()" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;background:var(--success);color:#000;">⬇️ Download players.json</button>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-page" id="tab-leaderboard">
       <div class="pg-head"><h2>🏆 Top Collectors</h2><p>The best Diamond Draft players worldwide</p></div>
       <div class="lb-body">
@@ -1374,6 +1400,58 @@ function startLivePoll(){
   loadTonightGames();
   // Poll live scores every 2 minutes during games
   livePollTimer = setInterval(refreshLiveScores, 120000);
+}
+
+
+// ── ADMIN: Player ID Fixer ───────────────────────────────────────────────────
+let _adminMLBLookup = {};
+let _adminFixedPlayers = [];
+
+async function adminFetchMLB(){
+  const btn=document.getElementById('admin-btn-fetch');
+  const status=document.getElementById('admin-status');
+  btn.disabled=true; status.textContent='Fetching from MLB Stats API...';
+  try {
+    const r=await fetch('/api/fix-players');
+    const data=await r.json();
+    if(data.error)throw new Error(data.error);
+    _adminMLBLookup=data.lookup;
+    status.innerHTML=`<span style="color:var(--success)">✓ Got ${data.total} MLB players</span>`;
+    document.getElementById('admin-step2').style.display='block';
+    document.getElementById('admin-stats').innerHTML=`<span style="color:var(--muted);font-size:12px;">${data.total} MLB players · ${PLAYERS.length} in our DB</span>`;
+  } catch(e){
+    status.innerHTML=`<span style="color:var(--danger)">Error: ${e.message}</span>`;
+  }
+  btn.disabled=false;
+}
+
+function adminFixPlayers(){
+  const log=document.getElementById('admin-log');
+  log.style.display='block'; log.innerHTML='';
+  let fixed=0,notFound=0,correct=0;
+  _adminFixedPlayers=PLAYERS.map(p=>{
+    const fullName=((p.firstName||'')+(p.lastName||'')).replace(/\s+/g,' ').trim().toLowerCase();
+    const full2=((p.firstName||'')+' '+(p.lastName||'')).trim().toLowerCase();
+    const mlb=_adminMLBLookup[full2]||_adminMLBLookup[fullName];
+    if(!mlb){
+      log.innerHTML+=`<div style="color:var(--muted)">⚠ ${p.firstName} ${p.lastName}</div>`;
+      notFound++; return p;
+    }
+    if(String(p.mlbamId)===String(mlb.mlbamId)){correct++;return p;}
+    log.innerHTML+=`<div style="color:var(--success)">✓ ${p.firstName} ${p.lastName}: ${p.mlbamId}→${mlb.mlbamId}</div>`;
+    fixed++;
+    return {...p,mlbamId:mlb.mlbamId,
+      photoUrl:`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mlb.mlbamId}/headshot/67/current`};
+  });
+  log.innerHTML+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;">Fixed: ${fixed} · Not found: ${notFound} · Already correct: ${correct}</div>`;
+  log.scrollTop=log.scrollHeight;
+  document.getElementById('admin-step3').style.display='block';
+}
+
+function adminDownload(){
+  const blob=new Blob([JSON.stringify(_adminFixedPlayers,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='players.json'; a.click();
 }
 
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}
