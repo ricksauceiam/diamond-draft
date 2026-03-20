@@ -1137,8 +1137,10 @@ if(_battleHistory.length>0){
     const date=new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const myLineup=(iFrom?b.from_lineup:b.to_lineup)||[];
     const theirLineup=(iFrom?b.to_lineup:b.from_lineup)||[];
+    window._histBattles=window._histBattles||{};
+    window._histBattles['hist-'+b.id]={id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at};
     return `<div class="mbig-expandable" id="hist-${b.id}">
-      <div class="mbig-collapsed" onclick="toggleBattleExpand('hist-${b.id}');renderHistoryExpand('hist-${b.id}',${JSON.stringify({id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at}).replace(/"/g,"'")})">
+      <div class="mbig-collapsed" onclick="toggleBattleExpand('hist-${b.id}');renderHistoryExpand('hist-${b.id}')">
         <div class="mc-result ${resultClass}">${resultLabel}</div>
         <div class="mc-opp" style="flex:1;">vs ${rivalName}</div>
         <div class="mc-score">${scoreStr}</div>
@@ -1916,6 +1918,8 @@ function renderBdCard(player, sideTotal){
 
 
 function renderHistoryExpand(wrapId, battle){
+  if(!battle) battle=window._histBattles&&window._histBattles[wrapId];
+  if(!battle) return;
   const el=document.getElementById(wrapId);
   if(!el||!el.classList.contains('open')) return;
   const expEl=document.getElementById('hist-exp-'+battle.id);
