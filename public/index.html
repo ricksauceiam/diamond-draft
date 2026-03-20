@@ -768,14 +768,17 @@ function renderChallengeOv(){
   const slots=document.getElementById('ch-slots');
   const slotLabels=['P','B1','B2','B3'];
   slots.innerHTML=lineup.map((id,i)=>{
-    if(!id)return`<div style="width:52px;height:70px;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:2px;background:var(--bg)"><span style="font-size:1rem">${i===0?'⚾':'🏏'}</span><span>${slotLabels[i]}</span></div>`;
+    if(!id)return`<div style="width:90px;height:120px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-direction:column;gap:4px;background:var(--bg);flex-shrink:0;"><span style="font-size:1.4rem">${i===0?'⚾':'🏏'}</span><span style="font-size:10px;font-weight:700;">${slotLabels[i]}</span></div>`;
     const p=getPlayer(id);const color=RARITY_COLORS[p.rarity||'COMMON'];
-    return`<div style="position:relative;width:52px;">
-      <div style="width:52px;height:70px;border-radius:8px;overflow:hidden;border:2px solid ${color};">
+    return`<div style="position:relative;width:90px;flex-shrink:0;">
+      <div style="width:90px;height:120px;border-radius:10px;overflow:hidden;border:2px solid ${color};box-shadow:0 0 10px ${color}55;">
         <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
       </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);padding:2px 3px;border-radius:0 0 6px 6px;font-size:7px;font-weight:700;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-      <div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:-5px;right:-5px;background:var(--danger);border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10;font-weight:900;">×</div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.82);padding:4px 5px;border-radius:0 0 8px 8px;">
+        <div style="font-size:10px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
+        <div style="font-size:8px;color:${color};text-align:center;font-weight:600;">${p.position||p.pos} · ${p.team||''}</div>
+      </div>
+      <div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:-6px;right:-6px;background:var(--danger);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;z-index:10;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,.5);">×</div>
     </div>`;
   }).join('');
 
