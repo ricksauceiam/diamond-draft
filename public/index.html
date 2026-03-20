@@ -2,174 +2,232 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Diamond Draft</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>:root{--bg:#08080f;--surface:#0f0f1a;--surface2:#161622;--surface3:#1e1e2e;--border:rgba(255,255,255,0.07);--text:#e8e8f0;--muted:#6a6a8a;--accent:#6c63ff;--accent2:#ff6b9d;--common:#8899AA;--rare:#00F5FF;--epic:#BF40FF;--legendary:#FFD700;--mythic:#FF006E;--success:#00d48a;--danger:#ff4757;--sw:220px;}*{box-sizing:border-box;margin:0;padding:0;}html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;}#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:radial-gradient(ellipse at top,#1a1035 0%,var(--bg) 70%);}.auth-logo{text-align:center;margin-bottom:32px;}.auth-logo h1{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}.auth-logo p{color:var(--muted);margin-top:5px;font-size:.9rem;}.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:26px;width:100%;max-width:370px;}.auth-tabs{display:flex;gap:6px;margin-bottom:22px;background:var(--bg);border-radius:10px;padding:4px;}.auth-tab{flex:1;text-align:center;padding:8px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s;}.auth-tab.active{background:var(--accent);color:#fff;}.field{margin-bottom:13px;}.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;}.field input:focus{border-color:var(--accent);}.btn-p{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;}.btn-p:hover{opacity:.88;}.btn-p:disabled{opacity:.45;cursor:not-allowed;}.auth-err{color:var(--danger);font-size:12px;margin-top:10px;text-align:center;min-height:16px;}#app{display:none;height:100vh;flex-direction:row;}#app.visible{display:flex;}.sidebar{width:var(--sw);min-width:var(--sw);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow:hidden;}.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);}.sb-logo h1{font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}.sb-logo p{font-size:11px;color:var(--muted);margin-top:2px;}.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;}.nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;transition:all .2s;border:none;background:none;width:100%;text-align:left;}.nav-item:hover{background:var(--surface2);color:var(--text);}.nav-item.active{background:rgba(108,99,255,.15);color:var(--accent);}.nav-icon{font-size:1.1rem;width:22px;text-align:center;flex-shrink:0;}.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;}.nav-div{height:1px;background:var(--border);margin:7px 8px;}.sb-footer{padding:12px 8px;border-top:1px solid var(--border);}.user-chip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:10px;background:var(--surface2);}.u-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}.u-info{flex:1;min-width:0;}.u-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.u-sub{font-size:10px;color:var(--muted);margin-top:1px;}.so-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:3px;border-radius:5px;}.so-btn:hover{color:var(--danger);}.main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}.tab-page{display:none;flex-direction:column;flex:1;min-height:0;}.tab-page.active{display:flex;}.pg-head{padding:22px 26px 0;flex-shrink:0;}.pg-head h2{font-size:1.45rem;font-weight:900;}.pg-head p{color:var(--muted);font-size:13px;margin-top:3px;}.home-body{padding:18px 26px 26px;display:flex;flex-direction:column;gap:18px;overflow-y:auto;flex:1;}.sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:7px;}.live-dot{width:7px;height:7px;border-radius:50%;background:var(--danger);animation:pulse 1.2s infinite;}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}.streak-bar{background:linear-gradient(135deg,var(--surface),#1a1035);border:1px solid rgba(108,99,255,.2);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px;}.streak-bar .snum{font-size:2rem;font-weight:900;color:var(--accent);}.streak-bar .stext h4{font-size:13px;font-weight:700;}.streak-bar .stext p{font-size:12px;color:var(--muted);margin-top:2px;}.next-reset{font-size:11px;color:var(--muted);margin-top:4px;}.next-reset span{color:var(--accent);font-weight:600;}.home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}.hstat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}.hstat .val{font-size:1.7rem;font-weight:900;}.hstat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}.packs-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.pack-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}.pack-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent)0a,transparent);pointer-events:none;}.pack-card:hover{border-color:var(--accent);transform:translateY(-2px);}.pack-card.claimed{opacity:.5;}.pack-card.claimed:hover{transform:none;border-color:var(--border);}.pc-top{display:flex;align-items:center;gap:11px;margin-bottom:12px;}.pc-icon{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.3rem;}.pc-top h3{font-size:.95rem;font-weight:800;}.pc-top p{font-size:11px;color:var(--muted);margin-top:2px;}.odds-row{display:flex;gap:5px;flex-wrap:wrap;}.odds-pill{font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;}.pack-cta{margin-top:12px;width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;}.pack-cta:hover{opacity:.88;}.pack-cta.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border);}.matchup-list{display:flex;flex-direction:column;gap:8px;}.matchup-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s;}.matchup-row:hover{border-color:var(--accent);}.m-side{flex:1;}.m-side.r{text-align:right;}.m-name{font-size:13px;font-weight:700;}.m-rec{font-size:11px;color:var(--muted);margin-top:1px;}.m-score-wrap{text-align:center;min-width:78px;}.m-score{font-size:1.7rem;font-weight:900;letter-spacing:2px;}.m-score .sep{color:var(--muted);}.m-inning{font-size:10px;color:var(--accent);font-weight:700;margin-top:1px;text-transform:uppercase;}.col-filters{display:flex;gap:7px;padding:12px 26px 0;flex-wrap:wrap;flex-shrink:0;}.fc{padding:6px 13px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}.fc.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}.col-search{margin:9px 26px 0;}.col-search input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;}.col-search input:focus{border-color:var(--accent);}.colgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;padding:12px 26px 24px;overflow-y:auto;flex:1;}.col-empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);}@keyframes fuseGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}.mt-body{padding:18px 26px 26px;flex:1;overflow-y:auto;}.mt-top{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}.mt-action{flex:1;min-width:190px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}.mt-action h3{font-size:.95rem;font-weight:800;margin-bottom:5px;}.mt-action p{font-size:12px;color:var(--muted);margin-bottom:12px;}.mlist{display:flex;flex-direction:column;gap:10px;}.mbig{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;}.mbig-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}.mbig-lineups{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-bottom:10px;}.mbig-cards{display:flex;gap:5px;}.mbig-cards.right{justify-content:flex-end;}.mbig-mini-card{width:52px;height:72px;border-radius:7px;overflow:hidden;position:relative;flex-shrink:0;border:1px solid rgba(255,255,255,.08);}.mbig-mini-card img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}.mbig-mini-card .mc-bar{height:3px;position:absolute;bottom:0;left:0;right:0;}.mbig-mini-card .mc-pos{position:absolute;top:2px;left:3px;font-size:7px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);background:rgba(0,0,0,.4);padding:1px 3px;border-radius:3px;}.mbig-score-center{text-align:center;flex-shrink:0;}.mb-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;}.mb-status.live{background:rgba(255,71,87,.15);color:var(--danger);}.mb-status.done{background:rgba(0,212,138,.1);color:var(--success);}.mb-status.upcoming{background:rgba(108,99,255,.15);color:var(--accent);}.mbig-teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;}.mbt{display:flex;flex-direction:column;}.mbt.r{text-align:right;}.mbt-name{font-size:14px;font-weight:800;}.mbt-sub{font-size:11px;color:var(--muted);margin-top:2px;}.mbt-score{text-align:center;font-size:1.9rem;font-weight:900;letter-spacing:3px;}.mbt-score .sep{color:var(--muted);}.lb-body{padding:18px 26px 26px;flex:1;overflow-y:auto;}.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin-bottom:24px;}.pod-item{display:flex;flex-direction:column;align-items:center;gap:7px;}.pod-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;}.pod-block{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-weight:900;width:62px;}.pod-name{font-size:12px;font-weight:700;text-align:center;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.pod-pts{font-size:11px;color:var(--muted);}.lb-list{display:flex;flex-direction:column;gap:8px;}.lb-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:13px;}.lb-row.me{border-color:var(--accent);background:rgba(108,99,255,.07);}.lb-rank{font-size:.95rem;font-weight:900;color:var(--muted);min-width:22px;text-align:center;}.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;}.lb-info h4{font-size:13px;font-weight:700;}.lb-info p{font-size:11px;color:var(--muted);margin-top:1px;}.lb-pts{margin-left:auto;text-align:right;}.lb-pts .pts{font-size:.95rem;font-weight:900;color:var(--accent);}.lb-pts .sub{font-size:11px;color:var(--muted);}.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;align-items:center;justify-content:center;}.overlay.open{display:flex;}.ov-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:26px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto;position:relative;}.ov-close{position:absolute;top:13px;right:13px;background:var(--surface2);border:none;border-radius:8px;padding:5px 9px;color:var(--muted);cursor:pointer;font-size:17px;}.ov-title{font-size:1.15rem;font-weight:800;margin-bottom:5px;}.ov-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}.prg{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;}.reveal-card{aspect-ratio:63/88;border-radius:10px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;}.card-back{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:repeating-linear-gradient(45deg,#0d0d1a,#0d0d1a 8px,#111124 8px,#111124 16px);border-radius:10px;border:2px solid var(--border);}.ov-actions{display:flex;gap:9px;margin-top:16px;}.ov-actions button{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;}.btn-reveal{background:var(--accent);color:#fff;}.btn-collect{background:var(--success);color:#000;}.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)!important;}.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center;}.modal-ov.open{display:flex;}.modal-sheet{background:var(--surface);border-radius:20px;width:100%;max-width:400px;padding:0 0 26px;position:relative;max-height:90vh;overflow-y:auto;}.modal-x{position:absolute;top:13px;right:13px;background:var(--surface2);border:none;border-radius:8px;padding:5px 9px;color:var(--muted);cursor:pointer;font-size:15px;z-index:2;}.m-preview{display:flex;gap:14px;padding:20px 18px;}.m-img{width:82px;min-width:82px;aspect-ratio:63/88;border-radius:9px;overflow:hidden;}.m-img img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}.m-info h3{font-size:1rem;font-weight:800;}.m-meta{color:var(--muted);font-size:12px;margin-top:3px;}.m-rbadge{display:inline-block;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;margin-top:7px;text-transform:uppercase;color:#000;}.m-power{font-size:12px;color:var(--muted);margin-top:5px;}.m-copies{margin:0 18px 13px;background:var(--surface2);border-radius:12px;padding:13px;}.m-copies-row{display:flex;justify-content:space-between;align-items:center;}.m-copies-row h4{font-size:13px;font-weight:700;}.copies-val{font-size:1.2rem;font-weight:800;color:var(--accent);}.cdots{display:flex;gap:4px;margin-top:9px;flex-wrap:wrap;}.cdot{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);}.cdot.filled{background:var(--accent);border-color:var(--accent);}.fuse-btn{margin:0 18px 13px;width:calc(100% - 36px);padding:12px;background:linear-gradient(135deg,#b8860b,var(--legendary));color:#000;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;}.fuse-btn:disabled{opacity:.4;cursor:not-allowed;}.mstats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 18px;}.mstat{background:var(--surface2);border-radius:9px;padding:9px;text-align:center;}.mstat-v{font-size:.95rem;font-weight:800;}.mstat-k{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;}.card-chrome-bar{height:5px;flex-shrink:0;}.card-art{flex:1;overflow:hidden;position:relative;min-height:0;background:#111122;}.card-art img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;display:block;}.card-art-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7) 100%);pointer-events:none;}.card-rarity-pill{display:none;}.new-badge{position:absolute;top:4px;right:4px;background:var(--success);color:#000;font-size:7px;font-weight:900;padding:2px 4px;border-radius:3px;z-index:2;}.copy-badge{position:absolute;top:4px;right:4px;font-size:7px;font-weight:900;padding:2px 4px;border-radius:3px;z-index:2;color:#fff;}.cbp{flex-shrink:0;padding:5px 6px 5px;background:#080810;border-top:1px solid rgba(255,255,255,.07);}.cbn{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;}.cbm{font-size:9px;margin-top:1px;letter-spacing:.3px;}.copy-prog{height:3px;background:rgba(255,255,255,.06);flex-shrink:0;}.copy-bar{height:100%;transition:width .3s;}.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}.toast.show{opacity:1;}
-/* ── MOBILE BOTTOM TAB BAR ─────────────────────────────────────────────── */
-#mob-nav{display:none;}
-@media(max-width:768px){
-  /* Hide sidebar entirely */
-  .sidebar{display:none!important;}
-  /* App takes full screen */
-  #app{flex-direction:column!important;height:100dvh!important;}
-  .main{height:calc(100dvh - 62px)!important;padding-bottom:0;}
-  /* Bottom tab bar */
-  #mob-nav{
-    display:flex;position:fixed;bottom:0;left:0;right:0;
-    background:var(--surface);border-top:1px solid var(--border);
-    z-index:100;height:62px;padding-bottom:env(safe-area-inset-bottom);
-  }
-  .mob-tab{
-    flex:1;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:3px;cursor:pointer;border:none;
-    background:none;color:var(--muted);font-size:9px;font-weight:700;
-    text-transform:uppercase;letter-spacing:.3px;padding:8px 4px;
-    transition:color .15s;position:relative;
-  }
-  .mob-tab.active{color:var(--accent);}
-  .mob-tab .mob-icon{font-size:1.3rem;line-height:1;}
-  .mob-badge{
-    position:absolute;top:6px;right:calc(50% - 18px);
-    background:var(--danger);color:#fff;font-size:9px;font-weight:900;
-    padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;
-    animation:pulse 1.2s infinite;
-  }
-  /* Page padding */
-  .pg-head{padding:14px 16px 0!important;}
-  .home-body{padding:14px 16px 16px!important;}
-  .mt-body,.lb-body,.scores-body{padding:14px 16px 16px!important;}
-  .col-filters{padding:10px 16px 0!important;}
-  .col-search{margin:8px 16px 0!important;}
-  .colgrid{padding:10px 16px 16px!important;grid-template-columns:repeat(auto-fill,minmax(80px,1fr))!important;}
-  .stash-section-header{padding:14px 16px 8px!important;}
-  /* Packs side by side on mobile */
-  .packs-row{grid-template-columns:1fr 1fr!important;}
-  /* Home stats 3 col */
-  .home-stats{grid-template-columns:repeat(3,1fr)!important;}
-  /* Overlays full screen on mobile */
-  .overlay{align-items:flex-end!important;}
-  .ov-box{border-radius:20px 20px 0 0!important;max-height:92dvh!important;width:100%!important;max-width:100%!important;}
-  /* Challenge overlay full screen */
-  #ch-ov .ov-box{max-height:96dvh!important;border-radius:20px 20px 0 0!important;}
-  /* Battle overlay */
-  #battle-ov .ov-box{border-radius:20px 20px 0 0!important;max-height:96dvh!important;}
-  /* Modal sheets */
-  .modal-sheet{border-radius:20px 20px 0 0!important;max-width:100%!important;width:100%!important;}
-  /* Col select bar */
-  .col-select-bar{padding:7px 16px!important;}
-  /* Bigger tap targets */
-  .fc{padding:8px 16px!important;font-size:13px!important;}
-  .pack-cta{padding:12px!important;font-size:14px!important;}
-  /* mt-top stack vertically */
-  .mt-top{flex-direction:column!important;}
-  /* Auth screen on mobile */
-  .auth-logo h1{font-size:2rem!important;}
-  /* Toast at bottom */
-  .toast{top:auto!important;bottom:80px!important;}
-  /* Challenge overlay 3-col → stacked */
-  #ch-ov .ov-box > div:last-child{grid-template-columns:1fr!important;overflow-y:auto!important;}
+<style>
+:root{--bg:#08080f;--surface:#0f0f1a;--surface2:#161622;--surface3:#1e1e2e;--border:rgba(255,255,255,0.07);--text:#e8e8f0;--muted:#6a6a8a;--accent:#6c63ff;--accent2:#ff6b9d;--common:#8899AA;--rare:#00F5FF;--epic:#BF40FF;--legendary:#FFD700;--mythic:#FF006E;--success:#00d48a;--danger:#ff4757;--sw:220px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;}
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:radial-gradient(ellipse at top,#1a1035 0%,var(--bg) 70%);}
+.auth-logo{text-align:center;margin-bottom:32px;}
+.auth-logo h1{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.auth-logo p{color:var(--muted);margin-top:5px;font-size:.9rem;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:26px;width:100%;max-width:370px;}
+.auth-tabs{display:flex;gap:6px;margin-bottom:22px;background:var(--bg);border-radius:10px;padding:4px;}
+.auth-tab{flex:1;text-align:center;padding:8px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s;}
+.auth-tab.active{background:var(--accent);color:#fff;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;}
+.field input:focus{border-color:var(--accent);}
+.btn-p{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.btn-p:hover{opacity:.88;}
+.btn-p:disabled{opacity:.45;cursor:not-allowed;}
+.auth-err{color:var(--danger);font-size:12px;margin-top:10px;text-align:center;min-height:16px;}
+/* APP */
+#app{display:none;height:100vh;flex-direction:row;}
+#app.visible{display:flex;}
+/* SIDEBAR */
+.sidebar{width:var(--sw);min-width:var(--sw);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+.sb-logo h1{font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.sb-logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;transition:all .2s;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(108,99,255,.15);color:var(--accent);}
+.nav-icon{font-size:1.1rem;width:22px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;}
+.nav-div{height:1px;background:var(--border);margin:7px 8px;}
+.sb-footer{padding:12px 8px;border-top:1px solid var(--border);}
+.user-chip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:10px;background:var(--surface2);}
+.u-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.u-info{flex:1;min-width:0;}
+.u-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.u-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.so-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:3px;border-radius:5px;}
+.so-btn:hover{color:var(--danger);}
+/* MAIN */
+.main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}
+/* TABS */
+.tab-page{display:none;flex-direction:column;flex:1;min-height:0;}
+.tab-page.active{display:flex;}
+.pg-head{padding:22px 26px 0;flex-shrink:0;}
+.pg-head h2{font-size:1.45rem;font-weight:900;}
+.pg-head p{color:var(--muted);font-size:13px;margin-top:3px;}
+/* HOME */
+.home-body{padding:18px 26px 26px;display:flex;flex-direction:column;gap:18px;overflow-y:auto;flex:1;}
+.sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--danger);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* streak */
+.streak-bar{background:linear-gradient(135deg,var(--surface),#1a1035);border:1px solid rgba(108,99,255,.2);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px;}
+.streak-bar .snum{font-size:2rem;font-weight:900;color:var(--accent);}
+.streak-bar .stext h4{font-size:13px;font-weight:700;}
+.streak-bar .stext p{font-size:12px;color:var(--muted);margin-top:2px;}
+.next-reset{font-size:11px;color:var(--muted);margin-top:4px;}
+.next-reset span{color:var(--accent);font-weight:600;}
+/* stats */
+.home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.hstat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.hstat .val{font-size:1.7rem;font-weight:900;}
+.hstat .lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+/* packs */
+.packs-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.pack-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.pack-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent)0a,transparent);pointer-events:none;}
+.pack-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.pack-card.claimed{opacity:.5;}
+.pack-card.claimed:hover{transform:none;border-color:var(--border);}
+.pc-top{display:flex;align-items:center;gap:11px;margin-bottom:12px;}
+.pc-icon{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+.pc-top h3{font-size:.95rem;font-weight:800;}
+.pc-top p{font-size:11px;color:var(--muted);margin-top:2px;}
+.odds-row{display:flex;gap:5px;flex-wrap:wrap;}
+.odds-pill{font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;}
+.pack-cta{margin-top:12px;width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;}
+.pack-cta:hover{opacity:.88;}
+.pack-cta.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+/* live matchups on home */
+.matchup-list{display:flex;flex-direction:column;gap:8px;}
+.matchup-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s;}
+.matchup-row:hover{border-color:var(--accent);}
+.m-side{flex:1;}
+.m-side.r{text-align:right;}
+.m-name{font-size:13px;font-weight:700;}
+.m-rec{font-size:11px;color:var(--muted);margin-top:1px;}
+.m-score-wrap{text-align:center;min-width:78px;}
+.m-score{font-size:1.7rem;font-weight:900;letter-spacing:2px;}
+.m-score .sep{color:var(--muted);}
+.m-inning{font-size:10px;color:var(--accent);font-weight:700;margin-top:1px;text-transform:uppercase;}
+/* COLLECTION */
+.col-filters{display:flex;gap:7px;padding:12px 26px 0;flex-wrap:wrap;flex-shrink:0;}
+.fc{padding:6px 13px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.fc.active{color:#000;font-weight:700;}
+.fc[data-r="ALL"].active{background:var(--text);border-color:var(--text);}
+.fc[data-r="COMMON"].active{background:var(--common);border-color:var(--common);}
+.fc[data-r="RARE"].active{background:var(--rare);border-color:var(--rare);}
+.fc[data-r="EPIC"].active{background:var(--epic);border-color:var(--epic);}
+.fc[data-r="LEGENDARY"].active{background:var(--legendary);border-color:var(--legendary);}
+.fc[data-r="MYTHIC"].active{background:var(--mythic);border-color:var(--mythic);}
+.col-search{margin:9px 26px 0;}
+.col-search input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;}
+.col-search input:focus{border-color:var(--accent);}
+.colgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;padding:12px 26px 24px;overflow-y:auto;flex:1;}
+.col-empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);}
+@keyframes fuseGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+/* MATCHUPS TAB */
+.mt-body{padding:18px 26px 26px;flex:1;overflow-y:auto;}
+.mt-top{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.mt-action{flex:1;min-width:190px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.mt-action h3{font-size:.95rem;font-weight:800;margin-bottom:5px;}
+.mt-action p{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.mlist{display:flex;flex-direction:column;gap:10px;}
+.mbig{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+.mbig-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.mb-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;}
+.mb-status.live{background:rgba(255,71,87,.15);color:var(--danger);}
+.mb-status.done{background:rgba(0,212,138,.1);color:var(--success);}
+.mb-status.upcoming{background:rgba(108,99,255,.15);color:var(--accent);}
+.mbig-teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;}
+.mbt{display:flex;flex-direction:column;}
+.mbt.r{text-align:right;}
+.mbt-name{font-size:14px;font-weight:800;}
+.mbt-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.mbt-score{text-align:center;font-size:1.9rem;font-weight:900;letter-spacing:3px;}
+.mbt-score .sep{color:var(--muted);}
+/* LEADERBOARD */
+.lb-body{padding:18px 26px 26px;flex:1;overflow-y:auto;}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin-bottom:24px;}
+.pod-item{display:flex;flex-direction:column;align-items:center;gap:7px;}
+.pod-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;}
+.pod-block{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-weight:900;width:62px;}
+.pod-name{font-size:12px;font-weight:700;text-align:center;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pod-pts{font-size:11px;color:var(--muted);}
+.lb-list{display:flex;flex-direction:column;gap:8px;}
+.lb-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:13px;}
+.lb-row.me{border-color:var(--accent);background:rgba(108,99,255,.07);}
+.lb-rank{font-size:.95rem;font-weight:900;color:var(--muted);min-width:22px;text-align:center;}
+.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;}
+.lb-info h4{font-size:13px;font-weight:700;}
+.lb-info p{font-size:11px;color:var(--muted);margin-top:1px;}
+.lb-pts{margin-left:auto;text-align:right;}
+.lb-pts .pts{font-size:.95rem;font-weight:900;color:var(--accent);}
+.lb-pts .sub{font-size:11px;color:var(--muted);}
+/* OVERLAYS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.ov-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:26px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto;position:relative;}
+.ov-close{position:absolute;top:13px;right:13px;background:var(--surface2);border:none;border-radius:8px;padding:5px 9px;color:var(--muted);cursor:pointer;font-size:17px;}
+.ov-title{font-size:1.15rem;font-weight:800;margin-bottom:5px;}
+.ov-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+/* pack reveal */
+.prg{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;}
+.reveal-card{aspect-ratio:63/88;border-radius:10px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;}
+.card-back{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:repeating-linear-gradient(45deg,#0d0d1a,#0d0d1a 8px,#111124 8px,#111124 16px);border-radius:10px;border:2px solid var(--border);}
+.ov-actions{display:flex;gap:9px;margin-top:16px;}
+.ov-actions button{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;}
+.btn-reveal{background:var(--accent);color:#fff;}
+.btn-collect{background:var(--success);color:#000;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)!important;}
+/* CARD MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal-sheet{background:var(--surface);border-radius:20px;width:100%;max-width:400px;padding:0 0 26px;position:relative;max-height:90vh;overflow-y:auto;}
+.modal-x{position:absolute;top:13px;right:13px;background:var(--surface2);border:none;border-radius:8px;padding:5px 9px;color:var(--muted);cursor:pointer;font-size:15px;z-index:2;}
+.m-preview{display:flex;gap:14px;padding:20px 18px;}
+.m-img{width:82px;min-width:82px;aspect-ratio:63/88;border-radius:9px;overflow:hidden;}
+.m-img img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}
+.m-info h3{font-size:1rem;font-weight:800;}
+.m-meta{color:var(--muted);font-size:12px;margin-top:3px;}
+.m-rbadge{display:inline-block;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;margin-top:7px;text-transform:uppercase;color:#000;}
+.m-power{font-size:12px;color:var(--muted);margin-top:5px;}
+.m-copies{margin:0 18px 13px;background:var(--surface2);border-radius:12px;padding:13px;}
+.m-copies-row{display:flex;justify-content:space-between;align-items:center;}
+.m-copies-row h4{font-size:13px;font-weight:700;}
+.copies-val{font-size:1.2rem;font-weight:800;color:var(--accent);}
+.cdots{display:flex;gap:4px;margin-top:9px;flex-wrap:wrap;}
+.cdot{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);}
+.cdot.filled{background:var(--accent);border-color:var(--accent);}
+.fuse-btn{margin:0 18px 13px;width:calc(100% - 36px);padding:12px;background:linear-gradient(135deg,#b8860b,var(--legendary));color:#000;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;}
+.fuse-btn:disabled{opacity:.4;cursor:not-allowed;}
+.mstats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 18px;}
+.mstat{background:var(--surface2);border-radius:9px;padding:9px;text-align:center;}
+.mstat-v{font-size:.95rem;font-weight:800;}
+.mstat-k{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;}
+/* CHROME CARD SHARED */
+.card-chrome-bar{height:5px;flex-shrink:0;}
+.card-art{flex:1;overflow:hidden;position:relative;min-height:0;background:#111122;}
+.card-art img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;display:block;}
+.card-art-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7) 100%);pointer-events:none;}
+.card-rarity-pill{position:absolute;top:4px;left:4px;font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.4px;z-index:2;}
+.new-badge{position:absolute;top:4px;right:4px;background:var(--success);color:#000;font-size:7px;font-weight:900;padding:2px 4px;border-radius:3px;z-index:2;}
+.copy-badge{position:absolute;top:4px;right:4px;font-size:7px;font-weight:900;padding:2px 4px;border-radius:3px;z-index:2;color:#fff;}
+.cbp{flex-shrink:0;padding:5px 6px 5px;background:#080810;border-top:1px solid rgba(255,255,255,.07);}
+.cbn{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;}
+.cbm{font-size:9px;margin-top:1px;letter-spacing:.3px;}
+.copy-prog{height:3px;background:rgba(255,255,255,.06);flex-shrink:0;}
+.copy-bar{height:100%;transition:width .3s;}
+/* TOAST */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+/* RESPONSIVE */
+@media(max-width:700px){
+  :root{--sw:56px;}
+  .sb-logo,.nav-item span,.u-info,.so-btn{display:none;}
+  .nav-item{justify-content:center;padding:12px;}
+  .nav-icon{width:auto;font-size:1.2rem;}
+  .nav-badge{display:none;}
+  .sb-footer{padding:8px 5px;}
+  .user-chip{justify-content:center;padding:7px;background:none;}
+  .pg-head{padding:14px 14px 0;}
+  .home-body,.mt-body,.lb-body{padding:12px 14px 18px;}
+  .col-filters,.col-search{padding-left:14px;padding-right:14px;}
+  .colgrid{padding:10px 14px 18px;}
+  .packs-row{grid-template-columns:1fr;}
 }
-.scores-body{padding:18px 26px 26px;flex:1;overflow-y:auto;}.scores-date-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;}.scores-date-nav button{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}.scores-date-nav button:hover{border-color:var(--accent);color:var(--accent);}.scores-date-label{font-size:14px;font-weight:700;flex:1;text-align:center;color:var(--text);}.scores-status-row{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap;}.scores-filter{padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}.scores-filter.active{background:var(--accent);color:#fff;border-color:var(--accent);}.games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}.game-tile{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .2s,transform .15s;}.game-tile:hover{border-color:var(--accent);transform:translateY(-2px);}.game-tile.live{border-color:var(--danger);box-shadow:0 0 12px rgba(255,71,87,.15);}.game-tile.final{opacity:.9;}.gt-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}.gt-matchup{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}.gt-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;}.gt-badge.live{background:rgba(255,71,87,.15);color:var(--danger);}.gt-badge.final{background:rgba(0,212,138,.1);color:var(--success);}.gt-badge.scheduled{background:rgba(108,99,255,.15);color:var(--accent);}.gt-badge.postponed{background:rgba(255,165,0,.15);color:#FFA500;}.gt-body{padding:14px 12px;}.gt-teams{display:grid;grid-template-columns:1fr 56px 1fr;align-items:center;gap:6px;}.gt-team{display:flex;flex-direction:column;align-items:center;gap:5px;}.gt-emoji{font-size:1.8rem;line-height:1;}.gt-name{font-size:11px;font-weight:700;text-align:center;color:var(--text);}.gt-rec{font-size:10px;color:var(--muted);text-align:center;}.gt-score-box{display:flex;flex-direction:column;align-items:center;justify-content:center;}.gt-score{font-size:1.5rem;font-weight:900;letter-spacing:2px;color:var(--text);}.gt-score .sep{color:var(--muted);}.gt-vs{font-size:11px;font-weight:700;color:var(--muted);}.gt-inning{font-size:9px;color:var(--danger);font-weight:700;margin-top:2px;text-align:center;}.gt-footer{padding:7px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;}.gt-venue{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.scores-loading{display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted);font-size:14px;gap:10px;}.scores-empty{text-align:center;padding:60px 20px;color:var(--muted);}.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg)}}@keyframes pendingPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}.col-select-bar{display:flex;align-items:center;gap:8px;padding:7px 26px;background:rgba(108,99,255,.1);border-bottom:1px solid rgba(108,99,255,.2);flex-shrink:0;}.col-select-bar.hidden{display:none!important;}.col-select-info{font-size:12px;font-weight:700;color:var(--accent);flex:1;}.col-select-btn{padding:5px 13px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:opacity .2s;}.btn-stash-move{background:var(--accent);color:#fff;}.btn-stash-move:hover{opacity:.85;}.btn-sel-cancel{background:var(--surface2);color:var(--muted);border:1px solid var(--border)!important;}.col-card-wrap{position:relative;cursor:pointer;}.col-card-wrap.selected::after{content:'✓';position:absolute;inset:0;background:rgba(108,99,255,.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:900;color:#fff;border:3px solid var(--accent);z-index:3;}.colgrid.drag-over{outline:2px dashed var(--accent);outline-offset:-4px;background:rgba(108,99,255,.05);border-radius:12px;}.stashgrid-wrap.drag-over{outline:2px dashed var(--success);outline-offset:-4px;background:rgba(0,212,138,.05);border-radius:12px;}.stash-section-header{display:flex;align-items:center;gap:12px;padding:18px 26px 10px;flex-shrink:0;}.stash-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}.stash-section-count{background:var(--surface2);color:var(--muted);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;}.stash-section-line{flex:1;height:1px;background:var(--border);}.col-card-wrap.stashed .card-chrome-bar{filter:grayscale(1);}.col-card-wrap.stashed img{filter:grayscale(1);opacity:.75;}.col-card-wrap.stashed{opacity:.85;}.col-card-wrap.stashed:hover{opacity:1;}.col-card-wrap.stashed.selected::after{background:rgba(0,212,138,.4);border-color:var(--success);}.user-search-result{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all .2s;margin-bottom:6px;}.user-search-result:hover{border-color:var(--accent);}.user-avatar-sm{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}.challenge-card{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:18px;margin-bottom:12px;position:relative;}.challenge-card.incoming{border-color:var(--danger);}.ch-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;}.ch-badge.incoming{background:rgba(255,71,87,.15);color:var(--danger);}.ch-badge.sent{background:rgba(108,99,255,.15);color:var(--accent);}.ch-badge.accepted{background:rgba(0,212,138,.1);color:var(--success);}.ch-lineup{display:flex;gap:5px;margin:10px 0;}.ch-mini{width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);flex-shrink:0;}.ch-mini img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}.ch-actions{display:flex;gap:8px;margin-top:12px;}.btn-accept{flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;}.btn-decline{padding:9px 14px;background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;}.no-matchups{text-align:center;padding:40px 20px;color:var(--muted);}
-  /* ── LIVE BATTLE SCORING ── */
-  .live-score-card{background:var(--surface2);border-radius:10px;padding:8px 10px;margin-bottom:6px;border-left:3px solid var(--border);display:flex;align-items:center;gap:9px;transition:border-color .3s;}
-  .live-score-card.scoring{border-color:var(--success);animation:scoreFlash .5s ease;}
-  @keyframes scoreFlash{0%{background:rgba(0,212,138,.2)}100%{background:var(--surface2)}}
-  .lsc-img{width:38px;height:38px;border-radius:7px;overflow:hidden;flex-shrink:0;}
-  .lsc-img img{width:100%;height:100%;object-fit:cover;object-position:50% 8%;}
-  .lsc-name{font-size:12px;font-weight:800;color:var(--text);}
-  .lsc-sub{font-size:10px;color:var(--muted);margin-top:1px;}
-  .lsc-pts{font-size:16px;font-weight:900;color:var(--accent);min-width:32px;text-align:right;}
-  .tonight-card{border-radius:8px;overflow:hidden;border:2px solid var(--border);cursor:pointer;transition:all .2s;position:relative;}
-  .tonight-card:hover{border-color:var(--accent);transform:scale(1.03);}
-  .tonight-card.playing{border-color:var(--success);}
-  .tonight-card.in-lineup{border-color:var(--accent);opacity:.6;}
-  .tonight-badge{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:7px;font-weight:700;background:rgba(0,212,138,.85);color:#000;padding:1px;}
-
-  .mbig-collapsed{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;}
-  .mbig-collapsed:hover{border-color:var(--accent);}
-  .mbig-collapsed .mc-result{font-size:12px;font-weight:800;padding:3px 8px;border-radius:8px;}
-  .mbig-collapsed .mc-result.win{background:rgba(0,212,138,.15);color:var(--success);}
-  .mbig-collapsed .mc-result.loss{background:rgba(255,71,87,.15);color:var(--danger);}
-  .mbig-collapsed .mc-result.pending{background:rgba(108,99,255,.15);color:var(--accent);}
-  .mbig-collapsed .mc-score{font-size:13px;font-weight:900;letter-spacing:1px;}
-  .mbig-collapsed .mc-opp{font-size:12px;font-weight:700;flex:1;}
-  .mbig-collapsed .mc-date{font-size:10px;color:var(--muted);}
-  .mbig-expanded{display:none;}
-  .mbig-expandable.open .mbig-collapsed{border-color:var(--accent);border-radius:12px 12px 0 0;}
-  .mbig-expandable.open .mbig-expanded{display:block;background:var(--surface);border:1px solid var(--accent);border-top:none;border-radius:0 0 12px 12px;padding:14px 16px;}
-
-  .bd-player-card{background:var(--surface2);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:all .3s;}
-  .bd-player-card.scoring{background:rgba(0,212,138,.08);border:1px solid rgba(0,212,138,.3);}
-  .bd-player-card.leading{border:1px solid var(--accent);}
-  .bd-photo{width:100%;aspect-ratio:3/2;border-radius:8px;overflow:hidden;position:relative;}
-  .bd-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 15%;}
-  .bd-photo-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.8));padding:6px 8px;}
-  .bd-pts{font-size:1.4rem;font-weight:900;color:var(--accent);text-align:center;}
-  .bd-pts.winning{color:var(--success);}
-  .bd-stat-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
-  .bd-stat-row span{color:var(--text);font-weight:600;}
-  .bd-header-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
-  .bd-rarity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-  .bd-proj{font-size:10px;color:var(--accent);font-weight:700;margin-top:2px;}
-
-  /* ── PACK REVEAL ── */
-  .pack-card-reveal{
-    width:120px;height:168px;border-radius:12px;overflow:hidden;position:relative;
-    flex-shrink:0;transform:rotateY(180deg);transition:transform .6s cubic-bezier(.4,0,.2,1);
-    transform-style:preserve-3d;cursor:default;
-  }
-  .pack-card-reveal.flipped{transform:rotateY(0deg);}
-  .pack-card-front,.pack-card-back-face{
-    position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;overflow:hidden;
-  }
-  .pack-card-back-face{
-    background:repeating-linear-gradient(45deg,#0d0d1a,#0d0d1a 8px,#111124 8px,#111124 16px);
-    border:2px solid rgba(108,99,255,.3);
-    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;
-    transform:rotateY(0deg);
-  }
-  .pack-card-front{transform:rotateY(180deg);}
-  .pack-card-reveal.rainbow{
-    box-shadow:0 0 30px rgba(255,215,0,.6),0 0 60px rgba(255,215,0,.3);
-  }
-  .rainbow-shine{
-    position:absolute;inset:0;
-    background:linear-gradient(105deg,
-      transparent 20%,rgba(255,0,128,.4) 30%,rgba(255,165,0,.4) 40%,
-      rgba(255,255,0,.4) 50%,rgba(0,255,128,.4) 60%,
-      rgba(0,200,255,.4) 70%,rgba(150,0,255,.4) 80%,transparent 90%);
-    background-size:200% 200%;
-    animation:rainbowShine 2s linear infinite;
-    pointer-events:none;z-index:10;mix-blend-mode:screen;
-  }
-  @keyframes rainbowShine{
-    0%{background-position:200% 0%}
-    100%{background-position:-200% 0%}
-  }
-  @keyframes rainbowPulse{
-    0%,100%{box-shadow:0 0 10px rgba(255,215,0,.3)}
-    50%{box-shadow:0 0 25px rgba(255,215,0,.7)}
-  }
-  @keyframes cardDrop{
-    0%{opacity:0;transform:rotateY(180deg) translateY(-30px);}
-    100%{opacity:1;transform:rotateY(180deg) translateY(0);}
-  }
-
-  /* ── LIVE TICKER ── */
-  .bd-pts-flash{animation:ptsFlash .6s ease;}
-  @keyframes ptsFlash{0%{transform:scale(1.4);color:#FFD700}100%{transform:scale(1);}}
-  .bd-score-flash{animation:scoreFlash2 .5s ease;}
-  @keyframes scoreFlash2{0%{transform:scale(1.15)}100%{transform:scale(1)}}
-  .bd-ticker{background:var(--surface2);border-radius:10px;padding:10px 12px;margin-top:10px;max-height:120px;overflow-y:auto;flex-shrink:0;}
-  .ticker-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;}
-  .ticker-item:last-child{border-bottom:none;}
-  .ticker-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-  .ticker-pts{font-weight:900;color:var(--success);margin-left:auto;}
-  .bd-card-done{opacity:.5;filter:grayscale(.6);}
-  @keyframes countUp{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
-  .pts-update{animation:countUp .3s ease;}
 </style>
 </head>
 <body>
@@ -207,21 +265,15 @@
         <span class="nav-badge" id="pack-badge" style="display:none">2</span>
       </button>
       <button class="nav-item" data-tab="collection" onclick="goTab('collection')">
-        <span class="nav-icon">🃏</span><span>Card Collection</span>
+        <span class="nav-icon">🃏</span><span>Collection</span>
       </button>
       <div class="nav-div"></div>
       <button class="nav-item" data-tab="matchups" onclick="goTab('matchups')">
-        <span class="nav-icon">⚔️</span><span>Battle</span>
-
-      </button>
-      <button class="nav-item" data-tab="scores" onclick="goTab('scores')">
-        <span class="nav-icon">⚾</span><span>Today's Games</span>
+        <span class="nav-icon">⚔️</span><span>Matchups</span>
+        <span class="nav-badge" style="background:var(--danger)">3</span>
       </button>
       <button class="nav-item" data-tab="leaderboard" onclick="goTab('leaderboard')">
         <span class="nav-icon">🏆</span><span>Top Collectors</span>
-      </button>
-      <button class="nav-item" data-tab="admin" onclick="goTab('admin')">
-        <span class="nav-icon">🔧</span><span>Admin</span>
       </button>
     </nav>
     <div class="sb-footer">
@@ -261,12 +313,17 @@
               <button class="pack-cta" id="pb1" onclick="openPackOv(0)">Open Pack 1</button>
             </div>
             <div class="pack-card" id="hp2">
-
+              <div class="pc-top"><div class="pc-icon" style="background:linear-gradient(135deg,var(--epic),var(--mythic))">🎁</div><div><h3>Pack 2</h3><p>Guaranteed Rare+</p></div></div>
+              <div class="odds-row">
+                <span class="odds-pill" style="background:rgba(255,215,0,.15);color:var(--legendary)">4% Legend</span>
+                <span class="odds-pill" style="background:rgba(255,0,110,.15);color:var(--mythic)">1% Mythic</span>
+              </div>
+              <button class="pack-cta" id="pb2" onclick="openPackOv(1)">Open Pack 2</button>
             </div>
           </div>
         </div>
         <div>
-          <div class="sec-title"><div class="live-dot"></div>Live Battles</div>
+          <div class="sec-title"><div class="live-dot"></div>Live Matchups</div>
           <div class="matchup-list" id="home-matchups"></div>
         </div>
       </div>
@@ -274,88 +331,27 @@
 
     <!-- COLLECTION -->
     <div class="tab-page" id="tab-collection">
-      <!-- Stats bar -->
-      <div style="padding:14px 26px 0;flex-shrink:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <h2 style="font-size:1.3rem;font-weight:900;">My Collection</h2>
-          <div style="font-size:11px;color:var(--muted);" id="col-sub">0 cards</div>
-        </div>
-        <!-- Mini stats strip -->
-        <div style="display:flex;gap:8px;margin-bottom:2px;" id="col-stats-strip">
-          <div style="flex:1;background:var(--surface2);border-radius:10px;padding:8px 10px;text-align:center;">
-            <div style="font-size:1.1rem;font-weight:900;" id="col-stat-total">0</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:1px;">Total</div>
-          </div>
-          <div style="flex:1;background:var(--surface2);border-radius:10px;padding:8px 10px;text-align:center;">
-            <div style="font-size:1.1rem;font-weight:900;" id="col-stat-unique">0</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:1px;">Unique</div>
-          </div>
-          <div style="flex:1;background:var(--surface2);border-radius:10px;padding:8px 10px;text-align:center;">
-            <div style="font-size:1.1rem;font-weight:900;color:#FFD700;" id="col-stat-elite">0</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:1px;">👑 Elite</div>
-          </div>
-          <div style="flex:1;background:var(--surface2);border-radius:10px;padding:8px 10px;text-align:center;">
-            <div style="font-size:1.1rem;font-weight:900;color:var(--muted);" id="col-stat-dupes">0</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:1px;">Dupes</div>
-          </div>
-        </div>
-      </div>
-      <!-- Filters + search -->
-      <div class="col-filters" style="padding-top:8px!important;">
-        <div class="fc active" data-r="ALL" onclick="filterCol('ALL')">⚾ All</div>
-        <div class="fc" data-r="PITCHER" onclick="filterCol('PITCHER')">🔥 Pitchers</div>
-        <div class="fc" data-r="HITTER" onclick="filterCol('HITTER')">🏏 Hitters</div>
-        <div class="fc" data-r="ELITE" onclick="filterCol('ELITE')">👑 Elite</div>
-        <div class="fc" data-r="DUPES" onclick="filterCol('DUPES')">2× Dupes</div>
+      <div class="pg-head"><h2>My Collection</h2><p id="col-sub">Loading...</p></div>
+      <div class="col-filters">
+        <div class="fc active" data-r="ALL" onclick="filterCol('ALL')">All</div>
+        <div class="fc" data-r="MYTHIC" onclick="filterCol('MYTHIC')">Mythic</div>
+        <div class="fc" data-r="LEGENDARY" onclick="filterCol('LEGENDARY')">Legendary</div>
+        <div class="fc" data-r="EPIC" onclick="filterCol('EPIC')">Epic</div>
+        <div class="fc" data-r="RARE" onclick="filterCol('RARE')">Rare</div>
+        <div class="fc" data-r="COMMON" onclick="filterCol('COMMON')">Common</div>
       </div>
       <div class="col-search"><input type="text" id="col-q" placeholder="Search name, team, position..." oninput="renderCollection()"></div>
-      <!-- Selection action bar -->
-      <div class="col-select-bar hidden" id="col-select-bar">
-        <div class="col-select-info" id="col-select-info">0 selected</div>
-        <button class="col-select-btn btn-stash-move" id="col-stash-action-btn" onclick="moveSelectedCards()">📦 Move to Stash</button>
-        <button class="col-select-btn btn-sel-cancel" onclick="clearSelection()">✕ Cancel</button>
-      </div>
-      <!-- Select mode hint -->
-      <div id="col-hint-bar" style="display:flex;align-items:center;gap:8px;padding:4px 26px;flex-shrink:0;">
-        <span style="font-size:11px;color:var(--muted)">💡 Click to view · Shift+click or</span>
-        <button id="select-mode-btn" onclick="toggleSelectMode()" style="font-size:11px;padding:2px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;">Select Mode</button>
-        <span style="font-size:11px;color:var(--muted)">to stash</span>
-      </div>
-      <!-- Scrollable content: active grid + stash section -->
-      <div id="col-scroll" style="flex:1;overflow-y:auto;padding-bottom:24px;">
-        <!-- Active cards drop zone -->
-        <div id="active-drop-wrap"
-          ondragover="event.preventDefault();document.getElementById('active-drop-wrap').classList.add('drag-over')"
-          ondragleave="document.getElementById('active-drop-wrap').classList.remove('drag-over')"
-          ondrop="handleDropOnActive(event)">
-          <div class="colgrid" id="colgrid"></div>
-        </div>
-        <!-- Stash section divider -->
-        <div class="stash-section-header" id="stash-section-header" style="display:none">
-          <div class="stash-section-title">📦 Stash Pile</div>
-          <div class="stash-section-count" id="stash-count">0</div>
-          <div class="stash-section-line"></div>
-          <span style="font-size:11px;color:var(--muted)">Drag cards here · or click to select</span>
-        </div>
-        <!-- Stash cards drop zone -->
-        <div id="stash-drop-wrap"
-          ondragover="event.preventDefault();document.getElementById('stash-drop-wrap').classList.add('drag-over')"
-          ondragleave="document.getElementById('stash-drop-wrap').classList.remove('drag-over')"
-          ondrop="handleDropOnStash(event)">
-          <div class="colgrid" id="stashgrid" style="padding-top:0;min-height:80px;"></div>
-        </div>
-      </div>
+      <div class="colgrid" id="colgrid"></div>
     </div>
 
     <!-- MATCHUPS -->
     <div class="tab-page" id="tab-matchups">
-      <div class="pg-head"><h2>⚔️ Battle</h2><p>Pick players from tonight's games and challenge a rival</p></div>
+      <div class="pg-head"><h2>⚔️ Matchups</h2><p>Challenge rivals and track your battles</p></div>
       <div class="mt-body">
-        <!-- Stats row -->
         <div class="mt-top">
           <div class="mt-action">
-            <h3>🎯 Tonight's Battle</h3>
-            <p id="tonight-desc">Build a lineup from players in tonight's games.</p>
+            <h3>🎯 Start a Challenge</h3>
+            <p>Pick 1 pitcher + 3 batters and battle a rival head-to-head.</p>
             <button class="btn-p" style="padding:10px;font-size:13px" onclick="openChallengeOv()">Build Lineup →</button>
           </div>
           <div class="mt-action">
@@ -367,40 +363,12 @@
             </div>
           </div>
         </div>
-        <!-- Tonight's eligible players -->
-        <div id="tonight-section" style="display:none;margin-bottom:16px;">
-          <div class="sec-title">⚾ Players In Tonight's Games</div>
-          <div id="tonight-players" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>
-        </div>
         <div class="sec-title"><div class="live-dot"></div>Active &amp; Recent</div>
         <div class="mlist" id="mlist"></div>
       </div>
     </div>
 
     <!-- LEADERBOARD -->
-    <!-- ADMIN: Player ID Fixer -->
-    <div class="tab-page" id="tab-admin">
-      <div class="pg-head"><h2>🔧 Fix Player IDs</h2><p>Match MLB Stats API IDs to our database</p></div>
-      <div style="padding:18px 26px;overflow-y:auto;flex:1;">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;">
-          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 1 — Fetch from MLB</h3>
-          <button onclick="adminFetchMLB()" id="admin-btn-fetch" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;">🔄 Fetch MLB Players</button>
-          <div id="admin-status" style="font-size:13px;color:var(--muted);margin-top:10px;"></div>
-        </div>
-        <div id="admin-step2" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;">
-          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 2 — Run Fix</h3>
-          <div id="admin-stats" style="margin-bottom:12px;"></div>
-          <button onclick="adminFixPlayers()" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;">🔧 Fix IDs</button>
-          <div id="admin-log" style="margin-top:12px;background:var(--bg);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;max-height:260px;overflow-y:auto;line-height:1.8;display:none;"></div>
-        </div>
-        <div id="admin-step3" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;">
-          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 3 — Download Fixed players.json</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Upload this to GitHub at <code>public/players.json</code></p>
-          <button onclick="adminDownload()" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;background:var(--success);color:#000;">⬇️ Download players.json</button>
-        </div>
-      </div>
-    </div>
-
     <div class="tab-page" id="tab-leaderboard">
       <div class="pg-head"><h2>🏆 Top Collectors</h2><p>The best Diamond Draft players worldwide</p></div>
       <div class="lb-body">
@@ -409,220 +377,42 @@
         <div class="lb-list" id="lb-list"></div>
       </div>
     </div>
-
-    <!-- MLB SCORES TAB -->
-    <div class="tab-page" id="tab-scores">
-      <div class="pg-head"><h2>⚾ MLB Scores</h2><p id="scores-subtitle">Today's games</p></div>
-      <div class="scores-body">
-        <div class="scores-date-nav">
-          <button onclick="scoresChangeDate(-1)">← Prev</button>
-          <div class="scores-date-label" id="scores-date-label">Today</div>
-          <button onclick="scoresChangeDate(1)">Next →</button>
-        </div>
-        <div class="scores-status-row">
-          <div class="scores-filter active" data-sf="all" onclick="scoresFilter('all')">All Games</div>
-          <div class="scores-filter" data-sf="live" onclick="scoresFilter('live')">🔴 Live</div>
-          <div class="scores-filter" data-sf="final" onclick="scoresFilter('final')">Final</div>
-          <div class="scores-filter" data-sf="scheduled" onclick="scoresFilter('scheduled')">Upcoming</div>
-        </div>
-        <div id="scores-list"><div class="scores-loading"><div class="spinner"></div> Loading games...</div></div>
-      </div>
-    </div>
   </main>
 </div>
 
 <!-- PACK OVERLAY -->
-<div class="overlay" id="pack-ov" style="z-index:400;background:rgba(0,0,0,.96);">
-  <div style="width:100%;max-width:500px;padding:24px;display:flex;flex-direction:column;align-items:center;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:1.2rem;font-weight:900;color:var(--text);" id="pov-title">📦 Daily Pack</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="pov-sub">Your cards are ready</div>
-    </div>
-    <div id="pack-stage" style="display:flex;gap:12px;justify-content:center;align-items:center;min-height:200px;width:100%;flex-wrap:wrap;"></div>
-    <div id="rainbow-alert" style="display:none;text-align:center;margin-top:16px;padding:12px 20px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.4);border-radius:12px;">
-      <div style="font-size:1.4rem;">🌈</div>
-      <div style="font-size:13px;font-weight:900;color:#FFD700;margin-top:4px;">RAINBOW PULL!</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="rainbow-name"></div>
-    </div>
-    <div style="margin-top:24px;display:flex;gap:10px;width:100%;">
-      <button class="btn-p" id="ov-collect-btn" style="display:none;flex:1;padding:13px;font-size:14px;" onclick="claimPack()">✅ Add to Collection</button>
-      <button style="flex:1;padding:13px;font-size:14px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer;" onclick="closePackOv()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- BATTLE RESULT OVERLAY -->
-<div class="overlay" id="result-ov" style="z-index:300;">
-  <div class="ov-box" style="max-width:460px;padding:0;overflow:hidden;">
-    <div id="result-header" style="padding:28px 24px 20px;text-align:center;background:linear-gradient(135deg,#1a1035,var(--bg));">
-      <div style="font-size:3.5rem;margin-bottom:8px;" id="result-emoji">🏆</div>
-      <div style="font-size:2rem;font-weight:900;margin-bottom:4px;" id="result-title">VICTORY!</div>
-      <div style="font-size:13px;color:var(--muted);" id="result-subtitle"></div>
-    </div>
-    <!-- Score -->
-    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:18px 20px;background:var(--surface2);align-items:center;text-align:center;">
-      <div>
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;" id="result-you-name">You</div>
-        <div style="font-size:2.6rem;font-weight:900;" id="result-you-score">0</div>
-      </div>
-      <div style="font-size:13px;font-weight:700;color:var(--muted);">vs</div>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;" id="result-rival-name">Rival</div>
-        <div style="font-size:2.6rem;font-weight:900;" id="result-rival-score">0</div>
-      </div>
-    </div>
-    <!-- Prize cards -->
-    <div id="result-prize" style="display:none;padding:16px 20px;border-top:1px solid var(--border);">
-      <div style="font-size:11px;font-weight:700;color:#FFD700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;text-align:center;">🎁 You Won Their Cards!</div>
-      <div style="display:flex;gap:8px;justify-content:center;" id="result-prize-cards"></div>
-    </div>
-    <!-- Breakdown -->
-    <div style="padding:14px 20px;max-height:180px;overflow-y:auto;border-top:1px solid var(--border);" id="result-breakdown"></div>
-    <!-- Actions -->
-    <div style="padding:14px 20px;display:flex;gap:10px;border-top:1px solid var(--border);">
-      <button class="btn-p" style="flex:1;padding:11px;font-size:13px;" onclick="document.getElementById('result-ov').classList.remove('open');goTab('matchups')">⚔️ Battles</button>
-      <button style="flex:1;padding:11px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer;" onclick="document.getElementById('result-ov').classList.remove('open');goTab('collection')">🃏 Collection</button>
-    </div>
-  </div>
-</div>
-
-<!-- BATTLE DETAIL OVERLAY -->
-<div class="overlay" id="battle-detail-ov" onclick="if(event.target===this)closeBattleDetail()" style="z-index:250;">
-  <div class="ov-box" style="max-width:700px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;">
-    <!-- Header -->
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--surface2);">
-      <button onclick="closeBattleDetail()" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;padding:0 4px;">←</button>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:800;" id="bd-title">Battle</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:1px;" id="bd-subtitle"></div>
-      </div>
-      <div id="bd-status-badge"></div>
-    </div>
-    <!-- Score bar -->
-    <div style="background:linear-gradient(135deg,#1a1035,var(--bg));padding:18px;display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;flex-shrink:0;">
-      <div style="text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;" id="bd-you-name">You</div>
-        <div style="font-size:3rem;font-weight:900;line-height:1;" id="bd-you-score">0</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px;" id="bd-you-proj"></div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);">VS</div>
-        <div style="width:1px;height:40px;background:var(--border);margin:6px auto;"></div>
-        <div style="font-size:10px;color:var(--muted);" id="bd-game-status"></div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;" id="bd-rival-name">Rival</div>
-        <div style="font-size:3rem;font-weight:900;line-height:1;" id="bd-rival-score">0</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px;" id="bd-rival-proj"></div>
-      </div>
-    </div>
-    <!-- Progress bar -->
-    <div style="height:3px;background:var(--surface2);flex-shrink:0;">
-      <div id="bd-prog-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .5s;"></div>
-    </div>
-    <!-- Cards vs cards -->
-    <div style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="bd-lineups"></div>
-      <!-- Live play ticker -->
-      <div id="bd-ticker-wrap" style="display:none;margin-top:12px;">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;"><div class="live-dot"></div>Live Plays</div>
-        <div class="bd-ticker" id="bd-ticker"></div>
-      </div>
-    </div>
-    <!-- Declare Result button - shown when games are done -->
-    <div id="bd-declare-wrap" style="display:none;padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;">
-      <button class="btn-p" style="padding:11px;font-size:13px;background:var(--success);color:#000;" id="bd-declare-btn" onclick="declareFromDetail()">🏆 See Final Result</button>
+<div class="overlay" id="pack-ov">
+  <div class="ov-box">
+    <button class="ov-close" onclick="closePackOv()">×</button>
+    <div class="ov-title" id="pov-title">Pack 1</div>
+    <div class="ov-sub" id="pov-sub">5 cards — tap each to reveal</div>
+    <div class="prg" id="prg"></div>
+    <div class="ov-actions">
+      <button class="btn-reveal" id="ov-reveal-btn" onclick="revealAll()">✨ Reveal All</button>
+      <button class="btn-collect" id="ov-collect-btn" onclick="claimPack()" style="display:none">✅ Claim Cards</button>
+      <button class="btn-ghost" onclick="closePackOv()">Close</button>
     </div>
   </div>
 </div>
 
 <!-- CHALLENGE OVERLAY -->
-<div class="overlay" id="ch-ov" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="ov-box" style="max-width:900px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;">
-    <!-- Header -->
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+<div class="overlay" id="ch-ov">
+  <div class="ov-box" style="max-width:840px">
+    <button class="ov-close" onclick="document.getElementById('ch-ov').classList.remove('open')">×</button>
+    <div class="ov-title">⚔️ Build Your Lineup</div>
+    <div class="ov-sub">Pick 1 pitcher + 3 batters, then choose a rival</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
       <div>
-        <div style="font-size:1.1rem;font-weight:900;">⚔️ Build Your Lineup</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Pick 1 pitcher + 3 batters · then find a rival</div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Your Lineup</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px" id="ch-slots"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Your Cards</div>
+        <div style="max-height:210px;overflow-y:auto"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="ch-avail"></div></div>
       </div>
-      <button class="ov-close" style="position:static;" onclick="document.getElementById('ch-ov').classList.remove('open')">×</button>
-    </div>
-    <!-- Lineup slots -->
-    <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Your Lineup</div>
-      <div style="display:flex;gap:8px;align-items:center;" id="ch-slots"></div>
-    </div>
-    <!-- 3 columns -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 220px;flex:1;min-height:0;overflow:hidden;">
-      <!-- Pitchers -->
-      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🔥 Pitchers</div>
-        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-pitchers"></div>
+      <div style="display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Pick a Rival</div>
+        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px;max-height:300px" id="ch-rivals"></div>
+        <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="margin-top:12px;padding:13px;font-size:14px">⚔️ Launch Battle</button>
       </div>
-      <!-- Hitters -->
-      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🏏 Hitters</div>
-        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-hitters"></div>
-      </div>
-      <!-- Rival search -->
-      <div style="display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">Find Rival</div>
-        <div style="padding:0 10px 8px;flex-shrink:0;">
-          <input id="rival-search" type="text" placeholder="Search username..." oninput="searchRivals(this.value)"
-            style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;">
-        </div>
-        <div style="overflow-y:auto;flex:1;padding:0 10px;" id="ch-rivals">
-          <div style="color:var(--muted);font-size:12px;padding:4px;">Type to search...</div>
-        </div>
-        <div style="padding:10px;border-top:1px solid var(--border);flex-shrink:0;">
-          <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="padding:11px;font-size:13px;">⚔️ Send Challenge</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- PENDING CHALLENGE OVERLAY -->
-<div class="overlay" id="pending-ov" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="ov-box" style="max-width:460px;position:relative;">
-    <button class="ov-close" onclick="document.getElementById('pending-ov').classList.remove('open')">×</button>
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:1.3rem;font-weight:900;color:var(--accent);margin-bottom:4px;">⚔️ Challenge Sent!</div>
-      <div style="font-size:14px;color:var(--muted);">Waiting for <span id="pending-rival-name" style="color:var(--text);font-weight:700;">Rival</span> to accept...</div>
-    </div>
-    <!-- VS card display -->
-    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:16px;">
-      <!-- Your side -->
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;" id="pending-your-name">You</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;" id="pending-your-lineup"></div>
-      </div>
-      <!-- VS -->
-      <div style="text-align:center;">
-        <div style="font-size:1.1rem;font-weight:900;color:var(--muted);">VS</div>
-        <div style="display:flex;justify-content:center;gap:5px;margin-top:8px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pendingPulse 1.4s infinite 0s;"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pendingPulse 1.4s infinite 0.2s;"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pendingPulse 1.4s infinite 0.4s;"></div>
-        </div>
-      </div>
-      <!-- Their side -->
-      <div style="text-align:right;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;" id="pending-rival-label">Rival</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
-          <div style="width:44px;height:60px;border-radius:6px;background:var(--surface);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">?</div>
-          <div style="width:44px;height:60px;border-radius:6px;background:var(--surface);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">?</div>
-          <div style="width:44px;height:60px;border-radius:6px;background:var(--surface);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">?</div>
-          <div style="width:44px;height:60px;border-radius:6px;background:var(--surface);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">?</div>
-        </div>
-      </div>
-    </div>
-    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.6;">
-      📬 Challenge sent! You'll see it update when they accept.
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button class="btn-p" style="flex:1;padding:11px;font-size:13px;" onclick="document.getElementById('pending-ov').classList.remove('open');goTab('matchups')">View Battles</button>
-      <button style="flex:1;padding:11px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer;" onclick="document.getElementById('pending-ov').classList.remove('open');goTab('home')">🏠 Home</button>
     </div>
   </div>
 </div>
@@ -681,11 +471,6 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const RARITY_ORDER=['COMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
-function isElite(player){
-  if(!player) return false;
-  return TOP_25_IDS.has(Number(player.mlbamId));
-}
-
 const RARITY_COLORS={COMMON:'#8899AA',RARE:'#00F5FF',EPIC:'#BF40FF',LEGENDARY:'#FFD700',MYTHIC:'#FF006E'};
 const NEED={COMMON:10,RARE:8,EPIC:6,LEGENDARY:4,MYTHIC:3};
 const MULTS=[1.0,1.20,1.38,1.52,1.60];
@@ -694,1722 +479,48 @@ const PACK_WEIGHTS=[{rarity:'COMMON',weight:55},{rarity:'RARE',weight:28},{rarit
 const CHROME_BARS={COMMON:'linear-gradient(90deg,#8899AA,#aabbcc,#8899AA)',RARE:'linear-gradient(90deg,#00F5FF,#6c63ff,#00F5FF)',EPIC:'linear-gradient(90deg,#BF40FF,#ff6b9d,#BF40FF)',LEGENDARY:'linear-gradient(90deg,#FFD700,#FF8C00,#FFD700)',MYTHIC:'linear-gradient(90deg,#FF006E,#ff4500,#FF006E)'};
 const CHROME_GLOW={COMMON:'rgba(136,153,170,0.2)',RARE:'rgba(0,245,255,0.3)',EPIC:'rgba(191,64,255,0.3)',LEGENDARY:'rgba(255,215,0,0.35)',MYTHIC:'rgba(255,0,110,0.4)'};
 const RIVALS=[{name:'SluggerKing',emoji:'⚾',power:820,desc:'Power hitter specialist'},{name:'AceHunter',emoji:'🎯',power:910,desc:'Stacked pitching rotation'},{name:'SpeedDemon',emoji:'💨',power:760,desc:'Built around stolen bases'},{name:'TheVeteran',emoji:'🏆',power:1050,desc:'10 seasons of experience'},{name:'Rookie2024',emoji:'🌟',power:620,desc:'Just getting started'}];
-const MOCK_MATCHUPS=[];
 const LEADERBOARD=[{name:'CardKing99',pts:14820,cards:312,wins:48,avatar:'CK',color:'#FFD700'},{name:'SluggerKing',pts:12440,cards:287,wins:41,avatar:'SK',color:'#FF006E'},{name:'AceHunter',pts:11200,cards:264,wins:38,avatar:'AH',color:'#BF40FF'},{name:'DiamondPro',pts:9880,cards:241,wins:33,avatar:'DP',color:'#00F5FF'},{name:'BaseballGod',pts:8760,cards:219,wins:29,avatar:'BG',color:'#FF8C00'},{name:'TheVeteran',pts:7450,cards:198,wins:26,avatar:'TV',color:'#6c63ff'},{name:'SpeedDemon',pts:6320,cards:177,wins:22,avatar:'SD',color:'#00d48a'},{name:'Rookie2024',pts:2140,cards:88,wins:8,avatar:'RK',color:'#8899AA'}];
-let PLAYERS=[],currentUser=null,userData=null,colFilter='ALL',packResults=[null],revealedCards=[new Set()],curPackIdx=0,currentModalCard=null,lineup=[null,null,null,null],selectedRival=null,selectedRivalId=null,selectedRivalName=null,battleState=null,battleTimer=null,battleRecord={wins:0,losses:0};
+const MOCK_MATCHUPS=[{you:'SluggerKing',rival:'AceHunter',sy:142,sr:118,status:'live',inn:'7th Inning'},{you:'TheVeteran',rival:'SpeedDemon',sy:201,sr:201,status:'live',inn:'9th Inning'},{you:'CardKing99',rival:'DiamondPro',sy:188,sr:156,status:'done',inn:'Final'},{you:'Rookie2024',rival:'BaseballGod',sy:0,sr:0,status:'upcoming',inn:'Starts in 2h'}];
+let PLAYERS=[],currentUser=null,userData=null,colFilter='ALL',packResults=[null,null],revealedCards=[new Set(),new Set()],curPackIdx=0,currentModalCard=null,lineup=[null,null,null,null],selectedRival=null,battleState=null,battleTimer=null,battleRecord={wins:0,losses:0};
 async function loadPlayers(){try{const r=await fetch('/players.json');PLAYERS=await r.json();}catch(e){console.error(e);PLAYERS=[];}}
 function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>a.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));document.getElementById('login-form').style.display=t==='login'?'':'none';document.getElementById('register-form').style.display=t==='register'?'':'none';document.getElementById('auth-err').textContent='';}
 async function doLogin(){const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;document.getElementById('auth-err').textContent='';const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doRegister(){const e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;document.getElementById('auth-err').textContent='';if(p.length<6){document.getElementById('auth-err').textContent='Password must be 6+ characters';return;}const{data,error}=await sb.auth.signUp({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doLogout(){await sb.auth.signOut();currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}
-async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){const wy=userData.lastPackDate===yesterdayStr();userData.packsOpened=[false];userData.lastPackDate=today;if(!wy)userData.streak=0;packResults=[null];revealedCards=[new Set()];saveData();}else{const ps=sessionStorage.getItem(`ddp_${currentUser.id}_${today}`);if(ps){const p=JSON.parse(ps);packResults=p.packResults||[null,null];revealedCards=(p.revealedCards||[[],[]]).map(a=>new Set(a));}}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');
-  upsertProfile();
-  startChallengePoll();
-  startLivePoll();
-
-}
-
-async function upsertProfile(){
-  if(!currentUser)return;
-  const username=(currentUser.email||'').split('@')[0];
-  const cardCount=userData?.collection?.length||0;
-  const{error}=await sb.from('profiles').upsert(
-    {id:currentUser.id,username,card_count:cardCount},
-    {onConflict:'id'}
-  );
-  if(error)console.warn('Profile upsert:',error.message);
-}
+async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false,false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){const wy=userData.lastPackDate===yesterdayStr();userData.packsOpened=[false,false];userData.lastPackDate=today;if(!wy)userData.streak=0;packResults=[null,null];revealedCards=[new Set(),new Set()];saveData();}else{const ps=sessionStorage.getItem(`ddp_${currentUser.id}_${today}`);if(ps){const p=JSON.parse(ps);packResults=p.packResults||[null,null];revealedCards=(p.revealedCards||[[],[]]).map(a=>new Set(a));}}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');}
 function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;localStorage.setItem(`dd_${currentUser.id}`,JSON.stringify(userData));}
 function savePackSession(){const t=todayStr();sessionStorage.setItem(`ddp_${currentUser.id}_${t}`,JSON.stringify({packResults,revealedCards:revealedCards.map(s=>[...s])}));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
-function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
-function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened[0]?0:1;pb.style.display=pl>0?'':'none';pb.textContent=pl;const opened=userData.packsOpened[0];const btn=document.getElementById('pb1');const card=document.getElementById('hp1');if(card){if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(0);}else{card.classList.remove('claimed');btn.textContent='Open Pack';btn.className='pack-cta';btn.onclick=()=>openPackOv(0);}}const ml=document.getElementById('home-matchups');ml.innerHTML='<div style="color:var(--muted);font-size:13px;padding:14px 0">No live battles yet. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
+function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups')renderMatchups();if(id==='leaderboard')renderLeaderboard();}
+function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened.filter(p=>!p).length;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1].forEach(i=>{const opened=userData.packsOpened[i];const btn=document.getElementById(`pb${i+1}`);const card=document.getElementById(`hp${i+1}`);if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(i);}else{card.classList.remove('claimed');btn.textContent=`Open Pack ${i+1}`;btn.className='pack-cta';btn.onclick=()=>openPackOv(i);}});const ml=document.getElementById('home-matchups');ml.innerHTML=MOCK_MATCHUPS.filter(m=>m.status==='live').map(m=>`<div class="matchup-row"><div class="m-side"><div class="m-name">${m.you}</div><div class="m-rec">Challenger</div></div><div class="m-score-wrap"><div class="m-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="m-inning">${m.inn}</div></div><div class="m-side r"><div class="m-name">${m.rival}</div><div class="m-rec">Defender</div></div></div>`).join('')||'<div style="color:var(--muted);font-size:13px;padding:14px 0">No live matchups. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
-function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';const elite=isElite(p);
-return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)'};border-radius:10px;box-shadow:${elite?'0 0 14px rgba(255,215,0,.4)':'none'};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${p?.photoUrl||''}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:var(--muted)">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
-function openPackOv(idx){
-  curPackIdx=idx;
-  if(!packResults[idx]) packResults[idx]=generatePack(idx);
-  document.getElementById('pov-title').textContent = userData.packsOpened[idx] ? '📦 Daily Pack — Already Opened' : '📦 Daily Pack';
-  document.getElementById('pov-sub').textContent = userData.packsOpened[idx] ? 'Your cards from today' : '4 cards · tap to open';
-  document.getElementById('rainbow-alert').style.display='none';
-  document.getElementById('ov-collect-btn').style.display='none';
-  document.getElementById('pack-ov').classList.add('open');
-  renderPackReveal(userData.packsOpened[idx]);
-}
+function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';return `<div ${cl} class="${extraClass}" style="border:2px solid ${color};border-radius:10px;box-shadow:0 0 14px ${glow};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${p?.photoUrl||''}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:${color}">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
+function openPackOv(idx){curPackIdx=idx;if(!packResults[idx])packResults[idx]=generatePack(idx);document.getElementById('pov-title').textContent=`Pack ${idx+1}`;document.getElementById('pov-sub').textContent=userData.packsOpened[idx]?'Already opened — viewing cards':'5 cards — tap each to reveal';renderPackGrid();document.getElementById('pack-ov').classList.add('open');}
 function closePackOv(){document.getElementById('pack-ov').classList.remove('open');}
-function generatePack(idx){
-  const RAINBOW_ODDS=5500;
-  const seed=currentUser.id+todayStr()+idx;
-  let hash=0;
-  for(let i=0;i<seed.length;i++){hash=(hash*31+seed.charCodeAt(i))>>>0;}
-  const rng=()=>{hash=(hash*1664525+1013904223)>>>0;return(hash>>>0)/4294967296;};
-  const pool=[...PLAYERS];
-  const cards=[];
-  for(let i=0;i<4;i++){
-    if(Math.floor(rng()*RAINBOW_ODDS)===0){
-      const t25=PLAYERS.filter(p=>TOP_25_IDS.has(Number(p.mlbamId)));
-      const rc=t25[Math.floor(rng()*t25.length)];
-      if(rc){cards.push({...rc,isRainbow:true});continue;}
-    }
-    const pick=pool[Math.floor(rng()*pool.length)];
-    cards.push({...pick,isRainbow:false});
-  }
-  return cards;
-}
-
+function generatePack(idx){const seed=`${currentUser.id}_${todayStr()}_pack${idx}`;let h=0;for(let i=0;i<seed.length;i++)h=Math.imul(31,h)+seed.charCodeAt(i)|0;const sr=()=>{h^=h<<13;h^=h>>17;h^=h<<5;return(h>>>0)/4294967296;};const cards=[];let hr=false;for(let i=0;i<5;i++){const fr=(i===4&&!hr);const r=fr?'RARE':pickRarity(sr);if(['RARE','EPIC','LEGENDARY','MYTHIC'].includes(r))hr=true;const pool=PLAYERS.filter(p=>p.rarity===r);cards.push(pool[Math.floor(sr()*pool.length)]||PLAYERS[0]);}return cards;}
 function pickRarity(rand){let c=0,r=rand()*100;for(const w of PACK_WEIGHTS){c+=w.weight;if(r<c)return w.rarity;}return'COMMON';}
-function renderPackReveal(alreadyOpened){
-  const cards = packResults[curPackIdx];
-  const stage = document.getElementById('pack-stage');
-  const hasRainbow = cards.some(c=>c.isRainbow);
-
-  // Build card elements — all face down first
-  stage.innerHTML = cards.map((card,i)=>{
-    const owned = userData.collection.find(c=>c.id===card.id);
-    const frontHTML = buildPackCardFront(card, owned);
-    return `<div class="pack-card-reveal${card.isRainbow?' rainbow':''}" id="pc-${i}" style="animation:cardDrop .4s ease ${i*0.1}s both;">
-      <div class="pack-card-back-face"><span style="font-size:2rem">⚾</span><span style="font-size:10px;color:var(--muted);">Diamond Draft</span></div>
-      <div class="pack-card-front">${frontHTML}${card.isRainbow?'<div class="rainbow-shine"></div>':''}</div>
-    </div>`;
-  }).join('');
-
-  if(alreadyOpened){
-    // Show all cards already flipped
-    cards.forEach((_,i)=>{
-      document.getElementById('pc-'+i)?.classList.add('flipped');
-    });
-    if(hasRainbow) document.getElementById('rainbow-alert').style.display='block';
-    document.getElementById('ov-collect-btn').style.display='none';
-  } else {
-    // Animate flip one by one
-    cards.forEach((_,i)=>{
-      setTimeout(()=>{
-        document.getElementById('pc-'+i)?.classList.add('flipped');
-        if(i===cards.length-1){
-          // All revealed
-          setTimeout(()=>{
-            if(hasRainbow){
-              document.getElementById('rainbow-alert').style.display='block';
-              document.getElementById('rainbow-name').textContent=
-                cards.find(c=>c.isRainbow)?.fullName||cards.find(c=>c.isRainbow)?.displayName||'Top Player';
-              showToast('🌈 RAINBOW PULL! Incredible!');
-            }
-            document.getElementById('ov-collect-btn').style.display='block';
-          }, 400);
-        }
-      }, 600 + i*400);
-    });
-  }
-}
-
-function buildPackCardFront(card, owned){
-  const elite = isElite(card)||card.isRainbow;
-  const border = elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.1)';
-  const glow = elite?'0 0 20px rgba(255,215,0,.5)':'none';
-  const name = card.fullName||card.displayName||((card.firstName||'')+' '+(card.lastName||card.name||'')).trim();
-  return `<div style="width:100%;height:100%;display:flex;flex-direction:column;background:#0a0a18;border:${border};border-radius:12px;box-shadow:${glow};overflow:hidden;">
-    <div style="flex:1;overflow:hidden;position:relative;">
-      <img src="${card.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 12%;" onerror="this.parentElement.style.background='#111122'">
-      <div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.8))"></div>
-      ${elite?'<div style="position:absolute;top:5px;right:5px;font-size:11px;">👑</div>':''}
-      ${owned?'<div style="position:absolute;top:5px;left:5px;background:var(--success);color:#000;font-size:7px;font-weight:900;padding:2px 5px;border-radius:3px;">+COPY</div>':'<div style="position:absolute;top:5px;left:5px;background:var(--accent);color:#fff;font-size:7px;font-weight:900;padding:2px 5px;border-radius:3px;">NEW</div>'}
-    </div>
-    <div style="padding:6px 8px;background:#080810;">
-      <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-      <div style="font-size:8px;color:var(--muted);margin-top:1px;">${card.position||card.pos||''} · ${card.team||''}</div>
-    </div>
-  </div>`;
-}
-
-function renderPackGrid(){} // legacy stub — replaced by renderPackReveal
-
+function renderPackGrid(){const cards=packResults[curPackIdx],revealed=revealedCards[curPackIdx];const grid=document.getElementById('prg');grid.innerHTML=cards.map((card,i)=>{if(!revealed.has(i))return`<div class="reveal-card" onclick="flipCard(${i})" style="cursor:pointer"><div class="card-back"><div style="font-size:1.8rem">⚾</div><div style="font-size:10px;color:var(--muted);font-weight:600">Tap to reveal</div></div></div>`;const owned=userData.collection.find(c=>c.id===card.id);return chromeCard({player:card,rarity:card.rarity,level:1,isNew:!owned,isCopy:!!owned,onclick:'',extraClass:'reveal-card'});}).join('');const all=revealed.size===cards.length;document.getElementById('ov-reveal-btn').style.display=all?'none':'';const cb=document.getElementById('ov-collect-btn');if(all&&!userData.packsOpened[curPackIdx]){cb.style.display='';cb.textContent='✅ Claim Cards';}else{cb.style.display='none';}}
 function flipCard(i){if(revealedCards[curPackIdx].has(i))return;revealedCards[curPackIdx].add(i);savePackSession();renderPackGrid();}
 function revealAll(){packResults[curPackIdx].forEach((_,i)=>revealedCards[curPackIdx].add(i));savePackSession();renderPackGrid();}
-function claimPack(){
-  if(userData.packsOpened[curPackIdx]) return;
-  const cards = packResults[curPackIdx];
-  cards.forEach(card=>awardCard(card));
-  userData.packsOpened[curPackIdx]=true;
-  const today=todayStr();
-  // Streak - just need pack 0 now (single pack)
-  if(userData.lastStreakDate!==today){
-    userData.streak=(userData.streak||0)+1;
-    userData.lastStreakDate=today;
-  }
-  saveData();
-  const hasRainbow = cards.some(c=>c.isRainbow);
-  showToast(hasRainbow?'🌈 Rainbow card added to collection!':'4 cards added to collection ✨');
-  document.getElementById('ov-collect-btn').style.display='none';
-  renderHome();
-}
+function claimPack(){if(userData.packsOpened[curPackIdx])return;packResults[curPackIdx].forEach(card=>awardCard(card));userData.packsOpened[curPackIdx]=true;const today=todayStr();if(userData.packsOpened[0]&&userData.packsOpened[1]&&userData.lastStreakDate!==today){userData.streak=(userData.streak||0)+1;userData.lastStreakDate=today;}saveData();showToast(`Pack ${curPackIdx+1} claimed! 5 cards added ✨`);renderPackGrid();renderHome();}
 function awardCard(raw){const col=userData.collection,ex=col.find(c=>c.id===raw.id);if(ex){ex.copies=(ex.copies||1)+1;}else{col.push({id:raw.id,rarity:raw.rarity,level:1,copies:1,mult:1.0});}}
-let selectedCards = new Set();
-let stashSelecting = false;
-let selectModeOn = false;
 function filterCol(r){colFilter=r;document.querySelectorAll('.fc').forEach(c=>c.classList.toggle('active',c.dataset.r===r));renderCollection();}
-function renderCollection(){
-if(!userData)return;
-if(!userData.stash)userData.stash=[];
-const q=(document.getElementById('col-q')?.value||'').toLowerCase();
-const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};
-const stashSet=new Set(userData.stash);
-let allItems=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-if(colFilter!=='ALL')allItems=allItems.filter(c=>c.player.rarity===colFilter);
-if(q)allItems=allItems.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});
-allItems.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));
-const activeItems=allItems.filter(c=>!stashSet.has(c.id));
-const stashItems=allItems.filter(c=>stashSet.has(c.id));
-document.getElementById('col-sub').textContent=`${activeItems.length} active · ${userData.collection.length} total`;
-document.getElementById('stash-count').textContent=stashItems.length;
-const grid=document.getElementById('colgrid');
-if(!activeItems.length){
-grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>';
-} else {
-grid.innerHTML=activeItems.map(item=>makeCardWrap(item,false)).join('');
-}
-const header=document.getElementById('stash-section-header');
-const sgrid=document.getElementById('stashgrid');
-if(stashItems.length>0){
-header.style.display='flex';
-sgrid.innerHTML=stashItems.map(item=>makeCardWrap(item,true)).join('');
-} else {
-header.style.display='none';
-sgrid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:28px 20px;color:var(--muted);font-size:13px;border:2px dashed var(--border);border-radius:12px;margin:0 0 8px;">📦 Drag cards here to stash them</div>';
-}
-}
-function makeCardWrap(item, isStashed){
-const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;
-const isSel=selectedCards.has(item.id);
-const card=chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:'',extraStyle:fr?'':''});
-const cls=['col-card-wrap',isSel?'selected':'',isStashed?'stashed':''].filter(Boolean).join(' ');
-return `<div class="${cls}" draggable="true" data-id="${item.id}"
-ondragstart="handleCardDragStart(event,'${item.id}',${isStashed})"
-ondragend="document.querySelectorAll('.col-card-wrap').forEach(w=>w.style.opacity='')"
-onclick="handleCardClick('${item.id}',event,${isStashed})"
-title="${isStashed?'Click to view · Shift+click to select':'Click to view · Shift+click to select'}">${card}</div>`;
-}
-function handleCardClick(id, e, isStashed){
-e.stopPropagation();
-if(e.shiftKey || selectModeOn){
-if(selectedCards.size>0 && stashSelecting !== isStashed){
-selectedCards.clear();
-}
-stashSelecting = isStashed;
-if(selectedCards.has(id)) selectedCards.delete(id);
-else selectedCards.add(id);
-updateSelectBar();
-renderCollection();
-return;
-}
-openCardModal(id);
-}
-function toggleCardSelect(id, e, isStashed){
-handleCardClick(id, Object.assign({}, e, {shiftKey: true}), isStashed);
-}
-function updateSelectBar(){
-const bar=document.getElementById('col-select-bar');
-const btn=document.getElementById('col-stash-action-btn');
-if(selectedCards.size>0){
-bar.classList.remove('hidden');
-document.getElementById('col-select-info').textContent=`${selectedCards.size} card${selectedCards.size!==1?'s':''} selected`;
-btn.textContent=stashSelecting?'⚡ Move to Active':'📦 Move to Stash';
-btn.style.background=stashSelecting?'var(--success)':'var(--accent)';
-} else {
-bar.classList.add('hidden');
-}
-}
-function clearSelection(){
-selectedCards.clear();stashSelecting=false;selectModeOn=false;
-document.getElementById('select-mode-btn').textContent='Select Mode';
-document.getElementById('select-mode-btn').style.color='var(--muted)';
-document.getElementById('select-mode-btn').style.borderColor='var(--border)';
-updateSelectBar();renderCollection();
-}
-function toggleSelectMode(){
-selectModeOn=!selectModeOn;
-const btn=document.getElementById('select-mode-btn');
-btn.textContent=selectModeOn?'✓ Selecting':'Select Mode';
-btn.style.color=selectModeOn?'var(--accent)':'var(--muted)';
-btn.style.borderColor=selectModeOn?'var(--accent)':'var(--border)';
-btn.style.background=selectModeOn?'rgba(108,99,255,.15)':'var(--surface2)';
-if(!selectModeOn){clearSelection();}
-}
-function moveSelectedCards(){
-if(!userData.stash)userData.stash=[];
-const stashSet=new Set(userData.stash);
-if(stashSelecting){
-selectedCards.forEach(id=>stashSet.delete(id));
-showToast(`⚡ ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Active`);
-} else {
-selectedCards.forEach(id=>stashSet.add(id));
-showToast(`📦 ${selectedCards.size} card${selectedCards.size!==1?'s':''} moved to Stash`);
-}
-userData.stash=[...stashSet];
-selectedCards.clear();stashSelecting=false;
-saveData();updateSelectBar();renderCollection();
-}
-let dragCardId=null;
-let dragIsStashed=false;
-function handleCardDragStart(e,id,isStashed){
-dragCardId=id;
-dragIsStashed=isStashed;
-e.dataTransfer.effectAllowed='move';
-e.dataTransfer.setData('text/plain',id);
-setTimeout(()=>{
-const wraps=document.querySelectorAll('.col-card-wrap');
-wraps.forEach(w=>{if(w.getAttribute('data-id')===id)w.style.opacity='0.4';});
-},0);
-}
-function handleDropOnStash(e){
-e.preventDefault();
-document.getElementById('stash-drop-wrap').classList.remove('drag-over');
-const id=e.dataTransfer.getData('text/plain')||dragCardId;
-if(!id)return;
-if(!userData.stash)userData.stash=[];
-const stashSet=new Set(userData.stash);
-if(!stashSet.has(id)){
-stashSet.add(id);
-userData.stash=[...stashSet];
-saveData();
-showToast('📦 Moved to Stash');
-renderCollection();
-}
-dragCardId=null;
-}
-function handleDropOnActive(e){
-e.preventDefault();
-document.getElementById('active-drop-wrap').classList.remove('drag-over');
-const id=e.dataTransfer.getData('text/plain')||dragCardId;
-if(!id)return;
-if(!userData.stash)userData.stash=[];
-const stashSet=new Set(userData.stash);
-if(stashSet.has(id)){
-stashSet.delete(id);
-userData.stash=[...stashSet];
-saveData();
-showToast('⚡ Moved to Active');
-renderCollection();
-}
-dragCardId=null;
-}
-function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.style.display='none';document.getElementById('m-power').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.style.display='none';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
+function renderCollection(){if(!userData)return;const q=(document.getElementById('col-q')?.value||'').toLowerCase();const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};let items=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);if(colFilter!=='ALL')items=items.filter(c=>c.player.rarity===colFilter);if(q)items=items.filter(c=>{const p=c.player;return(p.fullName||p.displayName||'').toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q)||(p.position||p.pos||'').toLowerCase().includes(q);});items.sort((a,b)=>(ORDER[a.player.rarity]||4)-(ORDER[b.player.rarity]||4)||a.player.lastName?.localeCompare(b.player.lastName));document.getElementById('col-sub').textContent=`${items.length} card${items.length!==1?'s':''} · ${userData.collection.length} unique`;const grid=document.getElementById('colgrid');if(!items.length){grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open your daily packs to start collecting.</span></div>';return;}grid.innerHTML=items.map(item=>{const p=item.player,need=NEED[p.rarity],pct=Math.min(100,(item.copies/need)*100),fr=item.copies>=need&&item.level<5;return chromeCard({player:p,rarity:p.rarity,level:item.level,copies:item.copies,pct,fuseReady:fr,onclick:`openCardModal('${item.id}')`,extraStyle:fr?'animation:fuseGlow 2s infinite;':''});}).join('');}
+function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${p.photoUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.textContent=rarityLabel(col.level);b.style.background=color;b.style.color='#000';document.getElementById('m-power').textContent=`${(col.mult||1.0).toFixed(2)}× power`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.disabled=!fr;fb.textContent=fr?`⚗ Fuse → ${RARITY_ORDER[col.level]||'MAX'}`:col.level>=5?'✨ Max Rarity!':'⚗ Need '+(need-col.copies)+' more copies';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
-function miniCard(player, isRival){
-if(!player) return `<div class="mbig-mini-card" style="background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:1.2rem">⚾</span></div>`;
-const color=RARITY_COLORS[player.rarity||'COMMON'];
-const pos=player.position||player.pos||'';
-const glow=color+'55', border=color+'66';
-return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${glow};border-color:${border};">
-<img src="${player.photoUrl||''}" onerror="this.parentElement.style.background='var(--surface2)';this.style.display='none'" loading="lazy">
-<div class="mc-pos">${pos}</div>
-<div class="mc-bar" style="background:${color}"></div>
-</div>`;
-}
-
-function renderMatchups(){
-document.getElementById('sw').textContent=battleRecord.wins||0;
-document.getElementById('sl').textContent=battleRecord.losses||0;
-document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;
-
-const now=Date.now();
-const ONE_DAY=24*60*60*1000;
-
-function isOld(t){return(now-new Date(t).getTime())>ONE_DAY;}
-
-function collapsedRow(m,resultClass,resultLabel,scoreStr){
-  const age=new Date(m.sentAt||m.created_at||Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  return `<div class="mbig-expandable" id="battle-${m.id}">
-    <div class="mbig-collapsed" onclick="toggleBattleExpand('battle-${m.id}')">
-      <div class="mc-result ${resultClass}">${resultLabel}</div>
-      <div class="mc-opp" style="flex:1;">vs ${m.rival||m.from_name||'Opponent'}</div>
-      <div class="mc-score">${scoreStr}</div>
-      <div class="mc-date">${age}</div>
-      <span style="color:var(--muted);font-size:11px;">›</span>
-    </div>
-    <div class="mbig-expanded"></div>
-  </div>`;
-}
-
-// Build all battle items into a single array with a sortKey timestamp
-const allItems = [];
-
-// 1. Incoming challenges (highest priority — always fresh)
-const incoming = window._incomingChallenges||[];
-incoming.forEach(c=>{
-  allItems.push({
-    sortKey: new Date(c.created_at).getTime(),
-    priority: 0, // incoming = top
-    html: (()=>{
-      const theirCards=(c.from_lineup||[]).slice(0,4).map(id=>getPlayer(id)).filter(Boolean);
-      if(isOld(c.created_at)) return collapsedRow({id:c.id,rival:c.from_name,sentAt:c.created_at},'pending','📨 Old','—');
-      return `<div class="mbig" style="border-color:var(--danger);background:rgba(255,71,87,.05);cursor:pointer;" onclick="openBattleDetail({id:'${c.id}',rivalName:'${c.from_name}',rival:'${c.from_name}',youLineup:[],rivalLineup:${JSON.stringify((c.from_lineup||[]).slice(0,4))},status:'incoming',sentAt:'${c.created_at}'})" >
-        <div class="mbig-head">
-          <span style="font-size:13px;font-weight:800;">⚔️ ${c.from_name} challenged you!</span>
-          <span class="mb-status live">🔴 Incoming</span>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">${new Date(c.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
-        <div style="display:flex;gap:5px;margin-bottom:12px;">
-          ${theirCards.map(p=>`<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);"><img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'"></div>`).join('')}
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="acceptChallenge('${c.id}')" style="flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">✅ Accept</button>
-          <button onclick="declineChallenge('${c.id}')" style="padding:9px 14px;background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;">Decline</button>
-        </div>
-      </div>`;
-    })()
-  });
-});
-
-// 2. Sent pending challenges
-const pending = userData?.pendingMatchups||[];
-pending.forEach(m=>{
-  const old = isOld(m.sentAt);
-  const pLineup=(m.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  while(pLineup.length<4)pLineup.push(null);
-  const rPool=[...PLAYERS].sort(()=>Math.random()-.5);
-  const rPit=rPool.filter(p=>PITCHER_POS.has(p.position||p.pos||'')).slice(0,1);
-  const rBat=rPool.filter(p=>!PITCHER_POS.has(p.position||p.pos||'')).slice(0,3);
-  const rLineup=[...rPit,...rBat];
-  allItems.push({
-    sortKey: new Date(m.sentAt).getTime(),
-    priority: old ? 2 : 1,
-    html: old ? collapsedRow(m,'pending','⏳ Expired','—') :
-    `<div class="mbig" style="border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.05);">
-      <div class="mbig-head">
-        <span style="font-size:13px;font-weight:700">${m.rivalEmoji||'⚾'} ${m.rival}</span>
-        <span class="mb-status upcoming" style="display:flex;align-items:center;gap:5px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pendingPulse 1.4s infinite;"></span>
-          Awaiting Response
-        </span>
-      </div>
-      <div class="mbig-lineups">
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;">${(currentUser?.email||'').split('@')[0]}</div>
-          <div class="mbig-cards">${pLineup.map(p=>miniCard(p,false)).join('')}</div>
-        </div>
-        <div class="mbig-score-center"><div style="font-size:11px;color:var(--muted);">📨 Sent ${new Date(m.sentAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div>
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;text-align:right;">${m.rival}</div>
-          <div class="mbig-cards right">${rLineup.map(p=>miniCard(p,true)).join('')}</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-        <button onclick="cancelChallenge('${m.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:11px;color:var(--muted);cursor:pointer;">Cancel</button>
-      </div>
-    </div>`
-  });
-});
-
-// Sort: priority first (0=incoming, 1=active, 2=expired), then by most recent within each group
-allItems.sort((a,b)=>{
-  if(a.priority !== b.priority) return a.priority - b.priority;
-  return b.sortKey - a.sortKey; // newest first within same priority
-});
-
-const html = allItems.map(i=>i.html).join('');
-document.getElementById('mlist').innerHTML = html || '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:2rem;margin-bottom:10px;">⚔️</div><p style="font-weight:700;margin-bottom:6px;">No battles yet</p><p style="font-size:13px;">Challenge a player to get started!</p><button class="btn-p" style="margin-top:14px;padding:10px 22px;font-size:13px;" onclick="openChallengeOv()">Find a Player →</button></div>';
-
-// ── Completed battle history ──────────────────────────────────────────────────
-const myName=(currentUser?.email||'').split('@')[0];
-if(_battleHistory.length>0){
-  const historyHTML=_battleHistory.map(b=>{
-    const iFrom=b.from_id===currentUser.id;
-    const rivalName=iFrom?b.to_name:b.from_name;
-    const result=b.result||{};
-    const myScore=iFrom?result.from_score||result.you||0:result.to_score||result.rival||0;
-    const theirScore=iFrom?result.to_score||result.rival||0:result.from_score||result.you||0;
-    const won=(iFrom&&result.winner==='from')||(!iFrom&&result.winner==='to');
-    const tied=result.winner==='tie';
-    const resultClass=won?'win':tied?'':'loss';
-    const resultLabel=won?'🏆 W':tied?'🤝 T':'💀 L';
-    const scoreStr=`${Number(myScore).toFixed(1)}–${Number(theirScore).toFixed(1)}`;
-    const date=new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const myLineup=(iFrom?b.from_lineup:b.to_lineup)||[];
-    const theirLineup=(iFrom?b.to_lineup:b.from_lineup)||[];
-    return `<div class="mbig-expandable" id="hist-${b.id}">
-      <div class="mbig-collapsed" onclick="toggleBattleExpand('hist-${b.id}');renderHistoryExpand('hist-${b.id}',${JSON.stringify({id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at}).replace(/"/g,"'")})">
-        <div class="mc-result ${resultClass}">${resultLabel}</div>
-        <div class="mc-opp" style="flex:1;">vs ${rivalName}</div>
-        <div class="mc-score">${scoreStr}</div>
-        <div class="mc-date">${date}</div>
-        <span style="color:var(--muted);font-size:11px;">›</span>
-      </div>
-      <div class="mbig-expanded" id="hist-exp-${b.id}"></div>
-    </div>`;
-  }).join('');
-  const histSection=document.createElement('div');
-  histSection.innerHTML=`<div class="sec-title" style="margin-top:16px;margin-bottom:8px;">📋 Battle History</div>`+historyHTML;
-  document.getElementById('mlist').after(histSection);
-}
-}
-
-function cancelChallenge(id){
-if(!userData.pendingMatchups)return;
-userData.pendingMatchups=userData.pendingMatchups.filter(m=>String(m.id)!==String(id));
-saveData();renderMatchups();showToast('Challenge cancelled.');
-}
-
-
-async function searchRivals(query){
-  const box=document.getElementById('ch-rivals');
-  if(!query||query.length<2){
-    box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>';
-    return;
-  }
-  box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Searching...</div>';
-  const{data,error}=await sb.from('profiles')
-    .select('id,username,card_count,wins,losses')
-    .ilike('username','%'+query+'%')
-    .neq('id',currentUser.id)
-    .limit(8);
-  if(error||!data?.length){
-    box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">No players found</div>';
-    return;
-  }
-  box.innerHTML=data.map(u=>{
-    const isSelected=selectedRivalId===u.id;
-    return `<div onclick="selectRival('${u.id}','${u.username}')"
-      style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
-      background:${isSelected?'rgba(108,99,255,.12)':'var(--surface2)'};
-      border:1px solid ${isSelected?'var(--accent)':'var(--border)'};
-      cursor:pointer;margin-bottom:6px;transition:all .2s;">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
-        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;">
-        ${u.username[0].toUpperCase()}
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;">${u.username}</div>
-        <div style="font-size:11px;color:var(--muted);">${u.card_count||0} cards · ${u.wins||0}W ${u.losses||0}L</div>
-      </div>
-      ${isSelected?'<span style="color:var(--accent);font-size:16px;font-weight:900;">✓</span>':''}
-    </div>`;
-  }).join('');
-}
-
-function selectRival(id,name){
-  selectedRivalId=id;
-  selectedRivalName=name;
-  selectedRival=id;
-  // Re-render search to show selection
-  const query=document.getElementById('rival-search')?.value||'';
-  searchRivals(query);
-  // Update button
-  const filled=lineup.filter(Boolean).length;
-  const btn=document.getElementById('ch-launch');
-  btn.disabled=filled<4;
-  btn.textContent=filled<4?`Pick ${4-filled} more`:'⚔️ Send Challenge';
-}
-
-function renderChallengeOv(){
-  // ── Lineup slots (compact horizontal row) ──────────────────────────────────
-  const slots=document.getElementById('ch-slots');
-  const slotLabels=['P','B1','B2','B3'];
-  slots.innerHTML=lineup.map((id,i)=>{
-    if(!id)return`<div style="width:90px;height:120px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-direction:column;gap:4px;background:var(--bg);flex-shrink:0;"><span style="font-size:1.4rem">${i===0?'⚾':'🏏'}</span><span style="font-size:10px;font-weight:700;">${slotLabels[i]}</span></div>`;
-    const p=getPlayer(id);const color=RARITY_COLORS[p.rarity||'COMMON'];
-    return`<div style="position:relative;width:90px;flex-shrink:0;">
-      <div style="width:90px;height:120px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-shadow:0 0 10px ${color}55;">
-        <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
-      </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.82);padding:4px 5px;border-radius:0 0 8px 8px;">
-        <div style="font-size:10px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-        <div style="font-size:8px;color:${color};text-align:center;font-weight:600;">${p.position||p.pos} · ${p.team||''}</div>
-      </div>
-      <div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:-6px;right:-6px;background:var(--danger);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;z-index:10;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,.5);">×</div>
-    </div>`;
-  }).join('');
-
-  // ── Card pool ──────────────────────────────────────────────────────────────
-  const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-// If games tonight, highlight eligible players; otherwise show all
-const hasGames=tonightGameIds.length>0;
-function isPlayingTonight(player){
-  if(!player)return false;
-  const team=(player.team||player.teamName||'').toUpperCase().trim();
-  const teamAbbr=(player.teamAbbr||team||'').toUpperCase().trim();
-  // Check against tonight's teams set
-  for(const t of tonightTeams){
-    const tu=t.toUpperCase();
-    if(tu===team||tu===teamAbbr||tu.includes(team)||team.includes(tu))return true;
-  }
-  return false;
-}
-const availCards=col.filter(item=>{
-  if(!hasGames)return true;
-  return isPlayingTonight(item.player);
-});
-const otherCards=hasGames?col.filter(item=>!isPlayingTonight(item.player)):[];
-let availHTML='';
-if(hasGames&&availCards.length>0){
-  availHTML+='<div style="font-size:10px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;grid-column:1/-1;">⚾ Playing Tonight</div>';
-}
-availHTML+=availCards.map(item=>{const p=item.player,inL=lineup.includes(item.id);const pts=getPlayerLivePoints(p.mlbamId);return chromeCard({player:p,rarity:p.rarity,level:1,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`})+(pts>0?`<div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:8px;font-weight:900;color:var(--success);">${pts}pts</div>`:'');}).join('');
-if(hasGames&&otherCards.length>0){
-  availHTML+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;grid-column:1/-1;">Not Playing Tonight</div>';
-  availHTML+=otherCards.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:1,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;filter:grayscale(.8);${inL?'border-color:var(--accent)!important':''}opacity:${inL?.4:.5}`});}).join('');
-}
-// Split into pitchers and hitters
-const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
-const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
-const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
-const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
-
-function playerRow(item,dimmed){
-  const p=item.player;
-  const inL=lineup.includes(item.id);
-  const color=RARITY_COLORS[p.rarity||'COMMON'];
-  const pts=getPlayerLivePoints(p.mlbamId);
-  return `<div onclick="toggleLineup('${item.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;background:${inL?'rgba(108,99,255,.15)':'var(--surface2)'};border:1px solid ${inL?'var(--accent)':'transparent'};cursor:pointer;margin-bottom:4px;opacity:${dimmed?.5:1};transition:all .15s;">
-    <div style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.1);">
-      <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">
-    </div>
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-      <div style="font-size:10px;color:${color};">${p.position||p.pos} · ${p.team||''}</div>
-    </div>
-    ${pts>0?`<div style="font-size:11px;font-weight:700;color:var(--success);">${pts}pts</div>`:""}
-    ${inL?'<span style="color:var(--accent);font-size:13px;">✓</span>':''}
-  </div>`;
-}
-
-const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
-const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
-
-const pitchEl=document.getElementById('ch-pitchers');
-const hitEl=document.getElementById('ch-hitters');
-if(pitchEl)pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
-if(hitEl)hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
-const filled2=lineup.filter(Boolean).length;const btn2=document.getElementById('ch-launch');if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
-}
-function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;selectedRivalId=null;selectedRivalName=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');const inp=document.getElementById('rival-search');if(inp)inp.value='';document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>';}
+function renderMatchups(){document.getElementById('sw').textContent=battleRecord.wins||0;document.getElementById('sl').textContent=battleRecord.losses||0;document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;document.getElementById('mlist').innerHTML=MOCK_MATCHUPS.map(m=>{const sc=m.status==='live'?'live':m.status==='done'?'done':'upcoming';const sl=m.status==='live'?'🔴 LIVE':m.status==='done'?'✅ Final':'🕐 Upcoming';return`<div class="mbig"><div class="mbig-head"><span style="font-size:13px;font-weight:700">Battle</span><span class="mb-status ${sc}">${sl}</span></div><div class="mbig-teams"><div class="mbt"><div class="mbt-name">${m.you}</div><div class="mbt-sub">Challenger</div></div><div class="mbt-score">${m.sy}<span class="sep">–</span>${m.sr}</div><div class="mbt r"><div class="mbt-name">${m.rival}</div><div class="mbt-sub">Defender</div></div></div><div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">${m.inn}</div></div>`;}).join('');}
+function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');}
+function renderChallengeOv(){const slots=document.getElementById('ch-slots');slots.innerHTML=lineup.map((id,i)=>{if(!id)return`<div style="aspect-ratio:63/88;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:3px;background:var(--surface2)"><span style="font-size:.9rem">${i===0?'⚾':'🏏'}</span><span>${i===0?'P':'B'+(i)}</span></div>`;const p=getPlayer(id);return`<div style="position:relative">${chromeCard({player:p,rarity:p.rarity,level:1,onclick:'',extraStyle:'aspect-ratio:63/88'})}<div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.8);border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10">×</div></div>`;}).join('');const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);document.getElementById('ch-avail').innerHTML=col.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:item.level,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`});}).join('');document.getElementById('ch-rivals').innerHTML=RIVALS.map(r=>`<div onclick="selectedRival='${r.name}';renderChallengeOv()" style="background:${selectedRival===r.name?'rgba(108,99,255,.1)':'var(--surface)'};border:1px solid ${selectedRival===r.name?'var(--accent)':'var(--border)'};border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;cursor:pointer"><div style="font-size:1.4rem">${r.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${r.name}</div><div style="font-size:11px;color:var(--muted)">${r.desc}</div></div><div style="font-size:12px;font-weight:700;color:var(--accent)">${r.power}pts</div></div>`).join('');const filled=lineup.filter(Boolean).length;const btn=document.getElementById('ch-launch');btn.disabled=filled<4||!selectedRival;btn.textContent=filled<4?`Pick ${4-filled} more`:!selectedRival?'Pick a rival':'⚔️ Launch Battle!';}
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
-async function launchBattle(){
-if(lineup.filter(Boolean).length<4||!selectedRivalId)return;
-const btn=document.getElementById('ch-launch');
-btn.disabled=true;btn.textContent='Sending...';
-const myName=(currentUser.email||'').split('@')[0];
-const lineupIds=lineup.filter(Boolean);
-const{error}=await sb.from('challenges').insert({
-  from_id:currentUser.id,from_name:myName,
-  to_id:selectedRivalId,to_name:selectedRivalName,
-  from_lineup:lineupIds,status:'pending'
-});
-btn.disabled=false;btn.textContent='⚔️ Send Challenge';
-if(error){console.error('Challenge error:',error);showToast('❌ Error sending challenge');return;}
-document.getElementById('ch-ov').classList.remove('open');
-showChallengePending({name:selectedRivalName,emoji:'⚔️'},lineupIds);
-if(!userData.pendingMatchups)userData.pendingMatchups=[];
-userData.pendingMatchups.push({id:Date.now(),rival:selectedRivalName,rivalEmoji:'⚔️',lineup:lineupIds,sentAt:new Date().toISOString()});
-saveData();renderMatchups();
-}
-
-async function pollChallenges(){
-if(!currentUser)return;
-// Check incoming (to me, pending)
-const{data:incoming}=await sb.from('challenges')
-  .select('id,from_id,from_name,from_lineup,created_at')
-  .eq('to_id',currentUser.id).eq('status','pending');
-const prev=window._incomingCount||0;
-window._incomingChallenges=incoming||[];
-window._incomingCount=(incoming||[]).length;
-updateChallengeBadge(window._incomingCount);
-if(window._incomingCount>prev&&document.visibilityState==='visible'){
-  showToast('⚔️ '+(incoming[0].from_name)+' challenged you! Go to Battle tab to accept.');
-}
-// Check accepted challenges I sent
-if(!window._shownBattleIds) window._shownBattleIds=new Set();
-const fiveMinAgo=new Date(Date.now()-5*60*1000).toISOString();
-const{data:accepted}=await sb.from('challenges')
-  .select('id,to_name,to_lineup,from_lineup,created_at')
-  .eq('from_id',currentUser.id).eq('status','accepted')
-  .gt('created_at',fiveMinAgo);
-if(accepted&&accepted.length>0){
-  const c=accepted.find(c=>!window._shownBattleIds.has(c.id));
-  if(c){
-    window._shownBattleIds.add(c.id);
-    showToast('✅ '+c.to_name+' accepted! Go to Battle tab.');
-    updateChallengeBadge((window._incomingCount||0));
-    renderMatchups();
-  }
-}
-// Fetch completed battles for history
-fetchBattleHistory();
-}
-
-let _battleHistory=[];
-async function fetchBattleHistory(){
-  if(!currentUser)return;
-  const{data}=await sb.from('challenges')
-    .select('id,from_id,from_name,to_name,from_lineup,to_lineup,result,created_at,status')
-    .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
-    .eq('status','completed')
-    .order('created_at',{ascending:false})
-    .limit(20);
-  if(data){
-    _battleHistory=data;
-    // Re-render if battle tab is open
-    if(document.getElementById('tab-matchups')?.classList.contains('active')){
-      renderMatchups();
-    }
-  }
-}
-
-function startSupabaseBattle(challenge){
-const myName=(currentUser?.email||'').split('@')[0];
-const myCards=(challenge.from_lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-const theirCards=(challenge.to_lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-// Pad to 4 if needed
-while(myCards.length<4)myCards.push(PLAYERS[Math.floor(Math.random()*PLAYERS.length)]);
-while(theirCards.length<4)theirCards.push(PLAYERS[Math.floor(Math.random()*PLAYERS.length)]);
-battleState={
-  you:{name:myName,lineup:myCards,scores:[0,0,0,0],total:0},
-  rival:{name:challenge.to_name,lineup:theirCards,scores:[0,0,0,0],total:0},
-  inning:0,maxInnings:9,done:false,
-  challengeId:challenge.id
-};
-document.getElementById('battle-ov').classList.add('open');
-document.getElementById('b-title').textContent=myName+' vs '+challenge.to_name;
-document.getElementById('b-rival-lbl').textContent=challenge.to_name;
-document.getElementById('bs-you').textContent='0';
-document.getElementById('bs-rival').textContent='0';
-document.getElementById('b-prog').style.width='0%';
-document.getElementById('b-pbp').innerHTML='';
-document.getElementById('b-over').style.display='none';
-['you','rival'].forEach(side=>{
-  document.getElementById('b-'+side).innerHTML=battleState[side].lineup.map((c,i)=>{
-    const color=RARITY_COLORS[c.rarity||'COMMON'];
-    const fullName=c.fullName||c.displayName||((c.firstName||'')+' '+(c.lastName||c.name||'')).trim();
-    return `<div style="display:flex;align-items:center;gap:9px;background:var(--surface2);border-radius:10px;padding:8px 10px;margin-bottom:6px;border-left:3px solid rgba(255,255,255,.1);">
-      <div style="width:38px;height:38px;border-radius:7px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.08);">
-        <img src="${c.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;" onerror="this.parentElement.style.background='var(--surface3)'">
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);">${fullName}</div>
-        <div style="font-size:10px;color:${color};font-weight:600;margin-top:1px;">${c.position||c.pos||''} · ${c.teamName||c.team||''}</div>
-      </div>
-      <div style="font-size:15px;font-weight:900;color:var(--accent);min-width:28px;text-align:right;" id="bpt-${side}-${i}">0</div>
-    </div>`;
-  }).join('');
-});
-clearTimeout(battleTimer);
-battleTimer=setTimeout(runBattle,800);
-}
-
-function updateChallengeBadge(count){
-document.querySelectorAll('.nav-item, .mob-tab').forEach(btn=>{
-  if(btn.dataset.tab==='matchups'){
-    let badge=btn.querySelector('.ch-notif');
-    if(count>0){
-      if(!badge){badge=document.createElement('span');badge.className='nav-badge ch-notif mob-badge';badge.style.cssText='background:var(--danger);animation:pulse 1.2s infinite;';btn.appendChild(badge);}
-      badge.textContent=count;
-    } else {if(badge)badge.remove();}
-  }
-});
-}
-
-function startChallengePoll(){
-  pollChallenges();
-  setInterval(pollChallenges,15000);
-  startRealtimeSubscription();
-}
-
-// ── SUPABASE REALTIME ─────────────────────────────────────────────────────────
-let realtimeChannel = null;
-
-function startRealtimeSubscription(){
-  if(realtimeChannel) sb.removeChannel(realtimeChannel);
-
-  realtimeChannel = sb.channel('challenges-realtime')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'challenges',
-      filter: `to_id=eq.${currentUser.id}`
-    }, payload => handleChallengeChange(payload))
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'challenges',
-      filter: `from_id=eq.${currentUser.id}`
-    }, payload => handleChallengeChange(payload))
-    .subscribe(status => {
-      console.log('Realtime status:', status);
-    });
-}
-
-function handleChallengeChange(payload){
-  const ch = payload.new;
-  if(!ch) return;
-
-  // Someone sent ME a challenge
-  if(ch.to_id === currentUser.id && ch.status === 'pending'){
-    // Add to incoming list if not already there
-    if(!window._incomingChallenges) window._incomingChallenges = [];
-    const exists = window._incomingChallenges.find(c => c.id === ch.id);
-    if(!exists){
-      window._incomingChallenges.push(ch);
-      window._incomingCount = window._incomingChallenges.length;
-      updateChallengeBadge(window._incomingCount);
-      showToast('⚔️ ' + ch.from_name + ' challenged you!');
-      renderMatchups();
-    }
-  }
-
-  // Challenge I SENT was accepted → launch battle for challenger
-  if(ch.from_id === currentUser.id && ch.status === 'accepted'){
-    if(!window._shownBattleIds) window._shownBattleIds = new Set();
-    if(!window._shownBattleIds.has(ch.id)){
-      window._shownBattleIds.add(ch.id);
-      showToast('✅ ' + ch.to_name + ' accepted! Battle starting...');
-      renderMatchups();
-      // Open battle detail for challenger after short delay
-      setTimeout(() => {
-        openBattleDetail({
-          id: ch.id,
-          rivalName: ch.to_name,
-          rival: ch.to_name,
-          youLineup: ch.from_lineup || [],
-          rivalLineup: ch.to_lineup || [],
-          status: 'active',
-          sentAt: ch.created_at
-        });
-      }, 1500);
-    }
-  }
-
-  // Challenge I ACCEPTED was declined or cancelled
-  if(ch.to_id === currentUser.id && (ch.status === 'declined' || ch.status === 'cancelled')){
-    window._incomingChallenges = (window._incomingChallenges||[]).filter(c => c.id !== ch.id);
-    window._incomingCount = window._incomingChallenges.length;
-    updateChallengeBadge(window._incomingCount);
-    renderMatchups();
-  }
-}
-
-function showChallengePending(rival,lineupIds){
-const ov=document.getElementById('pending-ov');
-const myName=(currentUser?.email||'').split('@')[0];
-document.getElementById('pending-rival-name').textContent=rival.name;
-document.getElementById('pending-rival-label').textContent=rival.name;
-document.getElementById('pending-your-name').textContent=myName;
-// Show your lineup cards
-const ids=lineupIds||lineup.filter(Boolean);
-const yourLineupEl=document.getElementById('pending-your-lineup');
-if(yourLineupEl){
-  yourLineupEl.innerHTML=ids.map(id=>{
-    const p=getPlayer(id);
-    if(!p)return'';
-    const color=RARITY_COLORS[p.rarity||'COMMON'];
-    return `<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.08);flex-shrink:0;position:relative;">
-      <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
-      <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:${color};"></div>
-    </div>`;
-  }).join('');
-}
-ov.classList.add('open');
-}
+function launchBattle(){if(lineup.filter(Boolean).length<4||!selectedRival)return;const rival=RIVALS.find(r=>r.name===selectedRival);const myCards=lineup.map(id=>{const p=getPlayer(id);const col=userData.collection.find(c=>c.id===id);return{...p,mult:col?.mult||1.0};}).filter(Boolean);const pool=[...PLAYERS].sort(()=>Math.random()-.5);const rP=pool.filter(p=>PITCHER_POS.has(p.position||p.pos));const rB=pool.filter(p=>!PITCHER_POS.has(p.position||p.pos));const rivalCards=[rP[0]||pool[0],rB[0]||pool[1],rB[1]||pool[2],rB[2]||pool[3]].map(p=>({...p,mult:1.0}));battleState={you:{name:'You',lineup:myCards,scores:[0,0,0,0],total:0},rival:{name:rival.name,lineup:rivalCards,scores:[0,0,0,0],total:0},inning:0,maxInnings:9,done:false};document.getElementById('ch-ov').classList.remove('open');document.getElementById('battle-ov').classList.add('open');document.getElementById('b-title').textContent=`You vs ${rival.name}`;document.getElementById('b-rival-lbl').textContent=rival.name;document.getElementById('bs-you').textContent='0';document.getElementById('bs-rival').textContent='0';document.getElementById('b-prog').style.width='0%';document.getElementById('b-pbp').innerHTML='';document.getElementById('b-over').style.display='none';['you','rival'].forEach(side=>{document.getElementById(`b-${side}`).innerHTML=battleState[side].lineup.map((c,i)=>`<div style="display:flex;align-items:center;gap:7px;background:var(--surface2);border-radius:8px;padding:6px 9px;margin-bottom:5px"><div style="width:26px;height:26px;border-radius:5px;overflow:hidden;flex-shrink:0"><img src="${c.photoUrl}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%" onerror="this.style.display='none'"></div><div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.lastName||c.name}</div><div style="font-size:9px;color:var(--muted)">${c.position||c.pos}</div></div><div style="font-size:13px;font-weight:900;color:var(--accent)" id="bpt-${side}-${i}">0</div></div>`).join('');});clearTimeout(battleTimer);battleTimer=setTimeout(runBattle,600);}
 function runBattle(){if(!battleState||battleState.done)return;const bs=battleState;bs.inning++;document.getElementById('b-prog').style.width=Math.round((bs.inning/bs.maxInnings)*100)+'%';['you','rival'].forEach(side=>{const ci=Math.floor(Math.random()*4),card=bs[side].lineup[ci];if(!card)return;const pts=Math.floor(Math.random()*18)+3;bs[side].scores[ci]+=pts;bs[side].total+=pts;const pe=document.getElementById(`bpt-${side}-${ci}`);if(pe){pe.textContent=bs[side].scores[ci];pe.style.transform='scale(1.4)';setTimeout(()=>pe.style.transform='',300);}document.getElementById(`bs-${side}`).textContent=bs[side].total;const plays=['⚾ Home run!','💥 RBI double!','🔥 Strikeout!','🎯 Solid hit!','⚡ Stolen base!','💪 RBI single!'];const pbp=document.getElementById('b-pbp');const el=document.createElement('div');el.style.cssText='background:var(--surface2);border-radius:7px;padding:6px 9px;font-size:12px;display:flex;align-items:center;gap:7px';el.innerHTML=`<span>${plays[Math.floor(Math.random()*plays.length)].split(' ')[0]}</span><span><b>${card.lastName||card.name}</b> +${pts} pts</span>`;pbp.insertBefore(el,pbp.firstChild);if(pbp.children.length>8)pbp.removeChild(pbp.lastChild);});if(bs.inning>=bs.maxInnings){endBattle();}else{battleTimer=setTimeout(runBattle,650+Math.random()*400);}}
-async function endBattle(){
-if(!battleState)return;battleState.done=true;
-const bs=battleState,won=bs.you.total>bs.rival.total;
-if(won){battleRecord.wins=(battleRecord.wins||0)+1;}else{battleRecord.losses=(battleRecord.losses||0)+1;}
-saveData();
-document.getElementById('b-res').textContent=won?'🏆 VICTORY!':'💀 DEFEAT';
-document.getElementById('b-res').style.color=won?'var(--success)':'var(--danger)';
-document.getElementById('b-res-sub').textContent=won
-  ?`You beat ${bs.rival.name} ${bs.you.total}–${bs.rival.total}!`
-  :`${bs.rival.name} wins ${bs.rival.total}–${bs.you.total}.`;
-document.getElementById('b-over').style.display='block';
-if(won){const bonus=PLAYERS[Math.floor(Math.random()*PLAYERS.length)];awardCard(bonus);saveData();setTimeout(()=>showToast('🎁 Bonus: '+(bonus.fullName||bonus.displayName)+'!'),400);}
-// Save result to Supabase and mark completed
-if(bs.challengeId){
-  await sb.from('challenges').update({
-    status:'completed',
-    result:{winner:won?'from':'to',you:bs.you.total,rival:bs.rival.total}
-  }).eq('id',bs.challengeId);
-  window._battleStarted=false;
-  // Update profile win/loss
-  const field=won?'wins':'losses';
-  await sb.rpc('increment_'+field,{user_id:currentUser.id}).catch(()=>{});
-}
-}
-
-
-// ── BATTLE DETAIL VIEW ───────────────────────────────────────────────────────
-let battleDetailInterval = null;
-
-
-// ── BATTLE RESULT ─────────────────────────────────────────────────────────────
-async function showBattleResult(battle){
-  const myName = (currentUser?.email||'').split('@')[0];
-  const youLineup = (battle.youLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const rivalLineup = (battle.rivalLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const youScore = youLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const rivalScore = rivalLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const won = youScore > rivalScore;
-  const tied = Math.abs(youScore-rivalScore) < 0.1;
-
-  // Update W/L record
-  if(!tied){
-    if(won) battleRecord.wins=(battleRecord.wins||0)+1;
-    else battleRecord.losses=(battleRecord.losses||0)+1;
-    saveData();
-  }
-
-  // Save result to Supabase
-  if(battle.id){
-    await sb.from('challenges').update({
-      status:'completed',
-      result:{winner:won?'you':tied?'tie':'rival',you:youScore,rival:rivalScore}
-    }).eq('id',battle.id).catch(()=>{});
-  }
-
-  // Populate overlay
-  const header = document.getElementById('result-header');
-  header.style.background = won
-    ? 'linear-gradient(135deg,#1a3520,#0a1a10)'
-    : tied ? 'linear-gradient(135deg,#1a1a35,var(--bg))'
-    : 'linear-gradient(135deg,#351a1a,#1a0a0a)';
-  document.getElementById('result-emoji').textContent = won?'🏆':tied?'🤝':'💀';
-  document.getElementById('result-title').textContent = won?'VICTORY!':tied?'TIE GAME':'DEFEAT';
-  document.getElementById('result-title').style.color = won?'var(--success)':tied?'var(--text)':'var(--danger)';
-  document.getElementById('result-subtitle').textContent = won
-    ? `You beat ${battle.rivalName||'Rival'} ${youScore.toFixed(1)}–${rivalScore.toFixed(1)}`
-    : tied ? `Dead heat — ${youScore.toFixed(1)} each`
-    : `${battle.rivalName||'Rival'} wins ${rivalScore.toFixed(1)}–${youScore.toFixed(1)}`;
-  document.getElementById('result-you-name').textContent = myName;
-  document.getElementById('result-rival-name').textContent = battle.rivalName||'Rival';
-  document.getElementById('result-you-score').textContent = youScore.toFixed(1);
-  document.getElementById('result-rival-score').textContent = rivalScore.toFixed(1);
-  document.getElementById('result-you-score').style.color = won?'var(--success)':!tied?'var(--danger)':'var(--text)';
-  document.getElementById('result-rival-score').style.color = !won&&!tied?'var(--success)':won?'var(--danger)':'var(--text)';
-
-  // Score breakdown
-  const allPlayers = [
-    ...youLineup.map(p=>({p,side:'you'})),
-    ...rivalLineup.map(p=>({p,side:'rival'}))
-  ].sort((a,b)=>getPlayerLivePoints(b.p.mlbamId)-getPlayerLivePoints(a.p.mlbamId));
-
-  document.getElementById('result-breakdown').innerHTML = allPlayers.length
-    ? allPlayers.map(({p,side})=>{
-        const pts = getPlayerLivePoints(p.mlbamId);
-        const isYou = side==='you';
-        const name = p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
-        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);">
-          <div style="width:28px;height:28px;border-radius:5px;overflow:hidden;flex-shrink:0;">
-            <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-            <div style="font-size:9px;color:${isYou?'var(--accent)':'var(--muted)'};">${isYou?myName:battle.rivalName||'Rival'} · ${p.position||p.pos||''}</div>
-          </div>
-          <div style="font-size:13px;font-weight:900;color:${pts>0?'var(--success)':'var(--muted)'};">${pts>0?pts.toFixed(1):'—'}</div>
-        </div>`;
-      }).join('')
-    : '<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px;">No live stats yet — games may not have started</div>';
-
-  // Prize: winner gets rival's 4 cards
-  const prizeSection = document.getElementById('result-prize');
-  const prizeCards = document.getElementById('result-prize-cards');
-  if(won && rivalLineup.length > 0){
-    prizeSection.style.display = 'block';
-    // Award rival's cards to winner's collection
-    rivalLineup.forEach(p => {
-      awardCard(p);
-    });
-    saveData();
-    prizeCards.innerHTML = rivalLineup.map(p=>{
-      const color = isElite(p)?'#FFD700':'rgba(255,255,255,.15)';
-      return `<div style="width:56px;text-align:center;">
-        <div style="width:56px;height:76px;border-radius:8px;overflow:hidden;border:2px solid ${color};margin-bottom:4px;">
-          <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
-        </div>
-        <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-      </div>`;
-    }).join('');
-    setTimeout(()=>showToast('🎁 You won '+rivalLineup.length+' cards!'),800);
-  } else {
-    prizeSection.style.display = 'none';
-  }
-
-  document.getElementById('result-ov').classList.add('open');
-}
-
-function openBattleDetail(battle){
-  // battle = {id, youName, rivalName, youLineup:[], rivalLineup:[], status, sentAt}
-  const ov = document.getElementById('battle-detail-ov');
-  const myName = (currentUser?.email||'').split('@')[0];
-
-  document.getElementById('bd-title').textContent = myName + ' vs ' + (battle.rivalName||battle.rival||'Opponent');
-  document.getElementById('bd-you-name').textContent = myName;
-  document.getElementById('bd-rival-name').textContent = battle.rivalName||battle.rival||'Opponent';
-
-  const sentDate = new Date(battle.sentAt||battle.created_at||Date.now());
-  document.getElementById('bd-subtitle').textContent = sentDate.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-
-  // Status badge
-  const statusEl = document.getElementById('bd-status-badge');
-  if(battle.status==='incoming'){
-    statusEl.innerHTML = '<span class="mb-status live">🔴 Incoming</span>';
-  } else if(battle.status==='pending'){
-    statusEl.innerHTML = '<span class="mb-status upcoming">⏳ Awaiting</span>';
-  } else if(battle.status==='expired'){
-    statusEl.innerHTML = '<span class="mb-status" style="background:rgba(106,106,138,.15);color:var(--muted);">Expired</span>';
-  } else {
-    statusEl.innerHTML = '<span class="mb-status upcoming">⚔️ Active</span>';
-  }
-
-  // Render lineups
-  renderBattleDetail(battle);
-  ov.classList.add('open');
-
-  // Start live ticker if active
-  if(battleDetailInterval) clearInterval(battleDetailInterval);
-  window._currentBattle = battle;
-  window._prevLiveScores = {};
-  window._tickerLog = [];
-  if(battle.status==='active' && tonightGameIds.length>0){
-    // Initial fetch
-    refreshLiveScores().then(()=>renderBattleDetail(battle));
-    // Poll every 45 seconds
-    battleDetailInterval = setInterval(()=>liveTickerUpdate(battle), 45000);
-  } else {
-    renderBattleDetail(battle);
-  }
-}
-
-
-function declareFromDetail(battle){
-  if(!battle) return;
-  closeBattleDetail();
-  showBattleResult(battle);
-}
-function closeBattleDetail(){
-  document.getElementById('battle-detail-ov').classList.remove('open');
-  if(battleDetailInterval){clearInterval(battleDetailInterval);battleDetailInterval=null;}
-}
-
-
-// ── LIVE TICKER UPDATE ────────────────────────────────────────────────────────
-async function liveTickerUpdate(battle){
-  if(!document.getElementById('battle-detail-ov')?.classList.contains('open')) return;
-
-  // Snapshot scores before refresh
-  const before = {};
-  const allIds = [...(battle.youLineup||[]), ...(battle.rivalLineup||[])];
-  allIds.forEach(id=>{
-    const p = getPlayer(id);
-    if(p) before[p.mlbamId] = getPlayerLivePoints(p.mlbamId);
-  });
-
-  // Fetch fresh stats
-  await refreshLiveScores();
-
-  // Find what changed
-  const plays = [];
-  allIds.forEach(id=>{
-    const p = getPlayer(id);
-    if(!p) return;
-    const oldPts = before[p.mlbamId] || 0;
-    const newPts = getPlayerLivePoints(p.mlbamId);
-    const diff = Math.round((newPts - oldPts)*10)/10;
-    if(diff > 0){
-      const isYou = (battle.youLineup||[]).includes(id);
-      const name = p.lastName||p.name||'Player';
-      plays.push({name, diff, isYou, mlbamId:p.mlbamId});
-    }
-  });
-
-  // Update UI without full re-render
-  if(plays.length > 0){
-    // Animate individual card scores
-    plays.forEach(play=>{
-      const el = document.getElementById('bdpts-'+play.mlbamId);
-      if(el){
-        const newPts = getPlayerLivePoints(play.mlbamId);
-        el.textContent = newPts.toFixed(1);
-        el.classList.remove('bd-pts-flash');
-        void el.offsetWidth; // force reflow
-        el.classList.add('bd-pts-flash');
-      }
-    });
-
-    // Animate total scores
-    updateBdTotals(battle, true);
-
-    // Add to ticker
-    addToTicker(plays);
-  } else {
-    // Just update totals silently
-    updateBdTotals(battle, false);
-  }
-}
-
-function updateBdTotals(battle, animate){
-  const youLineup = (battle.youLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const rivalLineup = (battle.rivalLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const youTotal = youLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const rivalTotal = rivalLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-
-  const youEl = document.getElementById('bd-you-score');
-  const rivEl = document.getElementById('bd-rival-score');
-  if(!youEl||!rivEl) return;
-
-  youEl.textContent = youTotal.toFixed(1);
-  rivEl.textContent = rivalTotal.toFixed(1);
-
-  if(animate){
-    youEl.classList.remove('bd-score-flash'); void youEl.offsetWidth;
-    rivEl.classList.remove('bd-score-flash'); void rivEl.offsetWidth;
-    youEl.classList.add('bd-score-flash');
-    rivEl.classList.add('bd-score-flash');
-  }
-
-  // Color
-  if(youTotal > rivalTotal){ youEl.style.color='var(--success)'; rivEl.style.color='var(--danger)'; }
-  else if(rivalTotal > youTotal){ rivEl.style.color='var(--success)'; youEl.style.color='var(--danger)'; }
-  else { youEl.style.color='var(--text)'; rivEl.style.color='var(--text)'; }
-
-  // Update projections
-  const gamesActive = tonightGameIds.length > 0;
-  if(gamesActive){
-    const yp = document.getElementById('bd-you-proj');
-    const rp = document.getElementById('bd-rival-proj');
-    if(yp) yp.textContent = youTotal>0 ? 'Proj: '+(youTotal*1.4).toFixed(1) : '';
-    if(rp) rp.textContent = rivalTotal>0 ? 'Proj: '+(rivalTotal*1.4).toFixed(1) : '';
-    const gs = document.getElementById('bd-game-status');
-    if(gs) gs.textContent = '🔴 Live';
-  }
-}
-
-function addToTicker(plays){
-  if(!plays.length) return;
-  const ticker = document.getElementById('bd-ticker');
-  const wrap = document.getElementById('bd-ticker-wrap');
-  if(!ticker||!wrap) return;
-  wrap.style.display = 'block';
-
-  const myName = (currentUser?.email||'').split('@')[0];
-  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-
-  plays.forEach(play=>{
-    const item = document.createElement('div');
-    item.className = 'ticker-item pts-update';
-    item.innerHTML = `<div class="ticker-dot" style="background:${play.isYou?'var(--accent)':'var(--muted)'}"></div>
-      <span style="color:${play.isYou?'var(--text)':'var(--muted)'};">${play.name}</span>
-      <span style="color:var(--muted);font-size:9px;">${now}</span>
-      <span class="ticker-pts">+${play.diff}</span>`;
-    ticker.insertBefore(item, ticker.firstChild);
-    // Keep max 12 items
-    while(ticker.children.length > 12) ticker.removeChild(ticker.lastChild);
-  });
-}
-
-function renderBattleDetail(battle){
-  const youLineup = (battle.youLineup||battle.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const rivalLineup = (battle.rivalLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-
-  // Calc scores
-  const youTotal = youLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const rivalTotal = rivalLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-
-  document.getElementById('bd-you-score').textContent = youTotal.toFixed(1);
-  document.getElementById('bd-rival-score').textContent = rivalTotal.toFixed(1);
-
-  // Highlight winner
-  const youScoreEl = document.getElementById('bd-you-score');
-  const rivalScoreEl = document.getElementById('bd-rival-score');
-  if(youTotal > rivalTotal){ youScoreEl.style.color='var(--success)'; rivalScoreEl.style.color='var(--danger)'; }
-  else if(rivalTotal > youTotal){ rivalScoreEl.style.color='var(--success)'; youScoreEl.style.color='var(--danger)'; }
-  else { youScoreEl.style.color='var(--text)'; rivalScoreEl.style.color='var(--text)'; }
-
-  // Projection (simple: if games running, project based on pace)
-  const gamesActive = tonightGameIds.length > 0;
-  if(gamesActive && (youTotal > 0 || rivalTotal > 0)){
-    document.getElementById('bd-you-proj').textContent = 'Proj: ' + (youTotal * 1.4).toFixed(1);
-    document.getElementById('bd-rival-proj').textContent = 'Proj: ' + (rivalTotal * 1.4).toFixed(1);
-    document.getElementById('bd-game-status').textContent = '🔴 Live';
-    document.getElementById('bd-prog-bar').style.width = '60%';
-  } else if(!gamesActive){
-    document.getElementById('bd-you-proj').textContent = '';
-    document.getElementById('bd-rival-proj').textContent = '';
-    document.getElementById('bd-game-status').textContent = battle.status==='pending'?'Awaiting Accept':'No games tonight';
-    document.getElementById('bd-prog-bar').style.width = '0%';
-  }
-  // Show declare button if both lineups have players and it's active
-  const declareWrap = document.getElementById('bd-declare-wrap');
-  if(declareWrap){
-    const hasLineups = (battle.youLineup||[]).length>0 && (battle.rivalLineup||[]).length>0;
-    declareWrap.style.display = (hasLineups && battle.status==='active') ? 'block' : 'none';
-    const btn = document.getElementById('bd-declare-btn');
-    if(btn) btn.onclick = ()=>declareFromDetail(battle);
-  }
-
-  // Build card grid: you on left, rival on right, paired by slot
-  const maxLen = Math.max(youLineup.length, rivalLineup.length, 4);
-  const slots = Array.from({length:maxLen},(_,i)=>({you:youLineup[i]||null,rival:rivalLineup[i]||null}));
-
-  document.getElementById('bd-lineups').innerHTML =
-    // Column headers
-    `<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;">${(currentUser?.email||'').split('@')[0]}</div>
-     <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;text-align:right;">${battle.rivalName||battle.rival||'Rival'}</div>` +
-    slots.map(slot=>`
-      ${renderBdCard(slot.you, youTotal)}
-      ${renderBdCard(slot.rival, rivalTotal)}
-    `).join('');
-}
-
-function renderBdCard(player, sideTotal){
-  if(!player){
-    return `<div style="background:var(--surface2);border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:90px;opacity:.3;"><span style="font-size:1.5rem;">⚾</span></div>`;
-  }
-  const color = RARITY_COLORS[player.rarity||'COMMON'];
-  const pts = getPlayerLivePoints(player.mlbamId);
-  const isPitcher = PITCHER_POS.has(player.position||player.pos||'');
-  const fullName = player.fullName||player.displayName||((player.firstName||'')+' '+(player.lastName||player.name||'')).trim();
-
-  const elite = isElite(player);
-  return `<div class="bd-player-card${pts>0?' scoring':''}">
-    <div class="bd-photo" style="border:${elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)'};">
-      <img src="${player.photoUrl||''}" onerror="this.parentElement.style.background='var(--surface3)';this.style.display='none'">
-      <div class="bd-photo-overlay">
-        <div style="font-size:11px;font-weight:800;color:#fff;">${elite?'👑 ':''}${fullName}</div>
-        <div style="font-size:9px;color:var(--muted);font-weight:600;">${player.position||player.pos||''} · ${player.team||''}</div>
-      </div>
-    </div>
-    <div class="bd-pts" id="bdpts-${player.mlbamId}">${pts>0?pts.toFixed(1):'—'} <span style="font-size:10px;color:var(--muted);font-weight:400;">pts</span></div>
-    ${pts>0?`<div class="bd-proj">Proj: ${(pts*1.4).toFixed(1)}</div>`:`<div style="font-size:10px;color:var(--muted);text-align:center;">${isPitcher?'Pitcher':'Batter'} · ${player.team||''}</div>`}
-  </div>`;
-}
-
-
-function renderHistoryExpand(wrapId, battle){
-  const el=document.getElementById(wrapId);
-  if(!el||!el.classList.contains('open')) return;
-  const expEl=document.getElementById('hist-exp-'+battle.id);
-  if(!expEl||expEl.innerHTML) return; // already rendered
-  const youLineup=(battle.youLineup||[]).map(id=>getPlayer(id.trim())).filter(Boolean);
-  const rivalLineup=(battle.rivalLineup||[]).map(id=>getPlayer(id.trim())).filter(Boolean);
-  const myName=(currentUser?.email||'').split('@')[0];
-  const allPlayers=[
-    ...youLineup.map(p=>({p,side:'you'})),
-    ...rivalLineup.map(p=>({p,side:'rival'}))
-  ];
-  expEl.innerHTML=`
-    <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">Lineups</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div>
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:5px;">${myName}</div>
-        ${youLineup.map(p=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-          <div style="width:24px;height:24px;border-radius:4px;overflow:hidden;flex-shrink:0;"><img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'"></div>
-          <div style="font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-          <div style="font-size:9px;color:var(--muted);margin-left:auto;">${p.position||p.pos||''}</div>
-        </div>`).join('')}
-      </div>
-      <div>
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:5px;">${battle.rivalName}</div>
-        ${rivalLineup.map(p=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-          <div style="width:24px;height:24px;border-radius:4px;overflow:hidden;flex-shrink:0;"><img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'"></div>
-          <div style="font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-          <div style="font-size:9px;color:var(--muted);margin-left:auto;">${p.position||p.pos||''}</div>
-        </div>`).join('')}
-      </div>
-    </div>
-    <button class="btn-p" style="padding:8px;font-size:12px;" onclick="openBattleDetail(${JSON.stringify(battle)})">📊 Full View</button>
-  `;
-}
-function toggleBattleExpand(id){
-  const el=document.getElementById(id);
-  if(!el)return;
-  el.classList.toggle('open');
-}
-async function acceptChallenge(id){
-  const myName=(currentUser.email||'').split('@')[0];
-  const col=userData?.collection||[];
-  const ORDER={MYTHIC:0,LEGENDARY:1,EPIC:2,RARE:3,COMMON:4};
-  const sorted=[...col].sort((a,b)=>(ORDER[getPlayer(a.id)?.rarity]||4)-(ORDER[getPlayer(b.id)?.rarity]||4));
-  const pit=sorted.filter(c=>PITCHER_POS.has(getPlayer(c.id)?.position||'')).slice(0,1).map(c=>c.id);
-  const bat=sorted.filter(c=>!PITCHER_POS.has(getPlayer(c.id)?.position||'')).slice(0,3).map(c=>c.id);
-  const toLineup=[...pit,...bat];
-
-  // Get the challenge first so we have from_lineup
-  const{data:ch, error:fetchErr}=await sb.from('challenges')
-    .select('*').eq('id',id).single();
-  if(fetchErr||!ch){showToast('Error fetching challenge');return;}
-
-  const{error}=await sb.from('challenges')
-    .update({status:'accepted', to_lineup:toLineup}).eq('id',id);
-  if(error){showToast('Error accepting');return;}
-
-  // Remove from incoming
-  window._incomingChallenges=(window._incomingChallenges||[]).filter(c=>c.id!==id);
-  window._incomingCount=Math.max(0,(window._incomingCount||1)-1);
-  updateChallengeBadge(window._incomingCount);
-  renderMatchups();
-
-  showToast('✅ Challenge accepted! Battle starting...');
-
-  // Open battle detail for ACCEPTOR immediately
-  setTimeout(()=>{
-    openBattleDetail({
-      id: ch.id,
-      rivalName: ch.from_name,
-      rival: ch.from_name,
-      youLineup: toLineup,          // acceptor's lineup
-      rivalLineup: ch.from_lineup||[], // challenger's lineup
-      status: 'active',
-      sentAt: ch.created_at
-    });
-  }, 1000);
-}
-async function declineChallenge(id){
-await sb.from('challenges').update({status:'declined'}).eq('id',id);
-window._incomingChallenges=(window._incomingChallenges||[]).filter(c=>c.id!==id);
-window._incomingCount=Math.max(0,(window._incomingCount||1)-1);
-updateChallengeBadge(window._incomingCount);
-showToast('Challenge declined.');renderMatchups();
-}
+function endBattle(){if(!battleState)return;battleState.done=true;const bs=battleState,won=bs.you.total>bs.rival.total;if(won){battleRecord.wins=(battleRecord.wins||0)+1;}else{battleRecord.losses=(battleRecord.losses||0)+1;}saveData();document.getElementById('b-res').textContent=won?'🏆 VICTORY!':'💀 DEFEAT';document.getElementById('b-res').style.color=won?'var(--success)':'var(--danger)';document.getElementById('b-res-sub').textContent=won?`You beat ${bs.rival.name} ${bs.you.total}–${bs.rival.total}!`:`${bs.rival.name} wins ${bs.rival.total}–${bs.you.total}.`;document.getElementById('b-over').style.display='block';if(won){const bonus=PLAYERS[Math.floor(Math.random()*PLAYERS.length)];awardCard(bonus);saveData();setTimeout(()=>showToast(`🎁 Bonus: ${bonus.fullName||bonus.displayName}!`),400);}}
 function renderLeaderboard(){const uname=(currentUser?.email||'').split('@')[0];const me={name:uname,pts:Math.max(0,(userData?.collection?.length||0)*120+(battleRecord.wins||0)*500),cards:userData?.collection?.length||0,wins:battleRecord.wins||0,avatar:uname[0]?.toUpperCase()||'?',color:'var(--accent)',isMe:true};const all=[...LEADERBOARD];const mi=all.findIndex(e=>e.pts<=me.pts);if(mi>=0)all.splice(mi,0,me);else all.push(me);const pc=['#FFD700','#C0C0C0','#CD7F32'];const ph=[88,68,52];const po=[1,0,2];const top3=all.slice(0,3);document.getElementById('podium').innerHTML=po.map(i=>{const e=top3[i];if(!e)return'';const r=i+1;return`<div class="pod-item"><div class="pod-avatar" style="width:${46-i*4}px;height:${46-i*4}px;background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="pod-name">${e.name}</div><div class="pod-pts">${e.pts.toLocaleString()}</div><div class="pod-block" style="background:${pc[i]};height:${ph[i]}px;color:#000;font-size:.95rem">#${r}</div></div>`;}).join('');document.getElementById('lb-list').innerHTML=all.map((e,i)=>`<div class="lb-row${e.isMe?' me':''}"><div class="lb-rank">${i+1}</div><div class="lb-avatar" style="background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="lb-info"><h4>${e.name}${e.isMe?' (you)':''}</h4><p>${e.wins} wins · ${e.cards} cards</p></div><div class="lb-pts"><div class="pts">${e.pts.toLocaleString()}</div><div class="sub">points</div></div></div>`).join('');}
 function getPlayer(id){return PLAYERS.find(p=>String(p.id)===String(id));}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
-let scoresDate = new Date();
-let scoresGameFilter = 'all';
-let scoresData = [];
-const MLB_TEAMS = {
-108:{name:'Angels',abbr:'LAA',emoji:'😇'},109:{name:'D-backs',abbr:'ARI',emoji:'🐍'},
-110:{name:'Orioles',abbr:'BAL',emoji:'🐦'},111:{name:'Red Sox',abbr:'BOS',emoji:'🧦'},
-112:{name:'Cubs',abbr:'CHC',emoji:'🐻'},113:{name:'Reds',abbr:'CIN',emoji:'🔴'},
-114:{name:'Guardians',abbr:'CLE',emoji:'⚡'},115:{name:'Rockies',abbr:'COL',emoji:'🏔️'},
-116:{name:'Tigers',abbr:'DET',emoji:'🐯'},117:{name:'Astros',abbr:'HOU',emoji:'🚀'},
-118:{name:'Royals',abbr:'KC',emoji:'👑'},119:{name:'Dodgers',abbr:'LAD',emoji:'💙'},
-120:{name:'Nationals',abbr:'WSH',emoji:'🌟'},121:{name:'Mets',abbr:'NYM',emoji:'🌉'},
-133:{name:'Athletics',abbr:'OAK',emoji:'🐘'},134:{name:'Pirates',abbr:'PIT',emoji:'☠️'},
-135:{name:'Padres',abbr:'SD',emoji:'🤌'},136:{name:'Mariners',abbr:'SEA',emoji:'🧭'},
-137:{name:'Giants',abbr:'SF',emoji:'🧡'},138:{name:'Cardinals',abbr:'STL',emoji:'🐦‍🔴'},
-139:{name:'Rays',abbr:'TB',emoji:'☀️'},140:{name:'Rangers',abbr:'TEX',emoji:'⭐'},
-141:{name:'Blue Jays',abbr:'TOR',emoji:'🦜'},142:{name:'Twins',abbr:'MIN',emoji:'🎗️'},
-143:{name:'Phillies',abbr:'PHI',emoji:'🔔'},144:{name:'Braves',abbr:'ATL',emoji:'🪓'},
-145:{name:'White Sox',abbr:'CWS',emoji:'⚡'},146:{name:'Marlins',abbr:'MIA',emoji:'🐬'},
-147:{name:'Yankees',abbr:'NYY',emoji:'🗽'},158:{name:'Brewers',abbr:'MIL',emoji:'🍺'},
-};
-function getTeam(id){return MLB_TEAMS[id]||{name:'TBD',abbr:'TBD',emoji:'⚾'};}
-function scoresDateStr(d){
-return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-}
-function scoresApiDate(d){
-return d.toISOString().split('T')[0];
-}
-function scoresChangeDate(delta){
-scoresDate.setDate(scoresDate.getDate()+delta);
-loadScores();
-}
-function scoresFilter(f){
-scoresGameFilter=f;
-document.querySelectorAll('.scores-filter').forEach(el=>el.classList.toggle('active',el.dataset.sf===f));
-renderScores();
-}
-async function loadScores(){
-const dateStr=scoresApiDate(scoresDate);
-const today=scoresApiDate(new Date());
-const label=dateStr===today?'Today':scoresDateStr(scoresDate);
-document.getElementById('scores-date-label').textContent=label;
-document.getElementById('scores-subtitle').textContent=`🌴 Spring Training · ${scoresDateStr(scoresDate)}`;
-const todayGames = [
-{away:'Giants',home:'Padres',awayScore:'',homeScore:'',status:'Scheduled',time:'1:10 PM PT',venue:'Peoria Sports Complex'},
-{away:'Cubs',home:'Guardians',awayScore:'',homeScore:'',status:'Scheduled',time:'4:05 PM PT',venue:'Goodyear Ballpark'},
-{away:'Reds',home:'D-backs',awayScore:'',homeScore:'',status:'Scheduled',time:'1:10 PM PT',venue:'Salt River Fields'},
-{away:'Brewers',home:'Dodgers',awayScore:'',homeScore:'',status:'Scheduled',time:'1:05 PM PT',venue:'Camelback Ranch'},
-{away:'Angels',home:'Athletics',awayScore:'',homeScore:'',status:'Scheduled',time:'1:05 PM PT',venue:'Hohokam Stadium'},
-{away:'White Sox',home:'Rangers',awayScore:'',homeScore:'',status:'Scheduled',time:'3:05 PM PT',venue:'Surprise Stadium'},
-];
-const list = document.getElementById('scores-list');
-if(dateStr === today) {
-scoresData = todayGames.map((g,i)=>({
-gamePk:i,
-teams:{
-away:{team:{name:g.away},score:g.awayScore},
-home:{team:{name:g.home},score:g.homeScore}
-},
-status:{detailedState:g.status},
-gameDate: null,
-gameTime: g.time,
-venue:{name:g.venue}
-}));
-renderScores();
-const link = document.createElement('div');
-link.style.cssText='text-align:center;padding:16px;';
-link.innerHTML=`<a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
-list.appendChild(link);
-} else {
-list.innerHTML=`<div style="text-align:center;padding:40px 20px;">
-<p style="color:var(--muted);margin-bottom:16px;font-size:14px;">Scores for ${scoresDateStr(scoresDate)}</p>
-<a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:12px 24px;border-radius:10px;display:inline-block;">View on MLB.com →</a>
-</div>`;
-}
-}
-function renderScores(){
-const list=document.getElementById('scores-list');
-let games=scoresData;
-if(scoresGameFilter!=='all'){
-games=games.filter(g=>{
-const s=g.status?.detailedState||'';
-if(scoresGameFilter==='live')return s.includes('In Progress')||s.includes('Warmup')||s.includes('Delayed: Start');
-if(scoresGameFilter==='final')return s.includes('Final')||s.includes('Completed');
-if(scoresGameFilter==='scheduled')return s.includes('Scheduled')||s.includes('Pre-Game');
-return true;
-});
-}
-if(!games.length){
-list.innerHTML='<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">No games found</p><span>Try a different date or filter.</span></div>';
-return;
-}
-const tilesHTML = games.map(game=>{
-const away=game.teams?.away;
-const home=game.teams?.home;
-const awayName=away?.team?.name||'Away';
-const homeName=home?.team?.name||'Home';
-const awayObj=Object.values(MLB_TEAMS).find(t=>awayName.includes(t.name))||{emoji:'⚾',abbr:awayName.slice(0,3).toUpperCase()};
-const homeObj=Object.values(MLB_TEAMS).find(t=>homeName.includes(t.name))||{emoji:'⚾',abbr:homeName.slice(0,3).toUpperCase()};
-const awayScore=away?.score??'';
-const homeScore=home?.score??'';
-const status=game.status?.detailedState||'Scheduled';
-const isLive=status.includes('In Progress')||status.includes('Warmup')||status==='Live';
-const isFinal=status.includes('Final')||status.includes('Completed');
-const isPost=status.includes('Postponed')||status.includes('Suspended');
-const statusClass=isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
-const statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'⚠️ Postponed':`🕐 ${game.gameTime||'TBD'}`;
-const inning=game.linescore?.currentInningOrdinal||'';
-const inningHalf=game.linescore?.inningHalf||'';
-const awayRec=away?.leagueRecord?`${away.leagueRecord.wins}-${away.leagueRecord.losses}`:'';
-const homeRec=home?.leagueRecord?`${home.leagueRecord.wins}-${home.leagueRecord.losses}`:'';
-const venue=game.venue?.name||'';
-const hasScore=awayScore!==''&&homeScore!=='';
-return `<div class="game-tile ${statusClass}">
-<div class="gt-header">
-<span class="gt-matchup">${awayObj.abbr} @ ${homeObj.abbr}</span>
-<span class="gt-badge ${statusClass}">${statusLabel}</span>
-</div>
-<div class="gt-body">
-<div class="gt-teams">
-<div class="gt-team">
-<div class="gt-emoji">${awayObj.emoji}</div>
-<div class="gt-name">${awayName}</div>
-${awayRec?`<div class="gt-rec">${awayRec}</div>`:''}
-</div>
-<div class="gt-score-box">
-${hasScore
-? `<div class="gt-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`
-: `<div class="gt-vs">VS</div>`}
-${isLive&&inning?`<div class="gt-inning">${inningHalf} ${inning}</div>`:''}
-</div>
-<div class="gt-team">
-<div class="gt-emoji">${homeObj.emoji}</div>
-<div class="gt-name">${homeName}</div>
-${homeRec?`<div class="gt-rec">${homeRec}</div>`:''}
-</div>
-</div>
-</div>
-${venue?`<div class="gt-footer"><span style="font-size:10px;margin-right:3px">📍</span><span class="gt-venue">${venue}</span></div>`:''}
-</div>`;
-}).join('');
-const existingLink = list.querySelector('a[href*="mlb.com"]');
-list.innerHTML = `<div class="games-grid">${tilesHTML}</div>`;
-if(existingLink){
-const linkWrap = document.createElement('div');
-linkWrap.style.cssText='text-align:center;padding:16px;';
-linkWrap.innerHTML=`<a href="${existingLink.href}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
-list.appendChild(linkWrap);
-}
-}
-
-// ── LIVE BATTLE SYSTEM ───────────────────────────────────────────────────────
-
-// Fantasy scoring weights
-const TOP_25_IDS = new Set([660271, 592450, 665742, 605141, 518692, 596019, 669373, 663728, 677951, 683002, 670541, 663538, 682998, 682079, 675911, 554430, 543037, 646240, 624413, 660670, 665487, 673237, 668939, 682928, 608070]);
-
-const SCORING = {
-  // Batting
-  single:1, double:2, triple:3, homeRun:4,
-  rbi:1, runs:1, stolenBase:2, walk:0.5, strikeoutB:-0.5,
-  // Pitching (per inning pitched = 3 outs)
-  inningPitched:3, strikeoutP:1, win:5, loss:-3,
-  earnedRun:-1, hitAllowed:-0.25, walkAllowed:-0.5
-};
-
-let tonightGameIds = [];
-let tonightTeams = new Set();
-let tonightPlayerIds = new Set();
-let liveScores = {}; // mlbamId -> fantasy points
-let livePollTimer = null;
-
-async function loadTonightGames(){
-  const today = new Date().toISOString().split('T')[0];
-  try {
-    // Use our Vercel proxy
-    const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1,17&date=${today}&hydrate=roster`);
-    if(!r.ok) throw new Error('API error');
-    const data = await r.json();
-    const games = data?.dates?.[0]?.games || [];
-    tonightGameIds = games.map(g => g.gamePk);
-    // Build set of team abbreviations playing tonight (simpler + more reliable)
-    tonightTeams = new Set();
-    games.forEach(game => {
-      const awayAbbr = game.teams?.away?.team?.abbreviation;
-      const homeAbbr = game.teams?.home?.team?.abbreviation;
-      if(awayAbbr) tonightTeams.add(awayAbbr.toUpperCase());
-      if(homeAbbr) tonightTeams.add(homeAbbr.toUpperCase());
-      // Also add full team names as fallback
-      const awayName = game.teams?.away?.team?.name;
-      const homeName = game.teams?.home?.team?.name;
-      if(awayName) tonightTeams.add(awayName);
-      if(homeName) tonightTeams.add(homeName);
-    });
-    updateTonightSection(games);
-  } catch(e) {
-    console.warn('Tonight games:', e.message);
-    // During spring training / offseason show all cards
-    updateTonightSection([]);
-  }
-}
-
-function updateTonightSection(games){
-  const section = document.getElementById('tonight-section');
-  const desc = document.getElementById('tonight-desc');
-  if(!section) return;
-  if(games.length === 0){
-    desc.textContent = 'No games tonight. Regular season starts March 26!';
-    section.style.display = 'none';
-    return;
-  }
-  desc.textContent = `${games.length} games tonight — pick players from tonight's rosters.`;
-  section.style.display = 'block';
-  // Show collection cards that are playing tonight
-  const col = userData?.collection || [];
-  const playing = col.filter(c => {
-    const p = getPlayer(c.id);
-    return p && (tonightTeams.size === 0 || isPlayingTonight(p));
-  });
-  const grid = document.getElementById('tonight-players');
-  if(!grid) return;
-  if(!playing.length){
-    grid.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;grid-column:1/-1;">None of your cards are playing tonight. Check back on game days!</div>';
-    return;
-  }
-  grid.innerHTML = playing.map(item => {
-    const p = getPlayer(item.id);
-    const color = RARITY_COLORS[p.rarity||'COMMON'];
-    const pts = liveScores[p.mlbamId] || 0;
-    return `<div class="tonight-card${pts > 0 ? ' playing' : ''}" onclick="openCardModal('${item.id}')" title="${p.fullName||p.displayName}">
-      <img src="${p.photoUrl||''}" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
-      <div style="background:#080810;padding:3px 4px;">
-        <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-        <div style="font-size:7px;color:${color};">${pts > 0 ? pts.toFixed(1)+' pts' : p.position||p.pos}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function fetchLiveStats(gameId){
-  try {
-    const r = await fetch(`/api/mlb?endpoint=/game/${gameId}/boxscore`);
-    if(!r.ok) return null;
-    return await r.json();
-  } catch(e){ return null; }
-}
-
-function calcBattingPoints(stats){
-  if(!stats) return 0;
-  let pts = 0;
-  const h = stats.hits || 0;
-  const hr = stats.homeRuns || 0;
-  const d = stats.doubles || 0;
-  const t = stats.triples || 0;
-  const singles = h - hr - d - t;
-  pts += singles * SCORING.single;
-  pts += d * SCORING.double;
-  pts += t * SCORING.triple;
-  pts += hr * SCORING.homeRun;
-  pts += (stats.rbi || 0) * SCORING.rbi;
-  pts += (stats.runs || 0) * SCORING.runs;
-  pts += (stats.stolenBases || 0) * SCORING.stolenBase;
-  pts += (stats.baseOnBalls || 0) * SCORING.walk;
-  pts += (stats.strikeOuts || 0) * SCORING.strikeoutB;
-  return Math.round(pts * 10) / 10;
-}
-
-function calcPitchingPoints(stats){
-  if(!stats) return 0;
-  let pts = 0;
-  // inningsPitched comes as "6.1" format
-  const ip = parseFloat(stats.inningsPitched || 0);
-  const fullInnings = Math.floor(ip);
-  const partial = (ip % 1) * 10 / 3; // .1 = 1/3 inning, .2 = 2/3
-  pts += (fullInnings + partial) * SCORING.inningPitched;
-  pts += (stats.strikeOuts || 0) * SCORING.strikeoutP;
-  pts += (stats.wins || 0) * SCORING.win;
-  pts += (stats.losses || 0) * SCORING.loss;
-  pts += (stats.earnedRuns || 0) * SCORING.earnedRun;
-  pts += (stats.hits || 0) * SCORING.hitAllowed;
-  pts += (stats.baseOnBalls || 0) * SCORING.walkAllowed;
-  return Math.round(pts * 10) / 10;
-}
-
-async function refreshLiveScores(){
-  if(!tonightGameIds.length) return;
-  for(const gameId of tonightGameIds){
-    const box = await fetchLiveStats(gameId);
-    if(!box) continue;
-    // Process all batters and pitchers
-    ['away','home'].forEach(side => {
-      const batters = box.teams?.[side]?.batters || [];
-      const pitchers = box.teams?.[side]?.pitchers || [];
-      const players = box.teams?.[side]?.players || {};
-      batters.forEach(pid => {
-        const p = players['ID'+pid];
-        if(!p) return;
-        const stats = p.stats?.batting?.summary ? p.stats.batting : null;
-        if(stats) liveScores[pid] = calcBattingPoints(stats);
-      });
-      pitchers.forEach(pid => {
-        const p = players['ID'+pid];
-        if(!p) return;
-        const stats = p.stats?.pitching ? p.stats.pitching : null;
-        if(stats) liveScores[pid] = calcPitchingPoints(stats);
-      });
-    });
-  }
-  // Update tonight section display
-  updateTonightSection([]); // refresh display with new scores
-  // Update any open live battles
-  updateLiveBattleScores();
-}
-
-function getPlayerLivePoints(mlbamId){
-  return liveScores[Number(mlbamId)] || liveScores[String(mlbamId)] || 0;
-}
-
-function calcLineupPoints(lineupIds){
-  return lineupIds.reduce((total, id) => {
-    const p = getPlayer(id);
-    if(!p) return total;
-    return total + getPlayerLivePoints(p.mlbamId);
-  }, 0);
-}
-
-function updateLiveBattleScores(){
-  // If there's an open live battle, update the scores
-  const battleOv = document.getElementById('battle-ov');
-  if(!battleOv?.classList.contains('open') || !battleState) return;
-  // Recalc from real stats if we have mlbamIds
-  if(battleState.useLiveStats){
-    const youPts = calcLineupPoints(battleState.you.lineupIds || []);
-    const rivalPts = calcLineupPoints(battleState.rival.lineupIds || []);
-    document.getElementById('bs-you').textContent = youPts.toFixed(1);
-    document.getElementById('bs-rival').textContent = rivalPts.toFixed(1);
-    battleState.you.total = youPts;
-    battleState.rival.total = rivalPts;
-  }
-}
-
-function startLivePoll(){
-  loadTonightGames();
-  // Poll live scores every 2 minutes during games
-  livePollTimer = setInterval(refreshLiveScores, 120000);
-}
-
-
-// ── ADMIN: Player ID Fixer ───────────────────────────────────────────────────
-let _adminMLBLookup = {};
-let _adminFixedPlayers = [];
-
-// Normalize name: strip accents, suffixes, punctuation
-function normName(s){
-  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/\b(jr|sr|ii|iii|iv)\b\.?/gi,'')
-    .replace(/[^a-z0-9 ]/gi,'').toLowerCase().trim().replace(/\s+/g,' ');
-}
-
-async function adminFetchMLB(){
-  const btn=document.getElementById('admin-btn-fetch');
-  const status=document.getElementById('admin-status');
-  btn.disabled=true; status.textContent='Fetching from MLB Stats API...';
-  try {
-    const r=await fetch('/api/fix-players');
-    const data=await r.json();
-    if(data.error)throw new Error(data.error);
-    _adminMLBLookup=data;
-    console.log('MLB data keys:',Object.keys(data));
-    const byFullCount=Object.keys(data.byFull||{}).length;
-    status.innerHTML=`<span style="color:var(--success)">✓ Got ${data.total} MLB players (byFull: ${byFullCount} entries)</span>`;
-    document.getElementById('admin-step2').style.display='block';
-    document.getElementById('admin-stats').innerHTML=`<span style="color:var(--muted);font-size:12px;">${data.total} MLB players · ${PLAYERS.length} in our DB</span>`;
-  } catch(e){
-    status.innerHTML=`<span style="color:var(--danger)">Error: ${e.message}</span>`;
-  }
-  btn.disabled=false;
-}
-
-function adminFixPlayers(){
-  const log=document.getElementById('admin-log');
-  log.style.display='block'; log.innerHTML='<div style="color:var(--muted)">Running...</div>';
-  try{
-    const byFull=_adminMLBLookup.byFull||{};
-    const byLast=_adminMLBLookup.byLast||{};
-    const byLastFirst=_adminMLBLookup.byLastFirst||{};
-    if(!Object.keys(byFull).length){
-      log.innerHTML='<div style="color:var(--danger)">Error: No data. Click Fetch MLB Players first.</div>';
-      return;
-    }
-    log.innerHTML='';
-    let fixed=0,notFound=0,correct=0;
-    const playerList=Array.isArray(PLAYERS)&&PLAYERS.length?PLAYERS:[];
-    if(!playerList.length){log.innerHTML='<div style="color:var(--danger)">Error: PLAYERS not loaded yet.</div>';return;}
-
-  _adminFixedPlayers=playerList.map(p=>{
-    const fn=normName(p.firstName||'');
-    const ln=normName(p.lastName||'');
-    const full=fn+' '+ln;
-    const lastFirst=ln+' '+fn;
-
-    // Try multiple matching strategies
-    let mlb = byFull[full] || byLastFirst[lastFirst];
-
-    // Try last name only if unique match
-    if(!mlb && byLast[ln] && byLast[ln].length===1){
-      mlb=byLast[ln][0];
-    }
-    // Try last name + first initial
-    if(!mlb && byLast[ln]){
-      const firstInit=fn[0];
-      const match=byLast[ln].find(m=>m.firstName&&m.firstName[0]===firstInit);
-      if(match) mlb=match;
-    }
-
-    if(!mlb){
-      log.innerHTML+=`<div style="color:var(--muted);font-size:11px;">⚠ ${p.firstName} ${p.lastName}</div>`;
-      notFound++; return p;
-    }
-    if(String(p.mlbamId)===String(mlb.mlbamId)){correct++;return p;}
-    log.innerHTML+=`<div style="color:var(--success);font-size:11px;">✓ ${p.firstName} ${p.lastName}: ${p.mlbamId}→${mlb.mlbamId} (${mlb.team})</div>`;
-    fixed++;
-    return {...p,mlbamId:mlb.mlbamId,team:mlb.team||p.team,teamName:mlb.teamName||p.teamName,
-      photoUrl:`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mlb.mlbamId}/headshot/67/current`};
-  });
-  log.innerHTML+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;color:var(--text);">✓ Fixed: ${fixed} &nbsp; ⚠ Not found: ${notFound} &nbsp; Already correct: ${correct}</div>`;
-  log.scrollTop=log.scrollHeight;
-  document.getElementById('admin-step3').style.display='block';
-  }catch(e){log.innerHTML+='<div style="color:var(--danger)">Error: '+e.message+'</div>';console.error(e);}
-}
-
-function adminDownload(){
-  const blob=new Blob([JSON.stringify(_adminFixedPlayers,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='players.json'; a.click();
-}
-
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}
-init();</script>
+init();
+</script>
 </body>
 </html>
