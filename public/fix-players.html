@@ -1,154 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Diamond Draft — Fix Players</title>
-<style>
-  body{background:#08080f;color:#e8e8f0;font-family:'Segoe UI',system-ui,sans-serif;padding:30px;max-width:900px;margin:0 auto;}
-  h1{color:#6c63ff;margin-bottom:6px;}
-  p{color:#6a6a8a;margin-bottom:20px;}
-  button{background:#6c63ff;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;margin-right:10px;margin-bottom:10px;}
-  button:hover{opacity:.85;}
-  button:disabled{opacity:.4;cursor:not-allowed;}
-  .card{background:#0f0f1a;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:20px;margin-bottom:16px;}
-  .log{background:#08080f;border-radius:8px;padding:14px;font-size:12px;font-family:monospace;max-height:300px;overflow-y:auto;line-height:1.7;}
-  .fixed{color:#00d48a;}
-  .warn{color:#FFD700;}
-  .err{color:#ff4757;}
-  .stat{display:inline-block;background:#161622;border-radius:8px;padding:8px 16px;margin-right:8px;margin-bottom:8px;font-size:13px;}
-  .stat span{font-size:1.4rem;font-weight:900;color:#6c63ff;display:block;}
-  #download{display:none;}
-  textarea{width:100%;background:#08080f;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;color:#e8e8f0;font-family:monospace;font-size:11px;resize:vertical;}
-</style>
-</head>
-<body>
-<h1>⚾ Diamond Draft — Player ID Fixer</h1>
-<p>Fetches all 2026 MLB players from the Stats API, matches them against our database by name, and fixes wrong mlbamIds.</p>
-
-<div class="card">
-  <h3 style="margin:0 0 14px">Step 1 — Fetch MLB Players</h3>
-  <button id="btn-fetch" onclick="fetchMLB()">🔄 Fetch from MLB Stats API</button>
-  <div id="fetch-status" style="color:#6a6a8a;font-size:13px;margin-top:8px;"></div>
-</div>
-
-<div class="card" id="step2" style="display:none">
-  <h3 style="margin:0 0 14px">Step 2 — Match & Fix</h3>
-  <div id="stats" style="margin-bottom:14px;"></div>
-  <button id="btn-fix" onclick="fixPlayers()">🔧 Run Fix</button>
-  <div class="log" id="log"></div>
-</div>
-
-<div class="card" id="step3" style="display:none">
-  <h3 style="margin:0 0 14px">Step 3 — Download Fixed players.json</h3>
-  <p style="color:#6a6a8a;font-size:13px;">Download and upload this to GitHub to replace <code>public/players.json</code></p>
-  <button onclick="downloadFixed()">⬇️ Download players.json</button>
-  <div style="margin-top:14px;">
-    <div style="font-size:11px;color:#6a6a8a;margin-bottom:6px;">Or copy the JSON directly:</div>
-    <textarea id="json-out" rows="8"></textarea>
-  </div>
-</div>
-
-<script>
-let mlbLookup = {};
-let ourPlayers = [];
-let fixedPlayers = [];
-
-async function fetchMLB() {
-  const btn = document.getElementById('btn-fetch');
-  const status = document.getElementById('fetch-status');
-  btn.disabled = true;
-  status.textContent = 'Fetching from MLB Stats API...';
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
 
   try {
-    // Fetch MLB lookup from our proxy
-    const r = await fetch('/api/fix-players');
+    const r = await fetch(
+      'https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R',
+      { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } }
+    );
+    if (!r.ok) throw new Error(`MLB API ${r.status}`);
     const data = await r.json();
-    if (data.error) throw new Error(data.error);
-    mlbLookup = data.lookup;
+    const mlbPlayers = data.people || [];
 
-    // Fetch our players.json
-    const r2 = await fetch('/players.json');
-    ourPlayers = await r2.json();
+    // Normalize: strip accents, lowercase, remove suffixes like Jr./Sr./II/III
+    function norm(s) {
+      return (s || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
+        .replace(/\b(jr|sr|ii|iii|iv)\b\.?/gi, '')        // remove suffixes
+        .replace(/[^a-z0-9 ]/gi, '')                       // remove punctuation
+        .toLowerCase().trim().replace(/\s+/g, ' ');
+    }
 
-    status.innerHTML = `<span style="color:#00d48a">✓ Got ${data.total} MLB players · Our DB has ${ourPlayers.length} players</span>`;
-    document.getElementById('step2').style.display = 'block';
-    document.getElementById('stats').innerHTML = `
-      <div class="stat"><span>${data.total}</span>MLB Players</div>
-      <div class="stat"><span>${ourPlayers.length}</span>Our Players</div>
-    `;
-  } catch(e) {
-    status.innerHTML = `<span style="color:#ff4757">Error: ${e.message}</span>`;
+    // Build lookup by normalized full name AND by last+first
+    const byFull = {};
+    const byLast = {};
+    const byLastFirst = {};
+
+    for (const p of mlbPlayers) {
+      const full = norm(`${p.firstName} ${p.lastName}`);
+      const last = norm(p.lastName);
+      const lastFirst = norm(`${p.lastName} ${p.firstName}`);
+      const entry = {
+        mlbamId: p.id,
+        position: p.primaryPosition?.abbreviation || '',
+        team: p.currentTeam?.abbreviation || '',
+        teamName: p.currentTeam?.name || '',
+      };
+      byFull[full] = entry;
+      byLastFirst[lastFirst] = entry;
+      if (!byLast[last]) byLast[last] = [];
+      byLast[last].push({ ...entry, firstName: norm(p.firstName) });
+    }
+
+    res.setHeader('Cache-Control', 's-maxage=3600');
+    res.status(200).json({
+      total: mlbPlayers.length,
+      byFull,
+      byLast,
+      byLastFirst
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-  btn.disabled = false;
 }
-
-function fixPlayers() {
-  const log = document.getElementById('log');
-  log.innerHTML = '';
-  let fixed = 0, notFound = 0, alreadyCorrect = 0;
-
-  fixedPlayers = ourPlayers.map(p => {
-    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase().trim();
-    const lastFirst = `${p.lastName} ${p.firstName}`.toLowerCase().trim();
-
-    // Try exact full name match first
-    let mlb = mlbLookup[fullName];
-
-    // Try reversed name
-    if (!mlb) mlb = mlbLookup[lastFirst];
-
-    // Try last name only (risky but as last resort)
-    if (!mlb) {
-      const lastName = p.lastName.toLowerCase().trim();
-      mlb = mlbLookup[lastName];
-      // Only use last-name match if it seems reasonable
-      if (mlb && mlb.team && p.team && mlb.team !== p.team) {
-        mlb = null; // Different team, likely wrong player
-      }
-    }
-
-    if (!mlb) {
-      log.innerHTML += `<div class="warn">⚠ NOT FOUND: ${p.firstName} ${p.lastName} (${p.team})</div>`;
-      notFound++;
-      return p;
-    }
-
-    const newId = mlb.mlbamId;
-    const oldId = p.mlbamId;
-
-    if (String(oldId) === String(newId)) {
-      alreadyCorrect++;
-      return p;
-    }
-
-    log.innerHTML += `<div class="fixed">✓ FIXED: ${p.firstName} ${p.lastName} — ${oldId} → ${newId} (${p.team})</div>`;
-    fixed++;
-
-    return {
-      ...p,
-      mlbamId: newId,
-      photoUrl: `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${newId}/headshot/67/current`
-    };
-  });
-
-  log.innerHTML += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)">
-    <b style="color:#00d48a">✓ Fixed: ${fixed}</b> &nbsp;
-    <b style="color:#FFD700">⚠ Not found: ${notFound}</b> &nbsp;
-    <b style="color:#6a6a8a">Already correct: ${alreadyCorrect}</b>
-  </div>`;
-
-  document.getElementById('step3').style.display = 'block';
-  document.getElementById('json-out').value = JSON.stringify(fixedPlayers, null, 2);
-  log.scrollTop = log.scrollHeight;
-}
-
-function downloadFixed() {
-  const blob = new Blob([JSON.stringify(fixedPlayers, null, 2)], {type: 'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'players.json';
-  a.click();
-}
-</script>
-</body>
-</html>
