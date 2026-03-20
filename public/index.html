@@ -261,26 +261,47 @@
 </div>
 
 <!-- CHALLENGE OVERLAY -->
-<div class="overlay" id="ch-ov">
-  <div class="ov-box" style="max-width:840px">
-    <button class="ov-close" onclick="document.getElementById('ch-ov').classList.remove('open')">×</button>
-    <div class="ov-title">⚔️ Build Your Lineup</div>
-    <div class="ov-sub">Pick 1 pitcher + 3 batters, then choose a rival</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+<div class="overlay" id="ch-ov" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="ov-box" style="max-width:900px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;">
+    <!-- Header -->
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div>
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Your Lineup</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px" id="ch-slots"></div>
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Your Cards</div>
-        <div style="max-height:210px;overflow-y:auto"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="ch-avail"></div></div>
+        <div style="font-size:1.1rem;font-weight:900;">⚔️ Build Your Lineup</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Pick 1 pitcher + 3 batters · then find a rival</div>
       </div>
-      <div style="display:flex;flex-direction:column">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Find a Player</div>
-        <input id="rival-search" type="text" placeholder="Search by username..." oninput="searchRivals(this.value)"
-          style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;margin-bottom:8px;">
-        <div style="flex:1;overflow-y:auto;max-height:260px;" id="ch-rivals">
-          <div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>
+      <button class="ov-close" style="position:static;" onclick="document.getElementById('ch-ov').classList.remove('open')">×</button>
+    </div>
+    <!-- Your selected lineup slots (compact horizontal) -->
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Your Lineup</div>
+      <div style="display:flex;gap:8px;align-items:center;" id="ch-slots"></div>
+    </div>
+    <!-- Main content: 3 columns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 220px;flex:1;min-height:0;overflow:hidden;">
+      <!-- Card picker: pitchers -->
+      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🔥 Pitchers</div>
+        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-pitchers"></div>
+      </div>
+      <!-- Card picker: hitters -->
+      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🏏 Hitters</div>
+        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-hitters"></div>
+      </div>
+      <!-- Rival search -->
+      <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">Find Rival</div>
+        <div style="padding:0 10px 8px;flex-shrink:0;">
+          <input id="rival-search" type="text" placeholder="Search username..." oninput="searchRivals(this.value)"
+            style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;">
         </div>
-        <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="margin-top:12px;padding:13px;font-size:14px">⚔️ Send Challenge</button>
+        <div style="overflow-y:auto;flex:1;padding:0 10px;" id="ch-rivals">
+          <div style="color:var(--muted);font-size:12px;padding:4px;">Type to search...</div>
+        </div>
+        <!-- Send button -->
+        <div style="padding:10px;border-top:1px solid var(--border);flex-shrink:0;">
+          <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="padding:11px;font-size:13px;">⚔️ Send Challenge</button>
+        </div>
       </div>
     </div>
   </div>
@@ -742,7 +763,24 @@ function selectRival(id,name){
   btn.textContent=filled<4?`Pick ${4-filled} more`:'⚔️ Send Challenge';
 }
 
-function renderChallengeOv(){const slots=document.getElementById('ch-slots');slots.innerHTML=lineup.map((id,i)=>{if(!id)return`<div style="aspect-ratio:63/88;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:3px;background:var(--surface2)"><span style="font-size:.9rem">${i===0?'⚾':'🏏'}</span><span>${i===0?'P':'B'+(i)}</span></div>`;const p=getPlayer(id);return`<div style="position:relative">${chromeCard({player:p,rarity:p.rarity,level:1,onclick:'',extraStyle:'aspect-ratio:63/88'})}<div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.8);border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10">×</div></div>`;}).join('');const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
+function renderChallengeOv(){
+  // ── Lineup slots (compact horizontal row) ──────────────────────────────────
+  const slots=document.getElementById('ch-slots');
+  const slotLabels=['P','B1','B2','B3'];
+  slots.innerHTML=lineup.map((id,i)=>{
+    if(!id)return`<div style="width:52px;height:70px;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);flex-direction:column;gap:2px;background:var(--bg)"><span style="font-size:1rem">${i===0?'⚾':'🏏'}</span><span>${slotLabels[i]}</span></div>`;
+    const p=getPlayer(id);const color=RARITY_COLORS[p.rarity||'COMMON'];
+    return`<div style="position:relative;width:52px;">
+      <div style="width:52px;height:70px;border-radius:8px;overflow:hidden;border:2px solid ${color};">
+        <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
+      </div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);padding:2px 3px;border-radius:0 0 6px 6px;font-size:7px;font-weight:700;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
+      <div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:-5px;right:-5px;background:var(--danger);border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;cursor:pointer;z-index:10;font-weight:900;">×</div>
+    </div>`;
+  }).join('');
+
+  // ── Card pool ──────────────────────────────────────────────────────────────
+  const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
 // If games tonight, highlight eligible players; otherwise show all
 const hasGames=tonightGameIds.length>0;
 function isPlayingTonight(player){
@@ -770,7 +808,37 @@ if(hasGames&&otherCards.length>0){
   availHTML+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;grid-column:1/-1;">Not Playing Tonight</div>';
   availHTML+=otherCards.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:1,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;filter:grayscale(.8);${inL?'border-color:var(--accent)!important':''}opacity:${inL?.4:.5}`});}).join('');
 }
-document.getElementById('ch-avail').innerHTML=availHTML;
+// Split into pitchers and hitters
+const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
+const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
+const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
+const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
+
+function playerRow(item,dimmed){
+  const p=item.player;
+  const inL=lineup.includes(item.id);
+  const color=RARITY_COLORS[p.rarity||'COMMON'];
+  const pts=getPlayerLivePoints(p.mlbamId);
+  return `<div onclick="toggleLineup('${item.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;background:${inL?'rgba(108,99,255,.15)':'var(--surface2)'};border:1px solid ${inL?'var(--accent)':'transparent'};cursor:pointer;margin-bottom:4px;opacity:${dimmed?.5:1};transition:all .15s;">
+    <div style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;border:1.5px solid ${color};">
+      <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
+      <div style="font-size:10px;color:${color};">${p.position||p.pos} · ${p.team||''}</div>
+    </div>
+    ${pts>0?`<div style="font-size:11px;font-weight:700;color:var(--success);">${pts}pts</div>`:`<div style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:${color}22;color:${color};">${p.rarity||'COM'}</div>`}
+    ${inL?'<span style="color:var(--accent);font-size:13px;">✓</span>':''}
+  </div>`;
+}
+
+const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
+const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
+
+const pitchEl=document.getElementById('ch-pitchers');
+const hitEl=document.getElementById('ch-hitters');
+if(pitchEl)pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
+if(hitEl)hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
 const filled2=lineup.filter(Boolean).length;const btn2=document.getElementById('ch-launch');if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
 }
 function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;selectedRivalId=null;selectedRivalName=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');const inp=document.getElementById('rival-search');if(inp)inp.value='';document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>';}
