@@ -1240,7 +1240,6 @@ function renderChallengeOv(){
   const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
 // If games tonight, highlight eligible players; otherwise show all
 const hasGames=tonightGameIds.length>0;
-}
 function isPlayingTonight(player){
   if(!player)return false;
   const team=(player.team||player.teamName||'').toUpperCase().trim();
@@ -1271,6 +1270,27 @@ const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position|
 const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
 const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
 const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
+
+const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
+const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
+const pitchEl=document.getElementById('ch-pitchers');
+const hitEl=document.getElementById('ch-hitters');
+if(pitchEl)pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
+if(hitEl)hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
+const pc=document.getElementById('ch-p-count');
+const hc=document.getElementById('ch-h-count');
+if(pc)pc.textContent=`${pitcherItems.length} available`;
+if(hc)hc.textContent=`${hitterItems.length} available`;
+const filled2=lineup.filter(Boolean).length;
+const btn2=document.getElementById('ch-launch');
+if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
+const totalEl=document.getElementById('ch-lineup-total');
+if(totalEl&&filled2>0){
+  const lineupPts=lineup.filter(Boolean).reduce((t,id)=>{const p=getPlayer(id);return t+(p?getPlayerLivePoints(p.mlbamId):0);},0);
+  if(lineupPts>0){totalEl.style.display='block';totalEl.textContent='Total: '+lineupPts.toFixed(1)+' pts';}
+  else{totalEl.style.display='none';}
+}
+}
 
 function playerRow(item,dimmed){
   const p=item.player;
