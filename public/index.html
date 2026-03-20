@@ -2324,6 +2324,13 @@ function startLivePoll(){
 let _adminMLBLookup = {};
 let _adminFixedPlayers = [];
 
+// Normalize name: strip accents, suffixes, punctuation
+function normName(s){
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\b(jr|sr|ii|iii|iv)\b\.?/gi,'')
+    .replace(/[^a-z0-9 ]/gi,'').toLowerCase().trim().replace(/\s+/g,' ');
+}
+
 async function adminFetchMLB(){
   const btn=document.getElementById('admin-btn-fetch');
   const status=document.getElementById('admin-status');
@@ -2332,7 +2339,7 @@ async function adminFetchMLB(){
     const r=await fetch('/api/fix-players');
     const data=await r.json();
     if(data.error)throw new Error(data.error);
-    _adminMLBLookup=data.lookup;
+    _adminMLBLookup=data;
     status.innerHTML=`<span style="color:var(--success)">✓ Got ${data.total} MLB players</span>`;
     document.getElementById('admin-step2').style.display='block';
     document.getElementById('admin-stats').innerHTML=`<span style="color:var(--muted);font-size:12px;">${data.total} MLB players · ${PLAYERS.length} in our DB</span>`;
@@ -2346,21 +2353,39 @@ function adminFixPlayers(){
   const log=document.getElementById('admin-log');
   log.style.display='block'; log.innerHTML='';
   let fixed=0,notFound=0,correct=0;
+  const {byFull,byLast,byLastFirst}=_adminMLBLookup;
+
   _adminFixedPlayers=PLAYERS.map(p=>{
-    const fullName=((p.firstName||'')+(p.lastName||'')).replace(/\s+/g,' ').trim().toLowerCase();
-    const full2=((p.firstName||'')+' '+(p.lastName||'')).trim().toLowerCase();
-    const mlb=_adminMLBLookup[full2]||_adminMLBLookup[fullName];
+    const fn=normName(p.firstName||'');
+    const ln=normName(p.lastName||'');
+    const full=fn+' '+ln;
+    const lastFirst=ln+' '+fn;
+
+    // Try multiple matching strategies
+    let mlb = byFull[full] || byLastFirst[lastFirst];
+
+    // Try last name only if unique match
+    if(!mlb && byLast[ln] && byLast[ln].length===1){
+      mlb=byLast[ln][0];
+    }
+    // Try last name + first initial
+    if(!mlb && byLast[ln]){
+      const firstInit=fn[0];
+      const match=byLast[ln].find(m=>m.firstName&&m.firstName[0]===firstInit);
+      if(match) mlb=match;
+    }
+
     if(!mlb){
-      log.innerHTML+=`<div style="color:var(--muted)">⚠ ${p.firstName} ${p.lastName}</div>`;
+      log.innerHTML+=`<div style="color:var(--muted);font-size:11px;">⚠ ${p.firstName} ${p.lastName}</div>`;
       notFound++; return p;
     }
     if(String(p.mlbamId)===String(mlb.mlbamId)){correct++;return p;}
-    log.innerHTML+=`<div style="color:var(--success)">✓ ${p.firstName} ${p.lastName}: ${p.mlbamId}→${mlb.mlbamId}</div>`;
+    log.innerHTML+=`<div style="color:var(--success);font-size:11px;">✓ ${p.firstName} ${p.lastName}: ${p.mlbamId}→${mlb.mlbamId} (${mlb.team})</div>`;
     fixed++;
-    return {...p,mlbamId:mlb.mlbamId,
+    return {...p,mlbamId:mlb.mlbamId,team:mlb.team||p.team,teamName:mlb.teamName||p.teamName,
       photoUrl:`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mlb.mlbamId}/headshot/67/current`};
   });
-  log.innerHTML+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;">Fixed: ${fixed} · Not found: ${notFound} · Already correct: ${correct}</div>`;
+  log.innerHTML+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;color:var(--text);">✓ Fixed: ${fixed} &nbsp; ⚠ Not found: ${notFound} &nbsp; Already correct: ${correct}</div>`;
   log.scrollTop=log.scrollHeight;
   document.getElementById('admin-step3').style.display='block';
 }
