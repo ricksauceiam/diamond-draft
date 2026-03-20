@@ -217,6 +217,9 @@
       <button class="nav-item" data-tab="scores" onclick="goTab('scores')">
         <span class="nav-icon">⚾</span><span>Today's Games</span>
       </button>
+      <button class="nav-item" data-tab="allcards" onclick="goTab('allcards')">
+        <span class="nav-icon">📋</span><span>All Cards</span>
+      </button>
       <button class="nav-item" data-tab="leaderboard" onclick="goTab('leaderboard')">
         <span class="nav-icon">🏆</span><span>Top Collectors</span>
       </button>
@@ -379,6 +382,46 @@
     </div>
 
     <!-- LEADERBOARD -->
+    <!-- ALL CARDS TAB -->
+    <div class="tab-page" id="tab-allcards">
+      <div style="padding:16px 20px 0;flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h2 style="font-size:1.3rem;font-weight:900;">📋 All Cards</h2>
+          <div id="ac-count" style="font-size:12px;color:var(--muted);"></div>
+        </div>
+        <!-- Search + filters -->
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <input id="ac-search" type="text" placeholder="Search player, team, position..." oninput="filterAllCards()"
+            style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 13px;color:var(--text);font-size:13px;outline:none;">
+          <select id="ac-team" onchange="filterAllCards()" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+            <option value="">All Teams</option>
+          </select>
+          <select id="ac-pos" onchange="filterAllCards()" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;">
+            <option value="">All Positions</option>
+            <option value="P">Pitchers</option>
+            <option value="C">Catchers</option>
+            <option value="1B,2B,3B,SS">Infielders</option>
+            <option value="LF,CF,RF,OF,DH">Outfielders/DH</option>
+          </select>
+        </div>
+        <!-- Owned filter -->
+        <div style="display:flex;gap:7px;margin-bottom:2px;">
+          <div class="fc active" data-ac="ALL" onclick="setAcFilter('ALL')">All Players</div>
+          <div class="fc" data-ac="OWNED" onclick="setAcFilter('OWNED')">✅ Owned</div>
+          <div class="fc" data-ac="UNOWNED" onclick="setAcFilter('UNOWNED')">🎯 Not Owned</div>
+          <div class="fc" data-ac="ELITE" onclick="setAcFilter('ELITE')">👑 Elite</div>
+        </div>
+      </div>
+      <!-- Grid -->
+      <div style="flex:1;overflow-y:auto;padding:12px 20px 24px;">
+        <div id="ac-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;"></div>
+        <div id="ac-loading" style="text-align:center;padding:60px 20px;color:var(--muted);">
+          <div class="spinner" style="margin:0 auto 12px;"></div>
+          Loading all MLB players...
+        </div>
+      </div>
+    </div>
+
     <!-- ADMIN: Player ID Fixer -->
     <div class="tab-page" id="tab-admin">
       <div class="pg-head"><h2>🔧 Fix Player IDs</h2><p>Match MLB Stats API IDs to our database</p></div>
@@ -733,7 +776,7 @@ function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;lo
 function savePackSession(){const t=todayStr();sessionStorage.setItem(`ddp_${currentUser.id}_${t}`,JSON.stringify({packResults,revealedCards:revealedCards.map(s=>[...s])}));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
-function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();}
+function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection')renderCollection();if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();if(id==='allcards')loadAllCards();}
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened[0]?0:1;pb.style.display=pl>0?'':'none';pb.textContent=pl;const opened=userData.packsOpened[0];const btn=document.getElementById('pb1');const card=document.getElementById('hp1');if(card){if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(0);}else{card.classList.remove('claimed');btn.textContent='Open Pack';btn.className='pack-cta';btn.onclick=()=>openPackOv(0);}}const ml=document.getElementById('home-matchups');ml.innerHTML='<div style="color:var(--muted);font-size:13px;padding:14px 0">No live battles yet. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
 function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';const elite=isElite(p);
@@ -2489,6 +2532,125 @@ function adminDownload(){
   const blob=new Blob([JSON.stringify(_adminFixedPlayers,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='players.json'; a.click();
+}
+
+
+// ── ALL CARDS TAB ─────────────────────────────────────────────────────────────
+let _allMLBPlayers = [];
+let _acFilter = 'ALL';
+let _acLoaded = false;
+
+async function loadAllCards(){
+  if(_acLoaded) return;
+  document.getElementById('ac-loading').style.display='block';
+  document.getElementById('ac-grid').innerHTML='';
+  try{
+    const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
+    const data=await r.json();
+    _allMLBPlayers=(data.people||[]).map(p=>({
+      id: String(p.id),
+      mlbamId: p.id,
+      firstName: p.firstName||'',
+      lastName: p.lastName||'',
+      fullName: p.fullName||p.firstName+' '+p.lastName,
+      position: p.primaryPosition?.abbreviation||'',
+      team: p.currentTeam?.abbreviation||'',
+      teamName: p.currentTeam?.name||'',
+    })).sort((a,b)=>a.lastName.localeCompare(b.lastName));
+    _acLoaded=true;
+    // Populate team dropdown
+    const teams=[...new Set(_allMLBPlayers.map(p=>p.team).filter(Boolean))].sort();
+    const sel=document.getElementById('ac-team');
+    teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+    filterAllCards();
+  }catch(e){
+    document.getElementById('ac-loading').innerHTML='<div style="color:var(--danger)">Failed to load. Try again.</div>';
+  }
+}
+
+function setAcFilter(f){
+  _acFilter=f;
+  document.querySelectorAll('[data-ac]').forEach(el=>el.classList.toggle('active',el.dataset.ac===f));
+  filterAllCards();
+}
+
+function filterAllCards(){
+  const q=(document.getElementById('ac-search')?.value||'').toLowerCase();
+  const team=document.getElementById('ac-team')?.value||'';
+  const posGroup=document.getElementById('ac-pos')?.value||'';
+  const owned=new Set((userData?.collection||[]).map(c=>c.id));
+
+  let players=_allMLBPlayers.filter(p=>{
+    if(q && !p.fullName.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q) && !p.position.toLowerCase().includes(q)) return false;
+    if(team && p.team!==team) return false;
+    if(posGroup){
+      const positions=posGroup.split(',');
+      const isPitcher=PITCHER_POS.has(p.position);
+      if(posGroup==='P' && !isPitcher) return false;
+      if(posGroup!=='P' && isPitcher) return false;
+      if(posGroup==='C' && p.position!=='C') return false;
+      if(posGroup==='1B,2B,3B,SS' && !['1B','2B','3B','SS'].includes(p.position)) return false;
+      if(posGroup==='LF,CF,RF,OF,DH' && !['LF','CF','RF','OF','DH'].includes(p.position)) return false;
+    }
+    if(_acFilter==='OWNED' && !owned.has(p.id)) return false;
+    if(_acFilter==='UNOWNED' && owned.has(p.id)) return false;
+    if(_acFilter==='ELITE' && !TOP_25_IDS.has(p.mlbamId)) return false;
+    return true;
+  });
+
+  document.getElementById('ac-count').textContent=players.length+' players · '+owned.size+' owned';
+  document.getElementById('ac-loading').style.display='none';
+
+  const grid=document.getElementById('ac-grid');
+  // Render in batches for performance
+  grid.innerHTML='';
+  const batch=100;
+  let i=0;
+  function renderBatch(){
+    const frag=document.createDocumentFragment();
+    const end=Math.min(i+batch,players.length);
+    for(;i<end;i++){
+      const p=players[i];
+      const isOwned=owned.has(p.id);
+      const isElite=TOP_25_IDS.has(p.mlbamId);
+      const card=document.createElement('div');
+      card.style.cssText='border-radius:12px;overflow:hidden;background:var(--surface2);border:1.5px solid '+(isElite?'#FFD700':isOwned?'var(--accent)':'rgba(255,255,255,.06)')+';position:relative;cursor:pointer;transition:transform .15s;';
+      card.onmouseover=function(){this.style.transform='scale(1.03)';};
+      card.onmouseout=function(){this.style.transform='scale(1)';};
+      card.onclick=function(){showAcCardDetail(p);};
+      const photoUrl='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+p.mlbamId+'/headshot/67/current';
+      card.innerHTML='<div style="aspect-ratio:3/4;overflow:hidden;position:relative;">'
+        +'<img src="'+photoUrl+'" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" loading="lazy" onerror="this.parentElement.style.background='#111122';this.style.display='none'">'
+        +(isElite?'<div style="position:absolute;top:4px;right:4px;font-size:11px;">👑</div>':'')
+        +(isOwned?'<div style="position:absolute;top:4px;left:4px;background:var(--accent);color:#fff;font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;">OWNED</div>':'')
+        +'</div>'
+        +'<div style="padding:5px 7px;background:#080810;">'
+        +'<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;">'+p.lastName+'</div>'
+        +'<div style="font-size:9px;color:var(--muted);margin-top:1px;">'+p.position+' · '+p.team+'</div>'
+        +'</div>';
+      frag.appendChild(card);
+    }
+    grid.appendChild(frag);
+    if(i<players.length) requestAnimationFrame(renderBatch);
+  }
+  renderBatch();
+}
+
+function showAcCardDetail(p){
+  const photoUrl='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+p.mlbamId+'/headshot/67/current';
+  const owned=userData?.collection?.find(c=>c.id===p.id);
+  const isElite=TOP_25_IDS.has(p.mlbamId);
+  // Reuse the card modal
+  document.getElementById('m-img').innerHTML='<img src="'+photoUrl+'" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">';
+  document.getElementById('m-name').textContent=p.fullName;
+  document.getElementById('m-meta').textContent=p.position+' · '+p.teamName;
+  document.getElementById('m-power').textContent=(isElite?'👑 Elite · ':'')+'mlbamId: '+p.mlbamId;
+  document.getElementById('m-rbadge').style.display='none';
+  document.getElementById('m-cv').textContent=owned?(owned.copies||1)+' copies':'Not owned';
+  document.getElementById('m-dots').innerHTML='';
+  document.getElementById('mstats').innerHTML='';
+  const fb=document.getElementById('fuse-btn');if(fb)fb.style.display='none';
+  document.getElementById('card-modal').classList.add('open');
 }
 
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}
