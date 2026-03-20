@@ -2351,11 +2351,21 @@ async function adminFetchMLB(){
 
 function adminFixPlayers(){
   const log=document.getElementById('admin-log');
-  log.style.display='block'; log.innerHTML='';
-  let fixed=0,notFound=0,correct=0;
-  const {byFull,byLast,byLastFirst}=_adminMLBLookup;
+  log.style.display='block'; log.innerHTML='<div style="color:var(--muted)">Running...</div>';
+  try{
+    const byFull=_adminMLBLookup.byFull||{};
+    const byLast=_adminMLBLookup.byLast||{};
+    const byLastFirst=_adminMLBLookup.byLastFirst||{};
+    if(!Object.keys(byFull).length){
+      log.innerHTML='<div style="color:var(--danger)">Error: No data. Click Fetch MLB Players first.</div>';
+      return;
+    }
+    log.innerHTML='';
+    let fixed=0,notFound=0,correct=0;
+    const playerList=Array.isArray(PLAYERS)&&PLAYERS.length?PLAYERS:[];
+    if(!playerList.length){log.innerHTML='<div style="color:var(--danger)">Error: PLAYERS not loaded yet.</div>';return;}
 
-  _adminFixedPlayers=PLAYERS.map(p=>{
+  _adminFixedPlayers=playerList.map(p=>{
     const fn=normName(p.firstName||'');
     const ln=normName(p.lastName||'');
     const full=fn+' '+ln;
@@ -2388,6 +2398,7 @@ function adminFixPlayers(){
   log.innerHTML+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;color:var(--text);">✓ Fixed: ${fixed} &nbsp; ⚠ Not found: ${notFound} &nbsp; Already correct: ${correct}</div>`;
   log.scrollTop=log.scrollHeight;
   document.getElementById('admin-step3').style.display='block';
+  }catch(e){log.innerHTML+='<div style="color:var(--danger)">Error: '+e.message+'</div>';console.error(e);}
 }
 
 function adminDownload(){
