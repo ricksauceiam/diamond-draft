@@ -52,7 +52,7 @@
   .overlay{align-items:flex-end!important;}
   .ov-box{border-radius:20px 20px 0 0!important;max-height:92dvh!important;width:100%!important;max-width:100%!important;}
   /* Challenge overlay full screen */
-  #ch-ov .ov-box{max-height:96dvh!important;border-radius:20px 20px 0 0!important;}
+  #ch-ov{padding-bottom:env(safe-area-inset-bottom);}
   /* Battle overlay */
   #battle-ov .ov-box{border-radius:20px 20px 0 0!important;max-height:96dvh!important;}
   /* Modal sheets */
@@ -536,50 +536,56 @@
   </div>
 </div>
 
-<!-- CHALLENGE OVERLAY -->
-<div class="overlay" id="ch-ov" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="ov-box" style="max-width:900px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;">
-    <!-- Header -->
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-      <div>
-        <div style="font-size:1.1rem;font-weight:900;">⚔️ Build Your Lineup</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Pick 1 pitcher + 3 batters · then find a rival</div>
-      </div>
-      <button class="ov-close" style="position:static;" onclick="document.getElementById('ch-ov').classList.remove('open')">×</button>
+<!-- CHALLENGE FULL PAGE -->
+<div id="ch-ov" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:150;flex-direction:column;">
+  <!-- Header bar -->
+  <div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
+    <button onclick="closeChallengeOv()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:8px;line-height:1;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">←</button>
+    <div>
+      <div style="font-size:1rem;font-weight:900;">⚔️ Build Your Lineup</div>
+      <div style="font-size:11px;color:var(--muted);">Pick 1 pitcher + 3 batters · then challenge a rival</div>
     </div>
-    <!-- Lineup slots -->
-    <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Your Lineup</div>
-        <div id="ch-lineup-total" style="font-size:11px;font-weight:700;color:var(--success);display:none;">Total: 0 pts</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;" id="ch-slots"></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+      <div id="ch-lineup-total" style="font-size:12px;font-weight:700;color:var(--success);display:none;"></div>
+      <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="width:auto;padding:10px 22px;font-size:13px;">⚔️ Send Challenge</button>
     </div>
-    <!-- 3 columns -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 220px;flex:1;min-height:0;overflow:hidden;">
-      <!-- Pitchers -->
-      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🔥 Pitchers</div>
-        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-pitchers"></div>
+  </div>
+
+  <!-- Lineup slots bar -->
+  <div style="padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Your Lineup</div>
+    <div style="display:flex;gap:12px;" id="ch-slots"></div>
+  </div>
+
+  <!-- Main content -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 260px;flex:1;min-height:0;overflow:hidden;">
+    <!-- Pitchers -->
+    <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
+      <div style="padding:12px 18px 8px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span style="font-size:1rem;">🔥</span>
+        <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Pitchers</span>
+        <span id="ch-p-count" style="font-size:10px;color:var(--muted);"></span>
       </div>
-      <!-- Hitters -->
-      <div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">🏏 Hitters</div>
-        <div style="overflow-y:auto;padding:0 10px 10px;flex:1;" id="ch-hitters"></div>
+      <div style="overflow-y:auto;padding:0 14px 14px;flex:1;" id="ch-pitchers"></div>
+    </div>
+    <!-- Hitters -->
+    <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
+      <div style="padding:12px 18px 8px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span style="font-size:1rem;">🏏</span>
+        <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Hitters</span>
+        <span id="ch-h-count" style="font-size:10px;color:var(--muted);"></span>
       </div>
-      <!-- Rival search -->
-      <div style="display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;">Find Rival</div>
-        <div style="padding:0 10px 8px;flex-shrink:0;">
-          <input id="rival-search" type="text" placeholder="Search username..." oninput="searchRivals(this.value)"
-            style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;">
-        </div>
-        <div style="overflow-y:auto;flex:1;padding:0 10px;" id="ch-rivals">
-          <div style="color:var(--muted);font-size:12px;padding:4px;">Type to search...</div>
-        </div>
-        <div style="padding:10px;border-top:1px solid var(--border);flex-shrink:0;">
-          <button class="btn-p" id="ch-launch" onclick="launchBattle()" disabled style="padding:11px;font-size:13px;">⚔️ Send Challenge</button>
-        </div>
+      <div style="overflow-y:auto;padding:0 14px 14px;flex:1;" id="ch-hitters"></div>
+    </div>
+    <!-- Rival -->
+    <div style="display:flex;flex-direction:column;overflow:hidden;background:var(--surface);">
+      <div style="padding:12px 16px 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);flex-shrink:0;">Find Rival</div>
+      <div style="padding:0 14px 8px;flex-shrink:0;">
+        <input id="rival-search" type="text" placeholder="Search username..." oninput="searchRivals(this.value)"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;">
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:0 14px;" id="ch-rivals">
+        <div style="color:var(--muted);font-size:12px;padding:6px 0;">Type to search...</div>
       </div>
     </div>
   </div>
@@ -1234,6 +1240,7 @@ function renderChallengeOv(){
   const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
 // If games tonight, highlight eligible players; otherwise show all
 const hasGames=tonightGameIds.length>0;
+}
 function isPlayingTonight(player){
   if(!player)return false;
   const team=(player.team||player.teamName||'').toUpperCase().trim();
@@ -1268,40 +1275,28 @@ const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||
 function playerRow(item,dimmed){
   const p=item.player;
   const inL=lineup.includes(item.id);
-  const color=RARITY_COLORS[p.rarity||'COMMON'];
   const pts=getPlayerLivePoints(p.mlbamId);
-  return `<div onclick="toggleLineup('${item.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;background:${inL?'rgba(108,99,255,.15)':'var(--surface2)'};border:1px solid ${inL?'var(--accent)':'transparent'};cursor:pointer;margin-bottom:4px;opacity:${dimmed?.5:1};transition:all .15s;">
-    <div style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.1);">
-      <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">
-    </div>
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-      <div style="font-size:10px;color:${color};">${p.position||p.pos} · ${p.team||''}</div>
-    </div>
-    ${pts>0?`<div style="font-size:11px;font-weight:700;color:var(--success);">${pts}pts</div>`:""}
-    ${inL?'<span style="color:var(--accent);font-size:13px;">✓</span>':''}
-  </div>`;
+  const elite=isElite(p);
+  const fullName=p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
+  const bg=inL?'rgba(108,99,255,.12)':'var(--surface2)';
+  const bc=inL?'var(--accent)':elite?'rgba(255,215,0,.3)':'transparent';
+  const imgBorder=elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.1)';
+  const clickAttr=dimmed?'':'onclick="toggleLineup(''+item.id+'')"';
+  const checkmark=inL?'<div style="width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;">✓</div>':'';
+  const ptsHtml=pts>0?('<div style="font-size:10px;font-weight:700;color:var(--success);margin-top:2px;">'+pts.toFixed(1)+' pts</div>'):'';
+  return '<div '+clickAttr+' style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:'+bg+';border:1.5px solid '+bc+';cursor:'+(dimmed?'default':'pointer')+';margin-bottom:6px;opacity:'+(dimmed?.4:1)+';transition:border-color .15s;">'
+    +'<div style="width:44px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0;border:'+imgBorder+';">'
+    +'<img src="'+playerPhoto(p)+'" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">'
+    +'</div>'
+    +'<div style="flex:1;min-width:0;">'
+    +'<div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(elite?'👑 ':'')+fullName+'</div>'
+    +'<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+(p.position||p.pos||'')+' · '+(p.team||'')+'</div>'
+    +ptsHtml
+    +'</div>'
+    +checkmark
+    +'</div>';
 }
 
-const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
-const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
-
-const pitchEl=document.getElementById('ch-pitchers');
-const hitEl=document.getElementById('ch-hitters');
-if(pitchEl)pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
-if(hitEl)hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
-const filled2=lineup.filter(Boolean).length;
-const btn2=document.getElementById('ch-launch');
-if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
-// Show total lineup points if games are live
-const totalEl=document.getElementById('ch-lineup-total');
-if(totalEl&&filled2>0){
-  const lineupPts=lineup.filter(Boolean).reduce((t,id)=>{const p=getPlayer(id);return t+(p?getPlayerLivePoints(p.mlbamId):0);},0);
-  if(lineupPts>0){totalEl.style.display='block';totalEl.textContent='Total: '+lineupPts.toFixed(1)+' pts';}
-  else{totalEl.style.display='none';}
-}
-}
-function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;selectedRivalId=null;selectedRivalName=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');const inp=document.getElementById('rival-search');if(inp)inp.value='';document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>';}
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
 async function launchBattle(){
 if(lineup.filter(Boolean).length<4||!selectedRivalId)return;
