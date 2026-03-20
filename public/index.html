@@ -549,7 +549,10 @@
     </div>
     <!-- Lineup slots -->
     <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Your Lineup</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Your Lineup</div>
+        <div id="ch-lineup-total" style="font-size:11px;font-weight:700;color:var(--success);display:none;">Total: 0 pts</div>
+      </div>
       <div style="display:flex;gap:8px;align-items:center;" id="ch-slots"></div>
     </div>
     <!-- 3 columns -->
@@ -1208,14 +1211,20 @@ function renderChallengeOv(){
   const slotLabels=['P','B1','B2','B3'];
   slots.innerHTML=lineup.map((id,i)=>{
     if(!id)return`<div style="width:90px;height:120px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-direction:column;gap:4px;background:var(--bg);flex-shrink:0;"><span style="font-size:1.4rem">${i===0?'⚾':'🏏'}</span><span style="font-size:10px;font-weight:700;">${slotLabels[i]}</span></div>`;
-    const p=getPlayer(id);const color=RARITY_COLORS[p.rarity||'COMMON'];
+    const p=getPlayer(id);const elite=isElite(p);
+    const pts=getPlayerLivePoints(p.mlbamId);
+    const borderColor=elite?'#FFD700':'rgba(255,255,255,.15)';
     return`<div style="position:relative;width:90px;flex-shrink:0;">
-      <div style="width:90px;height:120px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-shadow:0 0 10px ${color}55;">
+      <div style="width:90px;height:120px;border-radius:10px;overflow:hidden;border:2px solid ${borderColor};box-shadow:${elite?'0 0 12px rgba(255,215,0,.35)':'none'};">
         <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
       </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.82);padding:4px 5px;border-radius:0 0 8px 8px;">
-        <div style="font-size:10px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-        <div style="font-size:8px;color:${color};text-align:center;font-weight:600;">${p.position||p.pos} · ${p.team||''}</div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.88);padding:4px 5px;border-radius:0 0 8px 8px;">
+        <div style="font-size:10px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite?'👑 ':''}${p.lastName||p.name}</div>
+        <div style="font-size:8px;color:var(--muted);text-align:center;font-weight:600;">${p.position||p.pos} · ${p.team||''}</div>
+        ${pts>0
+          ? `<div style="font-size:9px;font-weight:900;color:var(--success);text-align:center;margin-top:1px;">${pts.toFixed(1)} pts</div>`
+          : `<div style="font-size:8px;color:var(--accent);text-align:center;margin-top:1px;">Proj: —</div>`
+        }
       </div>
       <div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:-6px;right:-6px;background:var(--danger);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;z-index:10;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,.5);">×</div>
     </div>`;
@@ -1281,7 +1290,16 @@ const pitchEl=document.getElementById('ch-pitchers');
 const hitEl=document.getElementById('ch-hitters');
 if(pitchEl)pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
 if(hitEl)hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
-const filled2=lineup.filter(Boolean).length;const btn2=document.getElementById('ch-launch');if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
+const filled2=lineup.filter(Boolean).length;
+const btn2=document.getElementById('ch-launch');
+if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
+// Show total lineup points if games are live
+const totalEl=document.getElementById('ch-lineup-total');
+if(totalEl&&filled2>0){
+  const lineupPts=lineup.filter(Boolean).reduce((t,id)=>{const p=getPlayer(id);return t+(p?getPlayerLivePoints(p.mlbamId):0);},0);
+  if(lineupPts>0){totalEl.style.display='block';totalEl.textContent='Total: '+lineupPts.toFixed(1)+' pts';}
+  else{totalEl.style.display='none';}
+}
 }
 function openChallengeOv(){lineup=[null,null,null,null];selectedRival=null;selectedRivalId=null;selectedRivalName=null;renderChallengeOv();document.getElementById('ch-ov').classList.add('open');const inp=document.getElementById('rival-search');if(inp)inp.value='';document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>';}
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
