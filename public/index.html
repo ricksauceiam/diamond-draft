@@ -1301,19 +1301,47 @@ function playerRow(item,dimmed){
   const elite=isElite(p);
   const fullName=p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
   const wrapper=document.createElement('div');
-  wrapper.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:'+(inL?'rgba(108,99,255,.12)':'var(--surface2)')+';border:1.5px solid '+(inL?'var(--accent)':elite?'rgba(255,215,0,.3)':'transparent')+';cursor:'+(dimmed?'default':'pointer')+';margin-bottom:6px;opacity:'+(dimmed?0.4:1)+';transition:border-color .15s;';
-  if(!dimmed){wrapper.setAttribute('data-cid',item.id);wrapper.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));});}
-  const img=document.createElement('div');
-  img.style.cssText='width:44px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.1)')+';';
-  img.innerHTML='<img src="'+playerPhoto(p)+'" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">';
+  wrapper.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;'
+    +'background:'+(inL?'rgba(108,99,255,.12)':'var(--surface2)')+';'
+    +'border:1.5px solid '+(inL?'var(--accent)':elite?'rgba(255,215,0,.3)':'transparent')+';'
+    +'cursor:'+(dimmed?'default':'pointer')+';margin-bottom:6px;opacity:'+(dimmed?0.4:1)+';transition:border-color .15s;';
+  if(!dimmed){
+    wrapper.setAttribute('data-cid',item.id);
+    wrapper.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));});
+  }
+  // Photo
+  const photoWrap=document.createElement('div');
+  photoWrap.style.cssText='width:44px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.1)')+';';
+  const photoEl=document.createElement('img');
+  photoEl.src=playerPhoto(p);
+  photoEl.style.cssText='width:100%;height:100%;object-fit:cover;object-position:50% 10%;';
+  photoEl.onerror=function(){this.parentElement.style.background='#161622';this.style.display='none';};
+  photoWrap.appendChild(photoEl);
+  // Info
   const info=document.createElement('div');
   info.style.cssText='flex:1;min-width:0;';
-  info.innerHTML='<div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(elite?'👑 ':'')+fullName+'</div>'
-    +'<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+(p.position||p.pos||'')+' · '+(p.team||'')+'</div>'
-    +(pts>0?'<div style="font-size:10px;font-weight:700;color:var(--success);margin-top:2px;">'+pts.toFixed(1)+' pts</div>':'');
-  wrapper.appendChild(img);
+  const nameEl=document.createElement('div');
+  nameEl.style.cssText='font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+  nameEl.textContent=(elite?'👑 ':'')+fullName;
+  const posEl=document.createElement('div');
+  posEl.style.cssText='font-size:11px;color:#6a6a8a;margin-top:2px;';
+  posEl.textContent=(p.position||p.pos||'')+' · '+(p.team||'');
+  info.appendChild(nameEl);
+  info.appendChild(posEl);
+  if(pts>0){
+    const ptsEl=document.createElement('div');
+    ptsEl.style.cssText='font-size:10px;font-weight:700;color:#00d48a;margin-top:2px;';
+    ptsEl.textContent=pts.toFixed(1)+' pts';
+    info.appendChild(ptsEl);
+  }
+  wrapper.appendChild(photoWrap);
   wrapper.appendChild(info);
-  if(inL){const tick=document.createElement('div');tick.style.cssText='width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;';tick.textContent='✓';wrapper.appendChild(tick);}
+  if(inL){
+    const tick=document.createElement('div');
+    tick.style.cssText='width:22px;height:22px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;';
+    tick.textContent='✓';
+    wrapper.appendChild(tick);
+  }
   return wrapper.outerHTML;
 }
 
