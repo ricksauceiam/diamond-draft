@@ -1991,8 +1991,8 @@ async function acceptChallenge(id){
       id: ch.id,
       rivalName: ch.from_name,
       rival: ch.from_name,
-      youLineup: toLineup,          // acceptor's lineup
-      rivalLineup: ch.from_lineup||[], // challenger's lineup
+      youLineup: toLineup,          // acceptor lineup
+      rivalLineup: ch.from_lineup||[], // challenger lineup
       status: 'active',
       sentAt: ch.created_at
     });
