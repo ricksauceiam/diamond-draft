@@ -252,7 +252,7 @@
       <div class="pg-head"><h2 id="home-greet">Welcome!</h2><p id="home-date"></p></div>
       <div class="home-body">
         <div class="streak-bar">
-          <div style="font-size:1.8rem">🔥</div>
+          <div style="font-size:1.8rem">🧤</div>
           <div class="stext"><h4>Daily Streak</h4><p>Open both packs to keep it going</p><div class="next-reset" id="next-reset"></div></div>
           <div class="snum" id="streak-num">0</div>
         </div>
@@ -316,7 +316,7 @@
       <!-- Filters + search -->
       <div class="col-filters" style="padding-top:8px!important;">
         <div class="fc active" data-r="ALL" onclick="filterCol('ALL')">⚾ All</div>
-        <div class="fc" data-r="PITCHER" onclick="filterCol('PITCHER')">🔥 Pitchers</div>
+        <div class="fc" data-r="PITCHER" onclick="filterCol('PITCHER')">🧤 Pitchers</div>
         <div class="fc" data-r="HITTER" onclick="filterCol('HITTER')">🏏 Hitters</div>
         <div class="fc" data-r="ELITE" onclick="filterCol('ELITE')">👑 Elite</div>
         <div class="fc" data-r="DUPES" onclick="filterCol('DUPES')">2× Dupes</div>
@@ -615,7 +615,7 @@
     <!-- Pitchers -->
     <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
       <div style="padding:12px 18px 8px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
-        <span style="font-size:1rem;">🔥</span>
+        <span style="font-size:1rem;">🧤</span>
         <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Pitchers</span>
         <span id="ch-p-count" style="font-size:10px;color:var(--muted);"></span>
       </div>
@@ -1652,7 +1652,7 @@ if(yourLineupEl){
 }
 ov.classList.add('open');
 }
-function runBattle(){if(!battleState||battleState.done)return;const bs=battleState;bs.inning++;document.getElementById('b-prog').style.width=Math.round((bs.inning/bs.maxInnings)*100)+'%';['you','rival'].forEach(side=>{const ci=Math.floor(Math.random()*4),card=bs[side].lineup[ci];if(!card)return;const pts=Math.floor(Math.random()*18)+3;bs[side].scores[ci]+=pts;bs[side].total+=pts;const pe=document.getElementById(`bpt-${side}-${ci}`);if(pe){pe.textContent=bs[side].scores[ci];pe.style.transform='scale(1.4)';setTimeout(()=>pe.style.transform='',300);}document.getElementById(`bs-${side}`).textContent=bs[side].total;const plays=['⚾ Home run!','💥 RBI double!','🔥 Strikeout!','🎯 Solid hit!','⚡ Stolen base!','💪 RBI single!'];const pbp=document.getElementById('b-pbp');const el=document.createElement('div');el.style.cssText='background:var(--surface2);border-radius:7px;padding:6px 9px;font-size:12px;display:flex;align-items:center;gap:7px';el.innerHTML=`<span>${plays[Math.floor(Math.random()*plays.length)].split(' ')[0]}</span><span><b>${card.lastName||card.name}</b> +${pts} pts</span>`;pbp.insertBefore(el,pbp.firstChild);if(pbp.children.length>8)pbp.removeChild(pbp.lastChild);});if(bs.inning>=bs.maxInnings){endBattle();}else{battleTimer=setTimeout(runBattle,650+Math.random()*400);}}
+function runBattle(){if(!battleState||battleState.done)return;const bs=battleState;bs.inning++;document.getElementById('b-prog').style.width=Math.round((bs.inning/bs.maxInnings)*100)+'%';['you','rival'].forEach(side=>{const ci=Math.floor(Math.random()*4),card=bs[side].lineup[ci];if(!card)return;const pts=Math.floor(Math.random()*18)+3;bs[side].scores[ci]+=pts;bs[side].total+=pts;const pe=document.getElementById(`bpt-${side}-${ci}`);if(pe){pe.textContent=bs[side].scores[ci];pe.style.transform='scale(1.4)';setTimeout(()=>pe.style.transform='',300);}document.getElementById(`bs-${side}`).textContent=bs[side].total;const plays=['⚾ Home run!','💥 RBI double!','🧤 Strikeout!','🎯 Solid hit!','⚡ Stolen base!','💪 RBI single!'];const pbp=document.getElementById('b-pbp');const el=document.createElement('div');el.style.cssText='background:var(--surface2);border-radius:7px;padding:6px 9px;font-size:12px;display:flex;align-items:center;gap:7px';el.innerHTML=`<span>${plays[Math.floor(Math.random()*plays.length)].split(' ')[0]}</span><span><b>${card.lastName||card.name}</b> +${pts} pts</span>`;pbp.insertBefore(el,pbp.firstChild);if(pbp.children.length>8)pbp.removeChild(pbp.lastChild);});if(bs.inning>=bs.maxInnings){endBattle();}else{battleTimer=setTimeout(runBattle,650+Math.random()*400);}}
 async function endBattle(){
 if(!battleState)return;battleState.done=true;
 const bs=battleState,won=bs.you.total>bs.rival.total;
