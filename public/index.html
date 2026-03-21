@@ -155,6 +155,20 @@
     0%,100%{box-shadow:0 0 10px rgba(255,215,0,.3)}
     50%{box-shadow:0 0 25px rgba(255,215,0,.7)}
   }
+  @keyframes spotlightPop{
+    0%{transform:scale(.85) translateY(20px);opacity:0}
+    60%{transform:scale(1.05) translateY(-4px);opacity:1}
+    100%{transform:scale(1) translateY(0);opacity:1}
+  }
+  @keyframes nameSlide{
+    0%{opacity:0;transform:translateY(10px)}
+    100%{opacity:1;transform:translateY(0)}
+  }
+  @keyframes stripIn{
+    0%{opacity:0;transform:scale(.6) translateY(20px)}
+    70%{transform:scale(1.1) translateY(-3px)}
+    100%{opacity:1;transform:scale(1) translateY(0)}
+  }
   @keyframes cardDrop{
     0%{opacity:0;transform:rotateY(180deg) translateY(-30px);}
     100%{opacity:1;transform:rotateY(180deg) translateY(0);}
@@ -490,23 +504,46 @@
 </div>
 
 <!-- PACK OVERLAY -->
-<div class="overlay" id="pack-ov" style="z-index:400;background:rgba(0,0,0,.96);">
-  <div style="width:100%;max-width:500px;padding:24px;display:flex;flex-direction:column;align-items:center;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:1.2rem;font-weight:900;color:var(--text);" id="pov-title">📦 Daily Pack</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="pov-sub">Your cards are ready</div>
-    </div>
-    <div id="pack-stage" style="display:flex;gap:12px;justify-content:center;align-items:center;min-height:200px;width:100%;flex-wrap:wrap;"></div>
-    <div id="rainbow-alert" style="display:none;text-align:center;margin-top:16px;padding:12px 20px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.4);border-radius:12px;">
-      <div style="font-size:1.4rem;">🌈</div>
-      <div style="font-size:13px;font-weight:900;color:#FFD700;margin-top:4px;">RAINBOW PULL!</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="rainbow-name"></div>
-    </div>
-    <div style="margin-top:24px;display:flex;gap:10px;width:100%;">
-      <button class="btn-p" id="ov-collect-btn" style="display:none;flex:1;padding:13px;font-size:14px;" onclick="claimPack()">✅ Add to Collection</button>
-      <button style="flex:1;padding:13px;font-size:14px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer;" onclick="closePackOv()">Close</button>
-    </div>
+<div class="overlay" id="pack-ov" style="z-index:400;background:rgba(0,0,0,.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+  <div style="text-align:center;margin-bottom:20px;width:100%;max-width:420px;">
+    <div style="font-size:1.1rem;font-weight:900;" id="pov-title">📦 Daily Pack</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="pov-sub">Tap each card to reveal</div>
   </div>
+
+  <!-- Single card spotlight (reveal one at a time) -->
+  <div id="pack-spotlight" style="display:none;flex-direction:column;align-items:center;width:100%;max-width:260px;">
+    <div id="pack-card-stage" style="width:200px;height:280px;perspective:1000px;cursor:pointer;" onclick="revealSpotlightCard()">
+      <div id="pack-card-inner" style="width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,0,.2,1);">
+        <div id="pack-card-back" style="position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;background:repeating-linear-gradient(45deg,#0d0d1a,#0d0d1a 10px,#111124 10px,#111124 20px);border:2px solid rgba(108,99,255,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+          <div style="font-size:3rem;">⚾</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;">TAP TO REVEAL</div>
+        </div>
+        <div id="pack-card-front" style="position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;overflow:hidden;transform:rotateY(180deg);">
+          <!-- filled dynamically -->
+        </div>
+      </div>
+    </div>
+    <div id="pack-card-name" style="margin-top:14px;font-size:1.1rem;font-weight:900;text-align:center;opacity:0;transition:opacity .4s;"></div>
+    <div id="pack-card-meta" style="font-size:12px;color:var(--muted);margin-top:4px;opacity:0;transition:opacity .4s;"></div>
+    <div id="pack-card-status" style="font-size:10px;font-weight:900;margin-top:6px;opacity:0;transition:opacity .4s;"></div>
+    <button id="pack-next-btn" onclick="packNextCard()" style="display:none;margin-top:16px;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;"></button>
+  </div>
+
+  <!-- Collected cards strip at bottom -->
+  <div id="pack-collected-strip" style="display:flex;gap:8px;margin-top:20px;justify-content:center;min-height:70px;"></div>
+
+  <div id="rainbow-alert" style="display:none;text-align:center;margin-top:12px;padding:10px 20px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.4);border-radius:12px;">
+    <div style="font-size:1.2rem;">🌈</div>
+    <div style="font-size:12px;font-weight:900;color:#FFD700;margin-top:3px;">RAINBOW PULL!</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="rainbow-name"></div>
+  </div>
+
+  <div style="margin-top:20px;display:flex;gap:10px;width:100%;max-width:420px;">
+    <button class="btn-p" id="ov-collect-btn" style="display:none;flex:1;padding:12px;font-size:14px;" onclick="claimPack()">✅ Add to Collection</button>
+    <button style="flex:1;padding:12px;font-size:14px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer;" onclick="closePackOv()">Close</button>
+  </div>
+  <!-- Legacy stage (hidden, keep for already-opened packs) -->
+  <div id="pack-stage" style="display:none;"></div>
 </div>
 
 <!-- BATTLE RESULT OVERLAY -->
@@ -843,47 +880,143 @@ function generatePack(idx){
 function pickRarity(rand){let c=0,r=rand()*100;for(const w of PACK_WEIGHTS){c+=w.weight;if(r<c)return w.rarity;}return'COMMON';}
 function renderPackReveal(alreadyOpened){
   const cards = packResults[curPackIdx];
-  const stage = document.getElementById('pack-stage');
-  const hasRainbow = cards.some(c=>c.isRainbow);
+  window._packSpotlightIdx = 0;
+  window._packCards = cards;
+  window._packRevealed = false;
 
-  // Build card elements — all face down first
-  stage.innerHTML = cards.map((card,i)=>{
-    const owned = userData.collection.find(c=>c.id===card.id);
-    const frontHTML = buildPackCardFront(card, owned);
-    return `<div class="pack-card-reveal${card.isRainbow?' rainbow':''}" id="pc-${i}" style="animation:cardDrop .4s ease ${i*0.1}s both;">
-      <div class="pack-card-back-face"><span style="font-size:2rem">⚾</span><span style="font-size:10px;color:var(--muted);">Diamond Draft</span></div>
-      <div class="pack-card-front">${frontHTML}${card.isRainbow?'<div class="rainbow-shine"></div>':''}</div>
-    </div>`;
-  }).join('');
+  // Reset UI
+  document.getElementById('pack-collected-strip').innerHTML = '';
+  document.getElementById('rainbow-alert').style.display = 'none';
+  document.getElementById('ov-collect-btn').style.display = 'none';
+  document.getElementById('pack-card-name').style.opacity = '0';
+  document.getElementById('pack-card-meta').style.opacity = '0';
+  document.getElementById('pack-card-status').style.opacity = '0';
+  document.getElementById('pack-next-btn').style.display = 'none';
+  document.getElementById('pack-card-inner').style.transform = 'rotateY(0deg)';
 
   if(alreadyOpened){
-    // Show all cards already flipped
-    cards.forEach((_,i)=>{
-      document.getElementById('pc-'+i)?.classList.add('flipped');
+    // Show all cards in strip without animation
+    document.getElementById('pack-spotlight').style.display = 'none';
+    const strip = document.getElementById('pack-collected-strip');
+    cards.forEach(card=>{
+      const owned = userData.collection.find(c=>c.id===card.id);
+      const d = document.createElement('div');
+      d.style.cssText = 'width:60px;height:84px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.15);flex-shrink:0;';
+      d.innerHTML = buildPackCardFront(card, owned);
+      strip.appendChild(d);
     });
-    if(hasRainbow) document.getElementById('rainbow-alert').style.display='block';
-    document.getElementById('ov-collect-btn').style.display='none';
+    if(cards.some(c=>c.isRainbow)) document.getElementById('rainbow-alert').style.display='block';
+    document.getElementById('ov-collect-btn').style.display = 'none';
+    document.getElementById('pov-sub').textContent = 'Already opened today';
   } else {
-    // Animate flip one by one
-    cards.forEach((_,i)=>{
-      setTimeout(()=>{
-        document.getElementById('pc-'+i)?.classList.add('flipped');
-        if(i===cards.length-1){
-          // All revealed
-          setTimeout(()=>{
-            if(hasRainbow){
-              document.getElementById('rainbow-alert').style.display='block';
-              document.getElementById('rainbow-name').textContent=
-                cards.find(c=>c.isRainbow)?.fullName||cards.find(c=>c.isRainbow)?.displayName||'Top Player';
-              showToast('🌈 RAINBOW PULL! Incredible!');
-            }
-            document.getElementById('ov-collect-btn').style.display='block';
-          }, 400);
-        }
-      }, 600 + i*400);
-    });
+    // Start spotlight reveal
+    document.getElementById('pack-spotlight').style.display = 'flex';
+    document.getElementById('pack-card-stage').style.animation = 'spotlightPop .5s ease both';
+    showPackSpotlight(0);
   }
 }
+
+function showPackSpotlight(idx){
+  const cards = window._packCards || [];
+  if(idx >= cards.length) return;
+  window._packSpotlightIdx = idx;
+  window._packRevealed = false;
+
+  // Reset flip
+  const inner = document.getElementById('pack-card-inner');
+  inner.style.transition = 'none';
+  inner.style.transform = 'rotateY(0deg)';
+  setTimeout(()=>{ inner.style.transition = 'transform .7s cubic-bezier(.4,0,.2,1)'; }, 50);
+
+  // Reset name/meta
+  document.getElementById('pack-card-name').style.opacity = '0';
+  document.getElementById('pack-card-meta').style.opacity = '0';
+  document.getElementById('pack-card-status').style.opacity = '0';
+  document.getElementById('pack-next-btn').style.display = 'none';
+
+  // Animate card in
+  const stage = document.getElementById('pack-card-stage');
+  stage.style.animation = 'none';
+  void stage.offsetWidth;
+  stage.style.animation = 'spotlightPop .45s ease both';
+
+  document.getElementById('pov-sub').textContent = 'Card ' + (idx+1) + ' of ' + cards.length + ' — tap to reveal';
+}
+
+function revealSpotlightCard(){
+  if(window._packRevealed) return;
+  window._packRevealed = true;
+  const cards = window._packCards || [];
+  const idx = window._packSpotlightIdx;
+  const card = cards[idx];
+  if(!card) return;
+
+  // Fill front
+  const owned = userData.collection.find(c=>c.id===card.id);
+  const front = document.getElementById('pack-card-front');
+  front.innerHTML = buildPackCardFront(card, owned) + (card.isRainbow ? '<div class="rainbow-shine"></div>' : '');
+
+  // Flip!
+  const inner = document.getElementById('pack-card-inner');
+  inner.style.transform = 'rotateY(180deg)';
+
+  // After flip, show name + meta
+  setTimeout(()=>{
+    const fullName = card.fullName||card.displayName||((card.firstName||'')+' '+(card.lastName||card.name||'')).trim();
+    const nameEl = document.getElementById('pack-card-name');
+    const metaEl = document.getElementById('pack-card-meta');
+    const statusEl = document.getElementById('pack-card-status');
+
+    nameEl.textContent = fullName;
+    nameEl.style.opacity = '1';
+    nameEl.style.animation = 'nameSlide .4s ease both';
+    nameEl.style.color = card.isRainbow ? '#FFD700' : isElite(card) ? '#FFD700' : 'var(--text)';
+
+    metaEl.textContent = (card.position||card.pos||'') + ' · ' + (card.team||'');
+    metaEl.style.opacity = '1';
+
+    if(owned){
+      statusEl.textContent = '+COPY';
+      statusEl.style.color = 'var(--muted)';
+    } else {
+      statusEl.textContent = '✨ NEW CARD!';
+      statusEl.style.color = 'var(--success)';
+    }
+    statusEl.style.opacity = '1';
+
+    if(card.isRainbow){
+      document.getElementById('rainbow-alert').style.display = 'block';
+      document.getElementById('rainbow-name').textContent = fullName;
+      showToast('🌈 RAINBOW PULL! Incredible!');
+    }
+
+    // Add to strip
+    const strip = document.getElementById('pack-collected-strip');
+    const d = document.createElement('div');
+    d.style.cssText = 'width:54px;height:76px;border-radius:9px;overflow:hidden;border:'+(card.isRainbow||isElite(card)?'2px solid #FFD700':'1px solid rgba(255,255,255,.15)')+';flex-shrink:0;animation:stripIn .4s ease both;';
+    d.innerHTML = buildPackCardFront(card, owned);
+    strip.appendChild(d);
+
+    // Show next button
+    const nextBtn = document.getElementById('pack-next-btn');
+    if(idx < cards.length - 1){
+      nextBtn.textContent = 'Next Card →';
+      nextBtn.style.display = 'block';
+    } else {
+      // Last card
+      nextBtn.style.display = 'none';
+      document.getElementById('pack-spotlight').style.display = 'none';
+      document.getElementById('ov-collect-btn').style.display = 'block';
+      document.getElementById('pov-sub').textContent = 'All ' + cards.length + ' cards revealed!';
+    }
+  }, 750);
+}
+
+function packNextCard(){
+  showPackSpotlight(window._packSpotlightIdx + 1);
+}
+
+function _legacyRenderGrid(){}
 
 function buildPackCardFront(card, owned){
   const elite = isElite(card)||card.isRainbow;
@@ -906,8 +1039,8 @@ function buildPackCardFront(card, owned){
 
 function renderPackGrid(){} // legacy stub — replaced by renderPackReveal
 
-function flipCard(i){if(revealedCards[curPackIdx].has(i))return;revealedCards[curPackIdx].add(i);savePackSession();renderPackGrid();}
-function revealAll(){packResults[curPackIdx].forEach((_,i)=>revealedCards[curPackIdx].add(i));savePackSession();renderPackGrid();}
+function flipCard(i){revealSpotlightCard();}
+function revealAll(){revealSpotlightCard();}
 function claimPack(){
   if(userData.packsOpened[curPackIdx]) return;
   const cards = packResults[curPackIdx];
