@@ -1319,803 +1319,93 @@ return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${glow};border-col
 function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, myScore, rivalScore, leading){
   const myName = (currentUser?.email||'').split('@')[0];
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'background:var(--surface);border:2px solid '+(leading?'#00d48a':'#6c63ff')+';border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .15s;';
+  wrap.style.cssText = 'background:var(--surface);border:2px solid '+(leading?'#00d48a':'#6c63ff')+';border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .15s;margin-bottom:12px;';
   wrap.onmouseover = function(){this.style.transform='translateY(-2px)';};
   wrap.onmouseout = function(){this.style.transform='none';};
   wrap.onclick = function(){openActiveBattle(battleId);};
 
   // Header
   const head = document.createElement('div');
-  head.style.cssText = 'padding:10px 14px;background:linear-gradient(135deg,rgba(108,99,255,.15),transparent);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);';
+  head.style.cssText = 'padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);background:linear-gradient(135deg,rgba(108,99,255,.12),transparent);';
   const title = document.createElement('div');
-  title.style.cssText = 'font-size:13px;font-weight:900;';
+  title.style.cssText = 'font-size:14px;font-weight:900;';
   title.textContent = '⚔️ vs ' + rivalName;
   const badge = document.createElement('div');
-  badge.style.cssText = 'display:flex;align-items:center;gap:5px;';
+  badge.style.cssText = 'display:flex;align-items:center;gap:6px;';
   badge.innerHTML = '<div class="live-dot"></div><span style="font-size:11px;font-weight:700;color:#ff4757;">LIVE</span>';
-  head.appendChild(title); head.appendChild(badge);
+  head.appendChild(title);
+  head.appendChild(badge);
 
-  // Scores
-  const scores = document.createElement('div');
-  scores.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:14px;';
+  // Main body — two columns side by side
+  const body = document.createElement('div');
+  body.style.cssText = 'display:grid;grid-template-columns:1fr 40px 1fr;gap:0;';
 
-  function sideEl(name, score, isLeading, lineup){
-    const d = document.createElement('div');
-    d.style.textAlign = 'center';
-    const nm = document.createElement('div');
-    nm.style.cssText = 'font-size:10px;color:#6a6a8a;text-transform:uppercase;font-weight:700;margin-bottom:4px;';
-    nm.textContent = name;
-    const sc = document.createElement('div');
-    sc.style.cssText = 'font-size:2rem;font-weight:900;color:'+(isLeading?'#00d48a':'#e8e8f0')+';';
-    sc.textContent = score.toFixed(1);
-    const cards = document.createElement('div');
-    cards.style.cssText = 'display:flex;gap:4px;justify-content:center;margin-top:6px;';
+  function makeSide(name, score, isLeading, lineup){
+    const side = document.createElement('div');
+    side.style.cssText = 'padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;';
+
+    // Name + score
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:10px;color:#6a6a8a;text-transform:uppercase;font-weight:700;letter-spacing:.5px;';
+    nameEl.textContent = name;
+
+    const scoreEl = document.createElement('div');
+    scoreEl.style.cssText = 'font-size:2.2rem;font-weight:900;line-height:1;color:'+(isLeading?'#00d48a':'#e8e8f0')+';';
+    scoreEl.textContent = score.toFixed(1);
+
+    // Cards grid — 2x2
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%;';
+
     lineup.slice(0,4).forEach(id=>{
       const p = getPlayer(id);
-      if(!p) return;
-      const cd = document.createElement('div');
-      cd.style.cssText = 'width:28px;height:36px;border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.1);';
-      const img = document.createElement('img');
-      img.src = playerPhoto(p);
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:50% 10%;';
-      img.onerror = function(){this.style.display='none';};
-      cd.appendChild(img);
-      cards.appendChild(cd);
+      const cell = document.createElement('div');
+      cell.style.cssText = 'aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:#111122;position:relative;';
+      if(p){
+        const img = document.createElement('img');
+        img.src = playerPhoto(p);
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:50% 10%;';
+        img.onerror = function(){this.style.display='none';};
+        cell.appendChild(img);
+        // Name overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.85));padding:3px 4px;';
+        const nm = document.createElement('div');
+        nm.style.cssText = 'font-size:7px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        nm.textContent = p.lastName||p.fullName||'';
+        overlay.appendChild(nm);
+        cell.appendChild(overlay);
+      } else {
+        cell.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.2rem;color:#333;">?</div>';
+      }
+      grid.appendChild(cell);
     });
-    d.appendChild(nm); d.appendChild(sc); d.appendChild(cards);
-    return d;
+
+    side.appendChild(nameEl);
+    side.appendChild(scoreEl);
+    side.appendChild(grid);
+    return side;
   }
 
-  scores.appendChild(sideEl(myName, myScore, leading, myLineup));
+  body.appendChild(makeSide(myName, myScore, leading, myLineup));
+
+  // VS divider
   const vs = document.createElement('div');
-  vs.style.cssText = 'text-align:center;color:#6a6a8a;font-size:12px;font-weight:700;';
+  vs.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#6a6a8a;';
   vs.textContent = 'VS';
-  scores.appendChild(vs);
-  scores.appendChild(sideEl(rivalName, rivalScore, !leading, rivalLineup));
+  body.appendChild(vs);
+
+  body.appendChild(makeSide(rivalName, rivalScore, !leading && rivalScore > 0, rivalLineup));
+  wrap.appendChild(head);
+  wrap.appendChild(body);
 
   // Footer
   const foot = document.createElement('div');
-  foot.style.cssText = 'padding:8px 14px;background:#161622;border-top:1px solid rgba(255,255,255,.07);text-align:center;';
-  foot.innerHTML = '<span style="font-size:11px;color:#6a6a8a;">Tap to view live matchup →</span>';
-
-  wrap.appendChild(head);
-  wrap.appendChild(scores);
+  foot.style.cssText = 'padding:8px 16px;background:#161622;border-top:1px solid rgba(255,255,255,.07);text-align:center;';
+  foot.innerHTML = '<span style="font-size:11px;color:#6a6a8a;">Tap to view full matchup →</span>';
   wrap.appendChild(foot);
+
   return wrap.outerHTML;
-}
-
-function renderMatchups(){
-document.getElementById('sw').textContent=battleRecord.wins||0;
-document.getElementById('sl').textContent=battleRecord.losses||0;
-document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;
-
-const now=Date.now();
-const ONE_DAY=24*60*60*1000;
-
-function isOld(t){return(now-new Date(t).getTime())>ONE_DAY;}
-
-function collapsedRow(m,resultClass,resultLabel,scoreStr){
-  const age=new Date(m.sentAt||m.created_at||Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  return `<div class="mbig-expandable" id="battle-${m.id}">
-    <div class="mbig-collapsed" onclick="toggleBattleExpand('battle-${m.id}')">
-      <div class="mc-result ${resultClass}">${resultLabel}</div>
-      <div class="mc-opp" style="flex:1;">vs ${m.rival||m.from_name||'Opponent'}</div>
-      <div class="mc-score">${scoreStr}</div>
-      <div class="mc-date">${age}</div>
-      <span style="color:var(--muted);font-size:11px;">›</span>
-    </div>
-    <div class="mbig-expanded"></div>
-  </div>`;
-}
-
-// Build all battle items into a single array with a sortKey timestamp
-const allItems = [];
-
-// 0. Active battles from Supabase (accepted/active)
-const activeBattles = window._activeBattles||[];
-activeBattles.forEach(b=>{
-  const isFrom = b.from_id===currentUser.id;
-  const rivalName = isFrom ? b.to_name : b.from_name;
-  const myLineup = isFrom ? (b.from_lineup||[]) : (b.to_lineup||[]);
-  const rivalLineup = isFrom ? (b.to_lineup||[]) : (b.from_lineup||[]);
-  const myScore = myLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const rivalScore = rivalLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const leading = myScore > rivalScore;
-  const date = new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  const battle = {id:b.id,rivalName,youLineup:myLineup,rivalLineup,status:'active',sentAt:b.created_at};
-  window._histBattles = window._histBattles||{};
-  window._histBattles['active-'+b.id] = battle;
-  allItems.push({
-    sortKey: new Date(b.created_at).getTime(),
-    priority: 0,
-    html: buildActiveBattleCard(b.id, rivalName, myLineup, rivalLineup, myScore, rivalScore, leading)
-  });});
-
-// 1. Incoming challenges (highest priority — always fresh)
-const incoming = window._incomingChallenges||[];
-incoming.forEach(c=>{
-  allItems.push({
-    sortKey: new Date(c.created_at).getTime(),
-    priority: 0, // incoming = top
-    html: (()=>{
-      const theirCards=(c.from_lineup||[]).slice(0,4).map(id=>getPlayer(id)).filter(Boolean);
-      if(isOld(c.created_at)) return collapsedRow({id:c.id,rival:c.from_name,sentAt:c.created_at},'pending','📨 Old','—');
-      return `<div class="mbig" style="border-color:var(--danger);background:rgba(255,71,87,.05);cursor:pointer;" onclick="openBattleDetail({id:'${c.id}',rivalName:'${c.from_name}',rival:'${c.from_name}',youLineup:[],rivalLineup:${JSON.stringify((c.from_lineup||[]).slice(0,4))},status:'incoming',sentAt:'${c.created_at}'})" >
-        <div class="mbig-head">
-          <span style="font-size:13px;font-weight:800;">⚔️ ${c.from_name} challenged you!</span>
-          <span class="mb-status live">🔴 Incoming</span>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">${new Date(c.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
-        <div style="display:flex;gap:5px;margin-bottom:12px;">
-          ${theirCards.map(p=>`<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);"><img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'"></div>`).join('')}
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="openAcceptLineup('${c.id}','${c.from_name}')" style="flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">⚔️ Accept & Pick Lineup</button>
-          <button onclick="declineChallenge('${c.id}')" style="padding:9px 14px;background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;">Decline</button>
-        </div>
-      </div>`;
-    })()
-  });
-});
-
-// 2. Sent pending challenges
-const pending = userData?.pendingMatchups||[];
-pending.forEach(m=>{
-  const old = isOld(m.sentAt);
-  const pLineup=(m.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  while(pLineup.length<4)pLineup.push(null);
-  const rLineup=[null,null,null,null]; // unknown until accepted
-  allItems.push({
-    sortKey: new Date(m.sentAt).getTime(),
-    priority: old ? 2 : 1,
-    html: old ? collapsedRow(m,'pending','⏳ Expired','—') :
-    `<div class="mbig" style="border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.05);">
-      <div class="mbig-head">
-        <span style="font-size:13px;font-weight:700">${m.rivalEmoji||'⚾'} ${m.rival}</span>
-        <span class="mb-status upcoming" style="display:flex;align-items:center;gap:5px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pendingPulse 1.4s infinite;"></span>
-          Awaiting Response
-        </span>
-      </div>
-      <div class="mbig-lineups">
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;">${(currentUser?.email||'').split('@')[0]}</div>
-          <div class="mbig-cards">${pLineup.map(p=>miniCard(p,false)).join('')}</div>
-        </div>
-        <div class="mbig-score-center"><div style="font-size:11px;color:var(--muted);">📨 Sent ${new Date(m.sentAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div>
-        <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;text-align:right;">${m.rival}</div>
-          <div class="mbig-cards right">${[0,1,2,3].map(i=>'<div style="width:52px;height:72px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:1.3rem;color:var(--muted);">?</span></div>').join('')}</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-        <button onclick="cancelChallenge('${m.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:11px;color:var(--muted);cursor:pointer;">Cancel</button>
-      </div>
-    </div>`
-  });
-});
-
-// Sort: priority first (0=incoming, 1=active, 2=expired), then by most recent within each group
-allItems.sort((a,b)=>{
-  if(a.priority !== b.priority) return a.priority - b.priority;
-  return b.sortKey - a.sortKey; // newest first within same priority
-});
-
-const html = allItems.map(i=>i.html).join('');
-document.getElementById('mlist').innerHTML = html || '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:2rem;margin-bottom:10px;">⚔️</div><p style="font-weight:700;margin-bottom:6px;">No battles yet</p><p style="font-size:13px;">Challenge a player to get started!</p><button class="btn-p" style="margin-top:14px;padding:10px 22px;font-size:13px;" onclick="openChallengeOv()">Find a Player →</button></div>';
-
-// ── Completed battle history ──────────────────────────────────────────────────
-const myName=(currentUser?.email||'').split('@')[0];
-if(_battleHistory.length>0){
-  const historyHTML=_battleHistory.map(b=>{
-    const iFrom=b.from_id===currentUser.id;
-    const rivalName=iFrom?b.to_name:b.from_name;
-    const result=b.result||{};
-    const myScore=iFrom?result.from_score||result.you||0:result.to_score||result.rival||0;
-    const theirScore=iFrom?result.to_score||result.rival||0:result.from_score||result.you||0;
-    const won=(iFrom&&result.winner==='from')||(!iFrom&&result.winner==='to');
-    const tied=result.winner==='tie';
-    const resultClass=won?'win':tied?'':'loss';
-    const resultLabel=won?'🏆 W':tied?'🤝 T':'💀 L';
-    const scoreStr=`${Number(myScore).toFixed(1)}–${Number(theirScore).toFixed(1)}`;
-    const date=new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const myLineup=(iFrom?b.from_lineup:b.to_lineup)||[];
-    const theirLineup=(iFrom?b.to_lineup:b.from_lineup)||[];
-    window._histBattles=window._histBattles||{};
-    window._histBattles['hist-'+b.id]={id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at};
-    return `<div class="mbig-expandable" id="hist-${b.id}">
-      <div class="mbig-collapsed" onclick="toggleBattleExpand('hist-${b.id}');renderHistoryExpand('hist-${b.id}')">
-        <div class="mc-result ${resultClass}">${resultLabel}</div>
-        <div class="mc-opp" style="flex:1;">vs ${rivalName}</div>
-        <div class="mc-score">${scoreStr}</div>
-        <div class="mc-date">${date}</div>
-        <span style="color:var(--muted);font-size:11px;">›</span>
-      </div>
-      <div class="mbig-expanded" id="hist-exp-${b.id}"></div>
-    </div>`;
-  }).join('');
-  const histSection=document.createElement('div');
-  histSection.innerHTML=`<div class="sec-title" style="margin-top:16px;margin-bottom:8px;">📋 Battle History</div>`+historyHTML;
-  document.getElementById('mlist').after(histSection);
-}
-}
-
-function cancelChallenge(id){
-if(!userData.pendingMatchups)return;
-userData.pendingMatchups=userData.pendingMatchups.filter(m=>String(m.id)!==String(id));
-saveData();renderMatchups();showToast('Challenge cancelled.');
-}
-
-
-async function searchRivals(query){
-  const box=document.getElementById('ch-rivals');
-  if(!query||query.length<2){
-    box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Type to search for players...</div>';
-    return;
-  }
-  box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">Searching...</div>';
-  const{data,error}=await sb.from('profiles')
-    .select('id,username,card_count,wins,losses')
-    .ilike('username','%'+query+'%')
-    .neq('id',currentUser.id)
-    .limit(8);
-  if(error||!data?.length){
-    box.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 4px;">No players found</div>';
-    return;
-  }
-  box.innerHTML=data.map(u=>{
-    const isSelected=selectedRivalId===u.id;
-    return `<div onclick="selectRival('${u.id}','${u.username}')"
-      style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
-      background:${isSelected?'rgba(108,99,255,.12)':'var(--surface2)'};
-      border:1px solid ${isSelected?'var(--accent)':'var(--border)'};
-      cursor:pointer;margin-bottom:6px;transition:all .2s;">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
-        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;">
-        ${u.username[0].toUpperCase()}
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;">${u.username}</div>
-        <div style="font-size:11px;color:var(--muted);">${u.card_count||0} cards · ${u.wins||0}W ${u.losses||0}L</div>
-      </div>
-      ${isSelected?'<span style="color:var(--accent);font-size:16px;font-weight:900;">✓</span>':''}
-    </div>`;
-  }).join('');
-}
-
-function selectRival(id,name){
-  selectedRivalId=id;
-  selectedRivalName=name;
-  selectedRival=id;
-  // Re-render search to show selection
-  const query=document.getElementById('rival-search')?.value||'';
-  searchRivals(query);
-  // Update button
-  const filled=lineup.filter(Boolean).length;
-  const btn=document.getElementById('ch-launch');
-  btn.disabled=filled<4;
-  btn.textContent=filled<4?`Pick ${4-filled} more`:'⚔️ Send Challenge';
-}
-
-function renderChallengeOv(){
-  // ── Lineup slots (compact horizontal row) ──────────────────────────────────
-  const slots=document.getElementById('ch-slots');
-  const slotLabels=['P','B1','B2','B3'];
-  slots.innerHTML=lineup.map((id,i)=>{
-    if(!id)return`<div style="width:90px;height:120px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-direction:column;gap:4px;background:var(--bg);flex-shrink:0;"><span style="font-size:1.4rem">${i===0?'⚾':'🏏'}</span><span style="font-size:10px;font-weight:700;">${slotLabels[i]}</span></div>`;
-    const p=getPlayer(id);const elite=isElite(p);
-    const pts=getPlayerLivePoints(p.mlbamId);
-    const borderColor=elite?'#FFD700':'rgba(255,255,255,.15)';
-    return`<div style="position:relative;width:90px;flex-shrink:0;">
-      <div style="width:90px;height:120px;border-radius:10px;overflow:hidden;border:2px solid ${borderColor};box-shadow:${elite?'0 0 12px rgba(255,215,0,.35)':'none'};">
-        <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
-      </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.88);padding:4px 5px;border-radius:0 0 8px 8px;">
-        <div style="font-size:10px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite?'👑 ':''}${p.lastName||p.name}</div>
-        <div style="font-size:8px;color:var(--muted);text-align:center;font-weight:600;">${p.position||p.pos} · ${p.team||''}</div>
-        ${pts>0
-          ? `<div style="font-size:9px;font-weight:900;color:var(--success);text-align:center;margin-top:1px;">${pts.toFixed(1)} pts</div>`
-          : `<div style="font-size:8px;color:var(--accent);text-align:center;margin-top:1px;">Proj: —</div>`
-        }
-      </div>
-      <div onclick="lineup[${i}]=null;renderChallengeOv()" style="position:absolute;top:-6px;right:-6px;background:var(--danger);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;z-index:10;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,.5);">×</div>
-    </div>`;
-  }).join('');
-
-  // ── Card pool ──────────────────────────────────────────────────────────────
-  const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-// If games tonight, highlight eligible players; otherwise show all
-const hasGames=tonightGameIds.length>0;
-function isPlayingTonight(player){
-  if(!player)return false;
-  const team=(player.team||player.teamName||'').toUpperCase().trim();
-  const teamAbbr=(player.teamAbbr||team||'').toUpperCase().trim();
-  // Check against tonight's teams set
-  for(const t of tonightTeams){
-    const tu=t.toUpperCase();
-    if(tu===team||tu===teamAbbr||tu.includes(team)||team.includes(tu))return true;
-  }
-  return false;
-}
-// Refresh in-battle IDs for lineup builder
-  const inBattleSet = window._inBattleIds || new Set();
-  const availCards=col.filter(item=>{
-  if(!hasGames)return true;
-  return isPlayingTonight(item.player);
-});
-// Also exclude in-battle cards from available pool
-  const otherCards=hasGames
-    ? col.filter(item=>!isPlayingTonight(item.player) && !inBattleSet.has(String(item.id)))
-    : col.filter(item=>inBattleSet.has(String(item.id)));
-let availHTML='';
-if(hasGames&&availCards.length>0){
-  availHTML+='<div style="font-size:10px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;grid-column:1/-1;">⚾ Playing Tonight</div>';
-}
-availHTML+=availCards.map(item=>{const p=item.player,inL=lineup.includes(item.id);const pts=getPlayerLivePoints(p.mlbamId);return chromeCard({player:p,rarity:p.rarity,level:1,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;${inL?'border-color:var(--accent)!important':''}opacity:${inL?.6:1}`})+(pts>0?`<div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:8px;font-weight:900;color:var(--success);">${pts}pts</div>`:'');}).join('');
-if(hasGames&&otherCards.length>0){
-  availHTML+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;grid-column:1/-1;">Not Playing Tonight</div>';
-  availHTML+=otherCards.map(item=>{const p=item.player,inL=lineup.includes(item.id);return chromeCard({player:p,rarity:p.rarity,level:1,onclick:`toggleLineup('${item.id}')`,extraStyle:`aspect-ratio:63/88;filter:grayscale(.8);${inL?'border-color:var(--accent)!important':''}opacity:${inL?.4:.5}`});}).join('');
-}
-// Split into pitchers and hitters
-const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
-const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
-const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
-const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
-
-const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
-const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
-const pitchEl=document.getElementById('ch-pitchers');
-const hitEl=document.getElementById('ch-hitters');
-if(pitchEl){pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
-  pitchEl.querySelectorAll('[data-cid]').forEach(el=>el.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));}));}
-if(hitEl){hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
-  hitEl.querySelectorAll('[data-cid]').forEach(el=>el.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));}));}
-const pc=document.getElementById('ch-p-count');
-const hc=document.getElementById('ch-h-count');
-if(pc)pc.textContent=`${pitcherItems.length} available`;
-if(hc)hc.textContent=`${hitterItems.length} available`;
-const filled2=lineup.filter(Boolean).length;
-const btn2=document.getElementById('ch-launch');
-if(btn2){btn2.disabled=filled2<4||!selectedRivalId;btn2.textContent=filled2<4?`Pick ${4-filled2} more`:!selectedRivalId?'Find a player above':'⚔️ Send Challenge';}
-const totalEl=document.getElementById('ch-lineup-total');
-if(totalEl&&filled2>0){
-  const lineupPts=lineup.filter(Boolean).reduce((t,id)=>{const p=getPlayer(id);return t+(p?getPlayerLivePoints(p.mlbamId):0);},0);
-  if(lineupPts>0){totalEl.style.display='block';totalEl.textContent='Total: '+lineupPts.toFixed(1)+' pts';}
-  else{totalEl.style.display='none';}
-}
-}
-
-function playerRow(item,dimmed){
-  const p=item.player;
-  const inL=lineup.includes(item.id);
-  const pts=getPlayerLivePoints(p.mlbamId);
-  const elite=isElite(p);
-  const fullName=p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
-  const wrapper=document.createElement('div');
-  wrapper.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;'
-    +'background:'+(inL?'rgba(108,99,255,.12)':'var(--surface2)')+';'
-    +'border:1.5px solid '+(inL?'var(--accent)':elite?'rgba(255,215,0,.3)':'transparent')+';'
-    +'cursor:'+(dimmed?'default':'pointer')+';margin-bottom:6px;opacity:'+(dimmed?0.4:1)+';transition:border-color .15s;';
-  if(!dimmed){
-    wrapper.setAttribute('data-cid',item.id);
-  }
-  // Photo
-  const photoWrap=document.createElement('div');
-  photoWrap.style.cssText='width:44px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.1)')+';';
-  const photoEl=document.createElement('img');
-  photoEl.src=playerPhoto(p);
-  photoEl.style.cssText='width:100%;height:100%;object-fit:cover;object-position:50% 10%;';
-  photoEl.onerror=function(){this.parentElement.style.background='#161622';this.style.display='none';};
-  photoWrap.appendChild(photoEl);
-  // Info
-  const info=document.createElement('div');
-  info.style.cssText='flex:1;min-width:0;';
-  const nameEl=document.createElement('div');
-  nameEl.style.cssText='font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-  nameEl.textContent=(elite?'👑 ':'')+fullName;
-  const posEl=document.createElement('div');
-  posEl.style.cssText='font-size:11px;color:#6a6a8a;margin-top:2px;';
-  posEl.textContent=(p.position||p.pos||'')+' · '+(p.team||'');
-  info.appendChild(nameEl);
-  info.appendChild(posEl);
-  if(pts>0){
-    const ptsEl=document.createElement('div');
-    ptsEl.style.cssText='font-size:10px;font-weight:700;color:#00d48a;margin-top:2px;';
-    ptsEl.textContent=pts.toFixed(1)+' pts';
-    info.appendChild(ptsEl);
-  }
-  wrapper.appendChild(photoWrap);
-  wrapper.appendChild(info);
-  if(inL){
-    const tick=document.createElement('div');
-    tick.style.cssText='width:22px;height:22px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;';
-    tick.textContent='✓';
-    wrapper.appendChild(tick);
-  }
-  return wrapper.outerHTML;
-}
-
-
-function openChallengeOv(){
-  lineup=[null,null,null,null];
-  selectedRival=null;selectedRivalId=null;selectedRivalName=null;
-  const ov=document.getElementById('ch-ov');
-  ov.style.display='flex';
-  renderChallengeOv();
-  const inp=document.getElementById('rival-search');
-  if(inp)inp.value='';
-  document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px 0;">Type to search...</div>';
-}
-function closeChallengeOv(){
-  document.getElementById('ch-ov').style.display='none';
-  _pendingAcceptId = null;
-  _pendingAcceptFromName = null;
-  // Restore rival search column
-  const rivalSearchInput = document.getElementById('rival-search');
-  if(rivalSearchInput){
-    const col = rivalSearchInput.closest('div[style*="background:var(--surface)"]');
-    if(col) col.style.display = '';
-  }
-  // Restore launch button
-  const launchBtn = document.getElementById('ch-launch');
-  if(launchBtn){
-    launchBtn.textContent = '⚔️ Send Challenge';
-    launchBtn.onclick = launchBattle;
-  }
-}
-
-function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
-async function launchBattle(){
-if(lineup.filter(Boolean).length<4||!selectedRivalId)return;
-const btn=document.getElementById('ch-launch');
-btn.disabled=true;btn.textContent='Sending...';
-const myName=(currentUser.email||'').split('@')[0];
-const lineupIds=lineup.filter(Boolean);
-const{error}=await sb.from('challenges').insert({
-  from_id:currentUser.id,from_name:myName,
-  to_id:selectedRivalId,to_name:selectedRivalName,
-  from_lineup:lineupIds,status:'pending'
-});
-btn.disabled=false;btn.textContent='⚔️ Send Challenge';
-if(error){console.error('Challenge error:',error);showToast('❌ Error sending challenge');return;}
-document.getElementById('ch-ov').classList.remove('open');
-showChallengePending({name:selectedRivalName,emoji:'⚔️'},lineupIds);
-if(!userData.pendingMatchups)userData.pendingMatchups=[];
-userData.pendingMatchups.push({id:Date.now(),rival:selectedRivalName,rivalEmoji:'⚔️',lineup:lineupIds,sentAt:new Date().toISOString()});
-saveData();renderMatchups();
-}
-
-async function pollChallenges(){
-if(!currentUser)return;
-// Check incoming (to me, pending)
-const{data:incoming}=await sb.from('challenges')
-  .select('id,from_id,from_name,from_lineup,created_at')
-  .eq('to_id',currentUser.id).eq('status','pending');
-const prev=window._incomingCount||0;
-window._incomingChallenges=incoming||[];
-window._incomingCount=(incoming||[]).length;
-updateChallengeBadge(window._incomingCount);
-if(window._incomingCount>prev&&document.visibilityState==='visible'){
-  showToast('⚔️ '+(incoming[0].from_name)+' challenged you! Go to Battle tab to accept.');
-}
-// Check accepted challenges I sent
-if(!window._shownBattleIds) window._shownBattleIds=new Set();
-const fiveMinAgo=new Date(Date.now()-5*60*1000).toISOString();
-const{data:accepted}=await sb.from('challenges')
-  .select('id,to_name,to_lineup,from_lineup,created_at')
-  .eq('from_id',currentUser.id).eq('status','accepted')
-  .gt('created_at',fiveMinAgo);
-if(accepted&&accepted.length>0){
-  const c=accepted.find(c=>!window._shownBattleIds.has(c.id));
-  if(c){
-    window._shownBattleIds.add(c.id);
-    showToast('✅ '+c.to_name+' accepted! Go to Battle tab.');
-    updateChallengeBadge((window._incomingCount||0));
-    renderMatchups();
-  }
-}
-// Fetch completed battles for history
-fetchBattleHistory();
-}
-
-let _battleHistory=[];
-async function fetchBattleHistory(){
-  if(!currentUser)return;
-  // Fetch both active AND completed battles
-  const{data}=await sb.from('challenges')
-    .select('id,from_id,from_name,to_name,from_lineup,to_lineup,result,created_at,status')
-    .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
-    .in('status',['accepted','active','completed'])
-    .order('created_at',{ascending:false})
-    .limit(30);
-  if(data){
-    _battleHistory=data.filter(b=>b.status==='completed');
-    window._activeBattles=data.filter(b=>b.status==='accepted'||b.status==='active');
-    if(document.getElementById('tab-matchups')?.classList.contains('active')){
-      renderMatchups();
-    }
-  }
-}
-
-function startSupabaseBattle(challenge){
-const myName=(currentUser?.email||'').split('@')[0];
-const myCards=(challenge.from_lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-const theirCards=(challenge.to_lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-// Pad to 4 if needed
-while(myCards.length<4)myCards.push(PLAYERS[Math.floor(Math.random()*PLAYERS.length)]);
-while(theirCards.length<4)theirCards.push(PLAYERS[Math.floor(Math.random()*PLAYERS.length)]);
-battleState={
-  you:{name:myName,lineup:myCards,scores:[0,0,0,0],total:0},
-  rival:{name:challenge.to_name,lineup:theirCards,scores:[0,0,0,0],total:0},
-  inning:0,maxInnings:9,done:false,
-  challengeId:challenge.id
-};
-document.getElementById('battle-ov').classList.add('open');
-document.getElementById('b-title').textContent=myName+' vs '+challenge.to_name;
-document.getElementById('b-rival-lbl').textContent=challenge.to_name;
-document.getElementById('bs-you').textContent='0';
-document.getElementById('bs-rival').textContent='0';
-document.getElementById('b-prog').style.width='0%';
-document.getElementById('b-pbp').innerHTML='';
-document.getElementById('b-over').style.display='none';
-['you','rival'].forEach(side=>{
-  document.getElementById('b-'+side).innerHTML=battleState[side].lineup.map((c,i)=>{
-    const color=RARITY_COLORS[c.rarity||'COMMON'];
-    const fullName=c.fullName||c.displayName||((c.firstName||'')+' '+(c.lastName||c.name||'')).trim();
-    return `<div style="display:flex;align-items:center;gap:9px;background:var(--surface2);border-radius:10px;padding:8px 10px;margin-bottom:6px;border-left:3px solid rgba(255,255,255,.1);">
-      <div style="width:38px;height:38px;border-radius:7px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.08);">
-        <img src="${playerPhoto(c)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;" onerror="this.parentElement.style.background='#111122'">
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);">${fullName}</div>
-        <div style="font-size:10px;color:${color};font-weight:600;margin-top:1px;">${c.position||c.pos||''} · ${c.teamName||c.team||''}</div>
-      </div>
-      <div style="font-size:15px;font-weight:900;color:var(--accent);min-width:28px;text-align:right;" id="bpt-${side}-${i}">0</div>
-    </div>`;
-  }).join('');
-});
-clearTimeout(battleTimer);
-battleTimer=setTimeout(runBattle,800);
-}
-
-function updateChallengeBadge(count){
-document.querySelectorAll('.nav-item, .mob-tab').forEach(btn=>{
-  if(btn.dataset.tab==='matchups'){
-    let badge=btn.querySelector('.ch-notif');
-    if(count>0){
-      if(!badge){badge=document.createElement('span');badge.className='nav-badge ch-notif mob-badge';badge.style.cssText='background:var(--danger);animation:pulse 1.2s infinite;';btn.appendChild(badge);}
-      badge.textContent=count;
-    } else {if(badge)badge.remove();}
-  }
-});
-}
-
-function startChallengePoll(){
-  pollChallenges();
-  setInterval(pollChallenges,15000);
-  startRealtimeSubscription();
-}
-
-// ── SUPABASE REALTIME ─────────────────────────────────────────────────────────
-let realtimeChannel = null;
-
-function startRealtimeSubscription(){
-  if(realtimeChannel) sb.removeChannel(realtimeChannel);
-
-  realtimeChannel = sb.channel('challenges-realtime')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'challenges',
-      filter: `to_id=eq.${currentUser.id}`
-    }, payload => handleChallengeChange(payload))
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'challenges',
-      filter: `from_id=eq.${currentUser.id}`
-    }, payload => handleChallengeChange(payload))
-    .subscribe(status => {
-      console.log('Realtime status:', status);
-    });
-}
-
-function handleChallengeChange(payload){
-  const ch = payload.new;
-  if(!ch) return;
-
-  // Someone sent ME a challenge
-  if(ch.to_id === currentUser.id && ch.status === 'pending'){
-    // Add to incoming list if not already there
-    if(!window._incomingChallenges) window._incomingChallenges = [];
-    const exists = window._incomingChallenges.find(c => c.id === ch.id);
-    if(!exists){
-      window._incomingChallenges.push(ch);
-      window._incomingCount = window._incomingChallenges.length;
-      updateChallengeBadge(window._incomingCount);
-      showToast('⚔️ ' + ch.from_name + ' challenged you!');
-      renderMatchups();
-    }
-  }
-
-  // Challenge I SENT was accepted → launch battle for challenger
-  if(ch.from_id === currentUser.id && ch.status === 'accepted'){
-    if(!window._shownBattleIds) window._shownBattleIds = new Set();
-    if(!window._shownBattleIds.has(ch.id)){
-      window._shownBattleIds.add(ch.id);
-      showToast('✅ ' + ch.to_name + ' accepted! Battle starting...');
-      renderMatchups();
-      // Open battle detail for challenger after short delay
-      setTimeout(() => {
-        openBattleDetail({
-          id: ch.id,
-          rivalName: ch.to_name,
-          rival: ch.to_name,
-          youLineup: ch.from_lineup || [],
-          rivalLineup: ch.to_lineup || [],
-          status: 'active',
-          sentAt: ch.created_at
-        });
-      }, 1500);
-    }
-  }
-
-  // Challenge I ACCEPTED was declined or cancelled
-  if(ch.to_id === currentUser.id && (ch.status === 'declined' || ch.status === 'cancelled')){
-    window._incomingChallenges = (window._incomingChallenges||[]).filter(c => c.id !== ch.id);
-    window._incomingCount = window._incomingChallenges.length;
-    updateChallengeBadge(window._incomingCount);
-    renderMatchups();
-  }
-}
-
-function showChallengePending(rival,lineupIds){
-const ov=document.getElementById('pending-ov');
-const myName=(currentUser?.email||'').split('@')[0];
-document.getElementById('pending-rival-name').textContent=rival.name;
-document.getElementById('pending-rival-label').textContent=rival.name;
-document.getElementById('pending-your-name').textContent=myName;
-// Show your lineup cards
-const ids=lineupIds||lineup.filter(Boolean);
-const yourLineupEl=document.getElementById('pending-your-lineup');
-if(yourLineupEl){
-  yourLineupEl.innerHTML=ids.map(id=>{
-    const p=getPlayer(id);
-    if(!p)return'';
-    const color=RARITY_COLORS[p.rarity||'COMMON'];
-    return `<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.08);flex-shrink:0;position:relative;">
-      <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
-      <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:${color};"></div>
-    </div>`;
-  }).join('');
-}
-ov.classList.add('open');
-}
-function runBattle(){if(!battleState||battleState.done)return;const bs=battleState;bs.inning++;document.getElementById('b-prog').style.width=Math.round((bs.inning/bs.maxInnings)*100)+'%';['you','rival'].forEach(side=>{const ci=Math.floor(Math.random()*4),card=bs[side].lineup[ci];if(!card)return;const pts=Math.floor(Math.random()*18)+3;bs[side].scores[ci]+=pts;bs[side].total+=pts;const pe=document.getElementById(`bpt-${side}-${ci}`);if(pe){pe.textContent=bs[side].scores[ci];pe.style.transform='scale(1.4)';setTimeout(()=>pe.style.transform='',300);}document.getElementById(`bs-${side}`).textContent=bs[side].total;const plays=['⚾ Home run!','💥 RBI double!','🧤 Strikeout!','🎯 Solid hit!','⚡ Stolen base!','💪 RBI single!'];const pbp=document.getElementById('b-pbp');const el=document.createElement('div');el.style.cssText='background:var(--surface2);border-radius:7px;padding:6px 9px;font-size:12px;display:flex;align-items:center;gap:7px';el.innerHTML=`<span>${plays[Math.floor(Math.random()*plays.length)].split(' ')[0]}</span><span><b>${card.lastName||card.name}</b> +${pts} pts</span>`;pbp.insertBefore(el,pbp.firstChild);if(pbp.children.length>8)pbp.removeChild(pbp.lastChild);});if(bs.inning>=bs.maxInnings){endBattle();}else{battleTimer=setTimeout(runBattle,650+Math.random()*400);}}
-async function endBattle(){
-if(!battleState)return;battleState.done=true;
-const bs=battleState,won=bs.you.total>bs.rival.total;
-if(won){battleRecord.wins=(battleRecord.wins||0)+1;}else{battleRecord.losses=(battleRecord.losses||0)+1;}
-saveData();
-document.getElementById('b-res').textContent=won?'🏆 VICTORY!':'💀 DEFEAT';
-document.getElementById('b-res').style.color=won?'var(--success)':'var(--danger)';
-document.getElementById('b-res-sub').textContent=won
-  ?`You beat ${bs.rival.name} ${bs.you.total}–${bs.rival.total}!`
-  :`${bs.rival.name} wins ${bs.rival.total}–${bs.you.total}.`;
-document.getElementById('b-over').style.display='block';
-if(won){const bonus=PLAYERS[Math.floor(Math.random()*PLAYERS.length)];awardCard(bonus);saveData();setTimeout(()=>showToast('🎁 Bonus: '+(bonus.fullName||bonus.displayName)+'!'),400);}
-// Save result to Supabase and mark completed
-if(bs.challengeId){
-  await sb.from('challenges').update({
-    status:'completed',
-    result:{winner:won?'from':'to',you:bs.you.total,rival:bs.rival.total}
-  }).eq('id',bs.challengeId);
-  window._battleStarted=false;
-  // Update profile win/loss
-  const field=won?'wins':'losses';
-  await sb.rpc('increment_'+field,{user_id:currentUser.id}).catch(()=>{});
-}
-}
-
-
-// ── BATTLE DETAIL VIEW ───────────────────────────────────────────────────────
-let battleDetailInterval = null;
-
-
-// ── BATTLE RESULT ─────────────────────────────────────────────────────────────
-async function showBattleResult(battle){
-  const myName = (currentUser?.email||'').split('@')[0];
-  const youLineup = (battle.youLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const rivalLineup = (battle.rivalLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const youScore = youLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const rivalScore = rivalLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
-  const won = youScore > rivalScore;
-  const tied = Math.abs(youScore-rivalScore) < 0.1;
-
-  // Update W/L record
-  if(!tied){
-    if(won) battleRecord.wins=(battleRecord.wins||0)+1;
-    else battleRecord.losses=(battleRecord.losses||0)+1;
-    saveData();
-  }
-
-  // Save result to Supabase
-  if(battle.id){
-    await sb.from('challenges').update({
-      status:'completed',
-      result:{winner:won?'you':tied?'tie':'rival',you:youScore,rival:rivalScore}
-    }).eq('id',battle.id).catch(()=>{});
-  }
-
-  // Populate overlay
-  const header = document.getElementById('result-header');
-  header.style.background = won
-    ? 'linear-gradient(135deg,#1a3520,#0a1a10)'
-    : tied ? 'linear-gradient(135deg,#1a1a35,var(--bg))'
-    : 'linear-gradient(135deg,#351a1a,#1a0a0a)';
-  document.getElementById('result-emoji').textContent = won?'🏆':tied?'🤝':'💀';
-  document.getElementById('result-title').textContent = won?'VICTORY!':tied?'TIE GAME':'DEFEAT';
-  document.getElementById('result-title').style.color = won?'var(--success)':tied?'var(--text)':'var(--danger)';
-  document.getElementById('result-subtitle').textContent = won
-    ? `You beat ${battle.rivalName||'Rival'} ${youScore.toFixed(1)}–${rivalScore.toFixed(1)}`
-    : tied ? `Dead heat — ${youScore.toFixed(1)} each`
-    : `${battle.rivalName||'Rival'} wins ${rivalScore.toFixed(1)}–${youScore.toFixed(1)}`;
-  document.getElementById('result-you-name').textContent = myName;
-  document.getElementById('result-rival-name').textContent = battle.rivalName||'Rival';
-  document.getElementById('result-you-score').textContent = youScore.toFixed(1);
-  document.getElementById('result-rival-score').textContent = rivalScore.toFixed(1);
-  document.getElementById('result-you-score').style.color = won?'var(--success)':!tied?'var(--danger)':'var(--text)';
-  document.getElementById('result-rival-score').style.color = !won&&!tied?'var(--success)':won?'var(--danger)':'var(--text)';
-
-  // Score breakdown
-  const allPlayers = [
-    ...youLineup.map(p=>({p,side:'you'})),
-    ...rivalLineup.map(p=>({p,side:'rival'}))
-  ].sort((a,b)=>getPlayerLivePoints(b.p.mlbamId)-getPlayerLivePoints(a.p.mlbamId));
-
-  document.getElementById('result-breakdown').innerHTML = allPlayers.length
-    ? allPlayers.map(({p,side})=>{
-        const pts = getPlayerLivePoints(p.mlbamId);
-        const isYou = side==='you';
-        const name = p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
-        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);">
-          <div style="width:28px;height:28px;border-radius:5px;overflow:hidden;flex-shrink:0;">
-            <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface3)'">
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-            <div style="font-size:9px;color:${isYou?'var(--accent)':'var(--muted)'};">${isYou?myName:battle.rivalName||'Rival'} · ${p.position||p.pos||''}</div>
-          </div>
-          <div style="font-size:13px;font-weight:900;color:${pts>0?'var(--success)':'var(--muted)'};">${pts>0?pts.toFixed(1):'—'}</div>
-        </div>`;
-      }).join('')
-    : '<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px;">No live stats yet — games may not have started</div>';
-
-  // Prize: winner gets rival's 4 cards
-  const prizeSection = document.getElementById('result-prize');
-  const prizeCards = document.getElementById('result-prize-cards');
-  if(won && rivalLineup.length > 0){
-    prizeSection.style.display = 'block';
-    // Award rival's cards to winner's collection
-    rivalLineup.forEach(p => {
-      awardCard(p);
-    });
-    saveData();
-    prizeCards.innerHTML = rivalLineup.map(p=>{
-      const color = isElite(p)?'#FFD700':'rgba(255,255,255,.15)';
-      return `<div style="width:56px;text-align:center;">
-        <div style="width:56px;height:76px;border-radius:8px;overflow:hidden;border:2px solid ${color};margin-bottom:4px;">
-          <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface2)'">
-        </div>
-        <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
-      </div>`;
-    }).join('');
-    setTimeout(()=>showToast('🎁 You won '+rivalLineup.length+' cards!'),800);
-  } else {
-    prizeSection.style.display = 'none';
-  }
-
-  document.getElementById('result-ov').classList.add('open');
 }
 
 
