@@ -101,13 +101,13 @@
   .mbig-expandable.open .mbig-collapsed{border-color:var(--accent);border-radius:12px 12px 0 0;}
   .mbig-expandable.open .mbig-expanded{display:block;background:var(--surface);border:1px solid var(--accent);border-top:none;border-radius:0 0 12px 12px;padding:14px 16px;}
 
-  .bd-player-card{background:var(--surface2);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px;transition:all .3s;}
+  .bd-player-card{background:var(--surface2);border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:3px;transition:all .3s;}
   .bd-player-card.scoring{background:rgba(0,212,138,.08);border:1px solid rgba(0,212,138,.3);}
   .bd-player-card.leading{border:1px solid var(--accent);}
-  .bd-photo{width:100%;aspect-ratio:3/4;border-radius:6px;overflow:hidden;position:relative;}
-  .bd-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}
-  .bd-photo-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.85));padding:4px 6px;}
-  .bd-pts{font-size:1rem;font-weight:900;color:var(--accent);text-align:center;}
+  .bd-photo{width:100%;aspect-ratio:1/1;border-radius:5px;overflow:hidden;position:relative;max-height:120px;}
+  .bd-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 15%;}
+  .bd-photo-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.9));padding:3px 5px;}
+  .bd-pts{font-size:.85rem;font-weight:900;color:var(--accent);text-align:center;}
   .bd-pts.winning{color:var(--success);}
   .bd-stat-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
   .bd-stat-row span{color:var(--text);font-weight:600;}
@@ -625,7 +625,7 @@
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;" id="bd-you-label">You</div>
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right;" id="bd-rival-label">Rival</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="bd-lineups"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:600px;margin:0 auto;width:100%;" id="bd-lineups"></div>
     <!-- Live ticker -->
     <div id="bd-ticker-wrap" style="display:none;margin-top:12px;">
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;"><div class="live-dot"></div>Live Plays</div>
