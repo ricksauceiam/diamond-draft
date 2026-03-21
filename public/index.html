@@ -838,7 +838,25 @@ function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>
 async function doLogin(){const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;document.getElementById('auth-err').textContent='';const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doRegister(){const e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;document.getElementById('auth-err').textContent='';if(p.length<6){document.getElementById('auth-err').textContent='Password must be 6+ characters';return;}const{data,error}=await sb.auth.signUp({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doLogout(){await sb.auth.signOut();currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}
-async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){const wy=userData.lastPackDate===yesterdayStr();userData.packsOpened=[false,false,false];userData.lastPackDate=today;if(!wy)userData.streak=0;packResults=[null,null,null];revealedCards=[new Set(),new Set(),new Set()];saveData();}else{const ps=sessionStorage.getItem(`ddp_${currentUser.id}_${today}`);if(ps){const p=JSON.parse(ps);packResults=p.packResults||[null,null];revealedCards=(p.revealedCards||[[],[]]).map(a=>new Set(a));}}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');
+async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){
+  // New day — reset packs
+  const wy=userData.lastPackDate===yesterdayStr();
+  userData.packsOpened=[false,false,false];
+  userData.lastPackDate=today;
+  userData.packResults=[null,null,null];
+  if(!wy)userData.streak=0;
+  packResults=[null,null,null];
+  revealedCards=[new Set(),new Set(),new Set()];
+  saveData();
+}else{
+  // Same day — restore pack state from localStorage
+  if(userData.packResults){
+    packResults=userData.packResults.map(p=>p||null);
+  } else {
+    packResults=[null,null,null];
+  }
+  revealedCards=[new Set(),new Set(),new Set()];
+}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');
   upsertProfile();
   startChallengePoll();
   startLivePoll();
@@ -857,7 +875,11 @@ async function upsertProfile(){
   if(error)console.warn('Profile upsert:',error.message);
 }
 function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;localStorage.setItem(`dd_${currentUser.id}`,JSON.stringify(userData));}
-function savePackSession(){const t=todayStr();sessionStorage.setItem(`ddp_${currentUser.id}_${t}`,JSON.stringify({packResults,revealedCards:revealedCards.map(s=>[...s])}));}
+function savePackSession(){
+  // Store pack results in localStorage so they survive refreshes
+  userData.packResults = packResults.map(p=>p||null);
+  saveData();
+}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
 function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection'){getInBattleIds().then(()=>renderCollection());}if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();if(id==='allcards')loadAllCards();}
@@ -874,7 +896,16 @@ function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onc
 return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)'};border-radius:10px;box-shadow:${elite?'0 0 14px rgba(255,215,0,.4)':'none'};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${playerPhoto(p)}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:var(--muted)">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
 function openPackOv(idx){
   curPackIdx=idx;
-  if(!packResults[idx]) packResults[idx]=generatePack(idx);
+  // Generate pack if needed — but only if not already opened or if we have a saved result
+  if(!packResults[idx]){
+    if(userData.packsOpened[idx]){
+      // Already opened but no result in memory — regenerate deterministically
+      packResults[idx]=generatePack(idx);
+    } else {
+      packResults[idx]=generatePack(idx);
+    }
+    savePackSession();
+  }
   document.getElementById('pov-title').textContent = userData.packsOpened[idx] ? '📦 Daily Pack — Already Opened' : '📦 Daily Pack';
   document.getElementById('pov-sub').textContent = userData.packsOpened[idx] ? 'Your cards from today' : '4 cards · tap to open';
   document.getElementById('rainbow-alert').style.display='none';
@@ -1330,7 +1361,7 @@ incoming.forEach(c=>{
           ${theirCards.map(p=>`<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);"><img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'"></div>`).join('')}
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="acceptChallenge('${c.id}')" style="flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">✅ Accept</button>
+          <button onclick="openAcceptLineup('${c.id}','${c.from_name}')" style="flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">⚔️ Accept & Pick Lineup</button>
           <button onclick="declineChallenge('${c.id}')" style="padding:9px 14px;background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;">Decline</button>
         </div>
       </div>`;
@@ -1631,6 +1662,20 @@ function openChallengeOv(){
 }
 function closeChallengeOv(){
   document.getElementById('ch-ov').style.display='none';
+  _pendingAcceptId = null;
+  _pendingAcceptFromName = null;
+  // Restore rival search column
+  const rivalSearchInput = document.getElementById('rival-search');
+  if(rivalSearchInput){
+    const col = rivalSearchInput.closest('div[style*="background:var(--surface)"]');
+    if(col) col.style.display = '';
+  }
+  // Restore launch button
+  const launchBtn = document.getElementById('ch-launch');
+  if(launchBtn){
+    launchBtn.textContent = '⚔️ Send Challenge';
+    launchBtn.onclick = launchBattle;
+  }
 }
 
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
@@ -2297,6 +2342,112 @@ function toggleBattleExpand(id){
   if(!el)return;
   el.classList.toggle('open');
 }
+
+// ── ACCEPT CHALLENGE WITH LINEUP PICKER ──────────────────────────────────────
+let _pendingAcceptId = null;
+let _pendingAcceptFromName = null;
+
+function openAcceptLineup(challengeId, fromName){
+  _pendingAcceptId = challengeId;
+  _pendingAcceptFromName = fromName;
+  lineup = [null,null,null,null];
+  selectedRival = null;
+  selectedRivalId = null;
+  selectedRivalName = fromName;
+
+  // Open the challenge overlay in "accept mode"
+  const ov = document.getElementById('ch-ov');
+  ov.style.display = 'flex';
+
+  // Update header for accept mode
+  const header = ov.querySelector('div div');
+  document.querySelector('#ch-ov .ov-title, #ch-ov div div div').textContent;
+  const titleEl = ov.querySelector('[style*="font-weight:900"]');
+
+  // Hide rival search — already have a rival
+  const rivalSection = document.getElementById('ch-rivals')?.parentElement?.parentElement;
+
+  renderChallengeOv();
+
+  // Update title for accept mode
+  const titleDivs = document.querySelectorAll('#ch-ov div div');
+  for(const d of titleDivs){
+    if(d.textContent.includes('Build Your Lineup')){
+      d.textContent = '⚔️ Accept Challenge vs ' + fromName;
+      break;
+    }
+  }
+  const subDivs = document.querySelectorAll('#ch-ov div div');
+  for(const d of subDivs){
+    if(d.textContent.includes('Pick 1 pitcher')){
+      d.textContent = 'Pick your lineup to battle ' + fromName;
+      break;
+    }
+  }
+
+  // Swap the title and button
+  const launchBtn = document.getElementById('ch-launch');
+  if(launchBtn){
+    launchBtn.textContent = '✅ Accept & Start Battle';
+    launchBtn.onclick = submitAcceptLineup;
+    launchBtn.disabled = true;
+  }
+
+  // Hide rival search column — not needed
+  const rivalSearchInput = document.getElementById('rival-search');
+  if(rivalSearchInput){
+    const col = rivalSearchInput.closest('div[style*="background:var(--surface)"]');
+    if(col) col.style.display = 'none';
+  }
+}
+
+async function submitAcceptLineup(){
+  const myName = (currentUser.email||'').split('@')[0];
+  const toLineup = lineup.filter(Boolean);
+  if(toLineup.length < 4){ showToast('Pick 1 pitcher + 3 batters first'); return; }
+
+  const btn = document.getElementById('ch-launch');
+  if(btn){ btn.disabled = true; btn.textContent = 'Accepting...'; }
+
+  // Fetch challenge to get challenger lineup
+  const{data:ch, error:fetchErr} = await sb.from('challenges')
+    .select('*').eq('id', _pendingAcceptId).single();
+  if(fetchErr||!ch){ showToast('Error fetching challenge'); return; }
+
+  const{error} = await sb.from('challenges')
+    .update({status:'accepted', to_lineup:toLineup}).eq('id', _pendingAcceptId);
+  if(error){ showToast('Error accepting'); return; }
+
+  // Clean up
+  window._incomingChallenges = (window._incomingChallenges||[]).filter(c=>c.id!==_pendingAcceptId);
+  window._incomingCount = Math.max(0,(window._incomingCount||1)-1);
+  updateChallengeBadge(window._incomingCount);
+
+  // Restore rival search column visibility
+  const rivalSearchInput = document.getElementById('rival-search');
+  if(rivalSearchInput){
+    const col = rivalSearchInput.closest('div[style*="background:var(--surface)"]');
+    if(col) col.style.display = '';
+  }
+
+  closeChallengeOv();
+  showToast('✅ Battle started!');
+  renderMatchups();
+
+  // Open battle detail
+  setTimeout(()=>{
+    openBattleDetail({
+      id: ch.id,
+      rivalName: ch.from_name,
+      rival: ch.from_name,
+      youLineup: toLineup,
+      rivalLineup: ch.from_lineup||[],
+      status: 'active',
+      sentAt: ch.created_at
+    });
+  }, 500);
+}
+
 async function acceptChallenge(id){
   const myName=(currentUser.email||'').split('@')[0];
   const col=userData?.collection||[];
