@@ -157,6 +157,15 @@
     100%{opacity:1;transform:rotateY(180deg) translateY(0);}
   }
 
+.ac-card{border-radius:12px;overflow:hidden;background:var(--surface2);position:relative;cursor:pointer;transition:transform .15s;}
+  .ac-card:hover{transform:scale(1.03);}
+  .ac-photo{aspect-ratio:3/4;overflow:hidden;position:relative;background:#111122;}
+  .ac-img{width:100%;height:100%;object-fit:cover;object-position:50% 10%;}
+  .ac-crown{position:absolute;top:4px;right:4px;font-size:11px;}
+  .ac-owned{position:absolute;top:4px;left:4px;background:#6c63ff;color:#fff;font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;}
+  .ac-info{padding:5px 7px;background:#080810;}
+  .ac-name{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;}
+  .ac-pos{font-size:9px;color:#6a6a8a;margin-top:1px;}
   /* ── LIVE TICKER ── */
   .bd-pts-flash{animation:ptsFlash .6s ease;}
   @keyframes ptsFlash{0%{transform:scale(1.4);color:#FFD700}100%{transform:scale(1);}}
@@ -2612,22 +2621,34 @@ function filterAllCards(){
     for(;i<end;i++){
       const p=players[i];
       const isOwned=owned.has(p.id);
-      const isElite=TOP_25_IDS.has(p.mlbamId);
+      const elite=TOP_25_IDS.has(p.mlbamId);
+      const borderCol=elite?'#FFD700':isOwned?'#6c63ff':'rgba(255,255,255,.06)';
       const card=document.createElement('div');
-      card.style.cssText='border-radius:12px;overflow:hidden;background:var(--surface2);border:1.5px solid '+(isElite?'#FFD700':isOwned?'var(--accent)':'rgba(255,255,255,.06)')+';position:relative;cursor:pointer;transition:transform .15s;';
-      card.onmouseover=function(){this.style.transform='scale(1.03)';};
-      card.onmouseout=function(){this.style.transform='scale(1)';};
-      card.onclick=function(){showAcCardDetail(p);};
-      const photoUrl='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+p.mlbamId+'/headshot/67/current';
-      card.innerHTML='<div style="aspect-ratio:3/4;overflow:hidden;position:relative;">'
-        +'<img src="'+photoUrl+'" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" loading="lazy" onerror="this.parentElement.style.background='#111122';this.style.display='none'">'
-        +(isElite?'<div style="position:absolute;top:4px;right:4px;font-size:11px;">👑</div>':'')
-        +(isOwned?'<div style="position:absolute;top:4px;left:4px;background:var(--accent);color:#fff;font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;">OWNED</div>':'')
-        +'</div>'
-        +'<div style="padding:5px 7px;background:#080810;">'
-        +'<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;">'+p.lastName+'</div>'
-        +'<div style="font-size:9px;color:var(--muted);margin-top:1px;">'+p.position+' · '+p.team+'</div>'
-        +'</div>';
+      card.className='ac-card';
+      card.style.border='1.5px solid '+borderCol;
+      card.addEventListener('click',(function(player){return function(){showAcCardDetail(player);};})(p));
+      const wrap=document.createElement('div');
+      wrap.className='ac-photo';
+      const img=document.createElement('img');
+      img.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+p.mlbamId+'/headshot/67/current';
+      img.className='ac-img';
+      img.setAttribute('loading','lazy');
+      img.addEventListener('error',function(){this.parentNode.style.background='#111122';this.style.display='none';});
+      wrap.appendChild(img);
+      if(elite){const cr=document.createElement('div');cr.className='ac-crown';cr.textContent='👑';wrap.appendChild(cr);}
+      if(isOwned){const ob=document.createElement('div');ob.className='ac-owned';ob.textContent='OWNED';wrap.appendChild(ob);}
+      const info=document.createElement('div');
+      info.className='ac-info';
+      const nm=document.createElement('div');
+      nm.className='ac-name';
+      nm.textContent=p.lastName;
+      const pos=document.createElement('div');
+      pos.className='ac-pos';
+      pos.textContent=p.position+' · '+p.team;
+      info.appendChild(nm);
+      info.appendChild(pos);
+      card.appendChild(wrap);
+      card.appendChild(info);
       frag.appendChild(card);
     }
     grid.appendChild(frag);
