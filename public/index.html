@@ -804,7 +804,36 @@ const RIVALS=[{name:'SluggerKing',emoji:'⚾',power:820,desc:'Power hitter speci
 const MOCK_MATCHUPS=[];
 const LEADERBOARD=[{name:'CardKing99',pts:14820,cards:312,wins:48,avatar:'CK',color:'#FFD700'},{name:'SluggerKing',pts:12440,cards:287,wins:41,avatar:'SK',color:'#FF006E'},{name:'AceHunter',pts:11200,cards:264,wins:38,avatar:'AH',color:'#BF40FF'},{name:'DiamondPro',pts:9880,cards:241,wins:33,avatar:'DP',color:'#00F5FF'},{name:'BaseballGod',pts:8760,cards:219,wins:29,avatar:'BG',color:'#FF8C00'},{name:'TheVeteran',pts:7450,cards:198,wins:26,avatar:'TV',color:'#6c63ff'},{name:'SpeedDemon',pts:6320,cards:177,wins:22,avatar:'SD',color:'#00d48a'},{name:'Rookie2024',pts:2140,cards:88,wins:8,avatar:'RK',color:'#8899AA'}];
 let PLAYERS=[],currentUser=null,userData=null,colFilter='ALL',packResults=[null],revealedCards=[new Set()],curPackIdx=0,currentModalCard=null,lineup=[null,null,null,null],selectedRival=null,selectedRivalId=null,selectedRivalName=null,battleState=null,battleTimer=null,battleRecord={wins:0,losses:0};
-async function loadPlayers(){try{const r=await fetch('/players.json');PLAYERS=await r.json();}catch(e){console.error(e);PLAYERS=[];}}
+async function loadPlayers(){
+  // Load from MLB Stats API (same source as All Cards tab)
+  try{
+    const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
+    const data=await r.json();
+    const people=data.people||[];
+    PLAYERS=people.map((p,i)=>({
+      id: String(p.id),
+      mlbamId: p.id,
+      firstName: p.firstName||'',
+      lastName: p.lastName||'',
+      fullName: p.fullName||(p.firstName+' '+p.lastName),
+      displayName: p.fullName||(p.firstName+' '+p.lastName),
+      position: p.primaryPosition?.abbreviation||'',
+      pos: p.primaryPosition?.abbreviation||'',
+      team: p.currentTeam?.abbreviation||'',
+      teamName: p.currentTeam?.name||'',
+    }));
+    // Also populate _allMLBPlayers so All Cards tab is pre-loaded
+    _allMLBPlayers=[...PLAYERS];
+    _acLoaded=true;
+    console.log('Players loaded from MLB API:',PLAYERS.length);
+  }catch(e){
+    console.warn('MLB API failed, falling back to players.json:',e);
+    try{
+      const r2=await fetch('/players.json');
+      PLAYERS=await r2.json();
+    }catch(e2){PLAYERS=[];}
+  }
+}
 function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>a.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));document.getElementById('login-form').style.display=t==='login'?'':'none';document.getElementById('register-form').style.display=t==='register'?'':'none';document.getElementById('auth-err').textContent='';}
 async function doLogin(){const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;document.getElementById('auth-err').textContent='';const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doRegister(){const e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;document.getElementById('auth-err').textContent='';if(p.length<6){document.getElementById('auth-err').textContent='Password must be 6+ characters';return;}const{data,error}=await sb.auth.signUp({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
@@ -1240,7 +1269,8 @@ renderCollection();
 }
 dragCardId=null;
 }
-function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${playerPhoto(p)}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;document.getElementById('m-name').textContent=p.fullName||p.displayName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.style.display='none';document.getElementById('m-power').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.style.display='none';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
+function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${playerPhoto(p)}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;const modalName = p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
+  document.getElementById('m-name').textContent=modalName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.style.display='none';document.getElementById('m-power').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.style.display='none';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
 function miniCard(player, isRival){
 if(!player) return `<div class="mbig-mini-card" style="background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:1.2rem">⚾</span></div>`;
