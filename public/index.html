@@ -2218,26 +2218,42 @@ function renderBattleDetail(battle){
 
 function renderBdCard(player, sideTotal){
   if(!player){
-    return `<div style="background:var(--surface2);border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:90px;opacity:.3;"><span style="font-size:1.5rem;">⚾</span></div>`;
+    return '<div class="ac-card" style="opacity:.2;"><div class="ac-photo"></div><div class="ac-info"><div class="ac-name">—</div></div></div>';
   }
-  const color = RARITY_COLORS[player.rarity||'COMMON'];
   const pts = getPlayerLivePoints(player.mlbamId);
-  const isPitcher = PITCHER_POS.has(player.position||player.pos||'');
-  const fullName = player.fullName||player.displayName||((player.firstName||'')+' '+(player.lastName||player.name||'')).trim();
-
   const elite = isElite(player);
-  return `<div class="bd-player-card${pts>0?' scoring':''}">
-    <div class="bd-photo" style="border:${elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)'};">
-      <img src="${playerPhoto(player)}" onerror="this.parentElement.style.background='var(--surface3)';this.style.display='none'">
-      <div class="bd-photo-overlay">
-        <div style="font-size:11px;font-weight:800;color:#fff;">${elite?'👑 ':''}${fullName}</div>
-        <div style="font-size:9px;color:var(--muted);font-weight:600;">${player.position||player.pos||''} · ${player.team||''}</div>
-      </div>
-    </div>
-    <div class="bd-pts" id="bdpts-${player.mlbamId}">${pts>0?pts.toFixed(1):'—'} <span style="font-size:8px;color:var(--muted);font-weight:400;">pts</span></div>
-  </div>`;
+  const borderCol = elite ? '#FFD700' : pts>0 ? '#00d48a' : 'rgba(255,255,255,.08)';
+  const nm = player.lastName||player.fullName||player.displayName||((player.firstName||'')+' '+(player.lastName||player.name||'')).trim();
+  const pos = (player.position||player.pos||'') + ' · ' + (player.team||'');
+  const ptsHtml = pts>0
+    ? '<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;color:#00d48a;text-shadow:0 1px 4px rgba(0,0,0,.9);" id="bdpts-'+player.mlbamId+'">'+pts.toFixed(1)+' pts</div>'
+    : '<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.3);" id="bdpts-'+player.mlbamId+'">— pts</div>';
+  const crownHtml = elite ? '<div class="ac-crown">👑</div>' : '';
+  const card = document.createElement('div');
+  card.className = 'ac-card';
+  card.style.border = '1.5px solid ' + borderCol;
+  const photo = document.createElement('div');
+  photo.className = 'ac-photo';
+  const img = document.createElement('img');
+  img.className = 'ac-img';
+  img.src = playerPhoto(player);
+  img.addEventListener('error', function(){this.parentNode.style.background='#111122';this.style.display='none';});
+  photo.appendChild(img);
+  photo.insertAdjacentHTML('beforeend', crownHtml + ptsHtml);
+  const info = document.createElement('div');
+  info.className = 'ac-info';
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'ac-name';
+  nameDiv.textContent = nm;
+  const posDiv = document.createElement('div');
+  posDiv.className = 'ac-pos';
+  posDiv.textContent = pos;
+  info.appendChild(nameDiv);
+  info.appendChild(posDiv);
+  card.appendChild(photo);
+  card.appendChild(info);
+  return card.outerHTML;
 }
-
 
 function renderHistoryExpand(wrapId, battle){
   if(!battle) battle=window._histBattles&&window._histBattles[wrapId];
