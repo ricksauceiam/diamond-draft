@@ -1862,6 +1862,93 @@ async function submitAcceptLineup(){
   }, 500);
 }
 
+
+function openChallengeOv(){
+  lineup=[null,null,null,null];
+  selectedRival=null;selectedRivalId=null;selectedRivalName=null;
+  _pendingAcceptId=null;_pendingAcceptFromName=null;
+  const ov=document.getElementById('ch-ov');
+  ov.style.display='flex';
+  renderChallengeOv();
+  const inp=document.getElementById('rival-search');
+  if(inp)inp.value='';
+  document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px 0;">Type to search...</div>';
+  const launchBtn=document.getElementById('ch-launch');
+  if(launchBtn){launchBtn.textContent='⚔️ Send Challenge';launchBtn.onclick=launchBattle;launchBtn.disabled=true;}
+  const rivalSearchInput=document.getElementById('rival-search');
+  if(rivalSearchInput){const col=rivalSearchInput.closest('div[style*="background:var(--surface)"]');if(col)col.style.display='';}
+}
+
+function closeChallengeOv(){
+  document.getElementById('ch-ov').style.display='none';
+  _pendingAcceptId=null;_pendingAcceptFromName=null;
+  const rivalSearchInput=document.getElementById('rival-search');
+  if(rivalSearchInput){const col=rivalSearchInput.closest('div[style*="background:var(--surface)"]');if(col)col.style.display='';}
+  const launchBtn=document.getElementById('ch-launch');
+  if(launchBtn){launchBtn.textContent='⚔️ Send Challenge';launchBtn.onclick=launchBattle;}
+}
+
+function renderChallengeOv(){
+  const slots=document.getElementById('ch-slots');
+  const slotLabels=['P','B1','B2','B3'];
+  slots.innerHTML=lineup.map((id,i)=>{
+    if(!id)return'<div style="width:90px;height:120px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-direction:column;gap:4px;background:var(--bg);flex-shrink:0;"><span style="font-size:1.4rem">'+(i===0?'🧤':'🏏')+'</span><span style="font-size:10px;font-weight:700;">'+slotLabels[i]+'</span></div>';
+    const p=getPlayer(id);if(!p)return'';
+    const elite=isElite(p);
+    const pts=getPlayerLivePoints(p.mlbamId);
+    return'<div style="position:relative;width:90px;flex-shrink:0;">'
+      +'<div style="width:90px;height:120px;border-radius:10px;overflow:hidden;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)')+';box-shadow:'+(elite?'0 0 12px rgba(255,215,0,.35)':'none')+'">'
+      +(function(){var i=document.createElement('img');i.src=playerPhoto(p);i.style.cssText='width:100%;height:100%;object-fit:cover;object-position:50% 10%;';i.onerror=function(){this.parentElement.style.background='#161622';};return i.outerHTML;}())
+      +'</div>'
+      +'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.88);padding:4px 5px;border-radius:0 0 8px 8px;">'
+      +'<div style="font-size:10px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(elite?'👑 ':'')+p.lastName+'</div>'
+      +'<div style="font-size:8px;color:var(--muted);text-align:center;font-weight:600;">'+(p.position||p.pos)+' · '+(p.team||'')+'</div>'
+      +(pts>0?'<div style="font-size:9px;font-weight:900;color:var(--success);text-align:center;margin-top:1px;">'+pts.toFixed(1)+' pts</div>':'')
+      +'</div>'
+      +'<div onclick="lineup['+i+']=null;renderChallengeOv()" style="position:absolute;top:-6px;right:-6px;background:var(--danger);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;z-index:10;font-weight:900;">×</div>'
+      +'</div>';
+  }).join('');
+
+  const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
+  const hasGames=tonightGameIds.length>0;
+  const inBattleSet=window._inBattleIds||new Set();
+  const availCards=col.filter(item=>{
+    if(inBattleSet.has(String(item.id)))return false;
+    if(!hasGames)return true;
+    return isPlayingTonight(item.player);
+  });
+  const otherCards=hasGames
+    ? col.filter(item=>!isPlayingTonight(item.player)&&!inBattleSet.has(String(item.id)))
+    : col.filter(item=>inBattleSet.has(String(item.id)));
+
+  const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
+  const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
+  const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
+  const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
+
+  const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
+  const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
+  const pitchEl=document.getElementById('ch-pitchers');
+  const hitEl=document.getElementById('ch-hitters');
+  if(pitchEl){pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
+    pitchEl.querySelectorAll('[data-cid]').forEach(el=>el.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));}));}
+  if(hitEl){hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
+    hitEl.querySelectorAll('[data-cid]').forEach(el=>el.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));}));}
+  const pc=document.getElementById('ch-p-count');
+  const hc=document.getElementById('ch-h-count');
+  if(pc)pc.textContent=pitcherItems.length+' available';
+  if(hc)hc.textContent=hitterItems.length+' available';
+  const filled2=lineup.filter(Boolean).length;
+  const btn2=document.getElementById('ch-launch');
+  if(btn2){btn2.disabled=filled2<4||(!selectedRivalId&&!_pendingAcceptId);btn2.textContent=filled2<4?'Pick '+(4-filled2)+' more':(!selectedRivalId&&!_pendingAcceptId)?'Find a player above':_pendingAcceptId?'✅ Accept & Start Battle':'⚔️ Send Challenge';}
+  const totalEl=document.getElementById('ch-lineup-total');
+  if(totalEl&&filled2>0){
+    const lineupPts=lineup.filter(Boolean).reduce((t,id)=>{const p=getPlayer(id);return t+(p?getPlayerLivePoints(p.mlbamId):0);},0);
+    if(lineupPts>0){totalEl.style.display='block';totalEl.textContent='Total: '+lineupPts.toFixed(1)+' pts';}
+    else{totalEl.style.display='none';}
+  }
+}
+
 async function acceptChallenge(id){
   const myName=(currentUser.email||'').split('@')[0];
   const col=userData?.collection||[];
