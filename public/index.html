@@ -677,13 +677,16 @@
     </div>
     <!-- Rival -->
     <div style="display:flex;flex-direction:column;overflow:hidden;background:var(--surface);">
-      <div style="padding:12px 16px 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);flex-shrink:0;">Find Rival</div>
+      <div style="padding:12px 16px 8px;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">All Players</span>
+        <span id="ch-rival-count" style="font-size:10px;color:var(--muted);"></span>
+      </div>
       <div style="padding:0 14px 8px;flex-shrink:0;">
-        <input id="rival-search" type="text" placeholder="Search username..." oninput="searchRivals(this.value)"
+        <input id="rival-search" type="text" placeholder="Filter by username..." oninput="searchRivals(this.value)"
           style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;">
       </div>
       <div style="overflow-y:auto;flex:1;padding:0 14px;" id="ch-rivals">
-        <div style="color:var(--muted);font-size:12px;padding:6px 0;">Type to search...</div>
+        <div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center;">Loading players...</div>
       </div>
     </div>
   </div>
@@ -1938,11 +1941,124 @@ function openChallengeOv(){
   renderChallengeOv();
   const inp=document.getElementById('rival-search');
   if(inp)inp.value='';
-  document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px 0;">Type to search...</div>';
   const launchBtn=document.getElementById('ch-launch');
   if(launchBtn){launchBtn.textContent='⚔️ Send Challenge';launchBtn.onclick=launchBattle;launchBtn.disabled=true;}
   const rivalSearchInput=document.getElementById('rival-search');
   if(rivalSearchInput){const col=rivalSearchInput.closest('div[style*="background:var(--surface)"]');if(col)col.style.display='';}
+  loadAllRivals();
+}
+
+let _allRivals = [];
+let _rivalsLoaded = false;
+
+async function loadAllRivals(){
+  const el = document.getElementById('ch-rivals');
+  if(!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center;">Loading players...</div>';
+  try {
+    const { data, error } = await sb.from('profiles')
+      .select('id,username,card_count')
+      .neq('id', currentUser.id)
+      .order('card_count', { ascending: false })
+      .limit(100);
+    if(error) throw error;
+    _allRivals = data || [];
+    _rivalsLoaded = true;
+    renderRivals(_allRivals);
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;">Could not load players.</div>';
+  }
+}
+
+function renderRivals(rivals){
+  const el = document.getElementById('ch-rivals');
+  if(!el) return;
+  const countEl = document.getElementById('ch-rival-count');
+  if(countEl) countEl.textContent = rivals.length ? rivals.length + ' players' : '';
+  if(!rivals.length){
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;">No other players found.</div>';
+    return;
+  }
+  el.innerHTML = rivals.map(u => {
+    const isSelected = selectedRivalId === u.id;
+    const initial = (u.username||'?')[0].toUpperCase();
+    const cards = u.card_count || 0;
+    return `<div onclick="selectRival('${u.id}','${(u.username||'').replace(/'/g,"\\'")}','${initial}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+        background:${isSelected ? 'rgba(108,99,255,.15)' : 'var(--surface2)'};
+        border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'};
+        cursor:pointer;transition:all .15s;margin-bottom:6px;"
+      onmouseenter="this.style.borderColor='var(--accent)'"
+      onmouseleave="this.style.borderColor='${isSelected ? 'var(--accent)' : 'var(--border)'}'">
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;">
+        ${initial}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:${isSelected ? 'var(--accent)' : 'var(--text)'};
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.username || 'Unknown'}</div>
+        <div style="font-size:10px;color:var(--muted);">${cards} cards</div>
+      </div>
+      ${isSelected ? '<div style="font-size:12px;font-weight:900;color:var(--accent);">✓</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function searchRivals(query){
+  if(!_rivalsLoaded){ loadAllRivals(); return; }
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? _allRivals.filter(u => (u.username||'').toLowerCase().includes(q))
+    : _allRivals;
+  renderRivals(filtered);
+}
+
+function selectRival(id, username, initial){
+  selectedRivalId = id;
+  selectedRivalName = username;
+  renderRivals(_allRivals.filter(u => {
+    const q = (document.getElementById('rival-search')?.value||'').trim().toLowerCase();
+    return q ? (u.username||'').toLowerCase().includes(q) : true;
+  }));
+  renderChallengeOv();
+}
+
+async function launchBattle(){
+  const myLineup = lineup.filter(Boolean);
+  if(myLineup.length < 4){ showToast('Pick 1 pitcher + 3 batters first'); return; }
+  if(!selectedRivalId){ showToast('Select a rival first'); return; }
+  const btn = document.getElementById('ch-launch');
+  if(btn){ btn.disabled = true; btn.textContent = 'Sending...'; }
+  const myName = (currentUser.email||'').split('@')[0];
+  const { data, error } = await sb.from('challenges').insert({
+    from_id: currentUser.id,
+    from_name: myName,
+    to_id: selectedRivalId,
+    to_name: selectedRivalName,
+    from_lineup: myLineup,
+    status: 'pending'
+  }).select().single();
+  if(error){
+    showToast('Error sending challenge: ' + error.message);
+    if(btn){ btn.disabled = false; btn.textContent = '⚔️ Send Challenge'; }
+    return;
+  }
+  // Close lineup overlay and show pending overlay
+  document.getElementById('ch-ov').style.display = 'none';
+  document.getElementById('pending-rival-name').textContent = selectedRivalName;
+  const yourNameEl = document.getElementById('pending-your-name');
+  if(yourNameEl) yourNameEl.textContent = myName;
+  // Render your mini lineup cards in the pending overlay
+  const pendingLineupEl = document.getElementById('pending-your-lineup');
+  if(pendingLineupEl){
+    pendingLineupEl.innerHTML = myLineup.map(id => {
+      const p = getPlayer(id);
+      if(!p) return '';
+      return `<div class="ch-mini"><img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='var(--surface)'"></div>`;
+    }).join('');
+  }
+  document.getElementById('pending-ov').classList.add('open');
+  showToast('⚔️ Challenge sent to ' + selectedRivalName + '!');
 }
 
 function closeChallengeOv(){
