@@ -1410,6 +1410,21 @@ function playerRow(item,dimmed){
   return wrapper.outerHTML;
 }
 
+
+function openChallengeOv(){
+  lineup=[null,null,null,null];
+  selectedRival=null;selectedRivalId=null;selectedRivalName=null;
+  const ov=document.getElementById('ch-ov');
+  ov.style.display='flex';
+  renderChallengeOv();
+  const inp=document.getElementById('rival-search');
+  if(inp)inp.value='';
+  document.getElementById('ch-rivals').innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px 0;">Type to search...</div>';
+}
+function closeChallengeOv(){
+  document.getElementById('ch-ov').style.display='none';
+}
+
 function toggleLineup(cardId){const p=getPlayer(cardId);if(!p)return;const idx=lineup.indexOf(cardId);if(idx!==-1){lineup[idx]=null;}else{const iP=PITCHER_POS.has(p.position||p.pos);if(iP){if(!lineup[0])lineup[0]=cardId;}else{const o=[1,2,3].find(i=>!lineup[i]);if(o!==undefined)lineup[o]=cardId;}}renderChallengeOv();}
 async function launchBattle(){
 if(lineup.filter(Boolean).length<4||!selectedRivalId)return;
