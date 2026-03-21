@@ -2119,11 +2119,22 @@ updateChallengeBadge(window._incomingCount);
 showToast('Challenge declined.');renderMatchups();
 }
 function renderLeaderboard(){const uname=(currentUser?.email||'').split('@')[0];const me={name:uname,pts:Math.max(0,(userData?.collection?.length||0)*120+(battleRecord.wins||0)*500),cards:userData?.collection?.length||0,wins:battleRecord.wins||0,avatar:uname[0]?.toUpperCase()||'?',color:'var(--accent)',isMe:true};const all=[...LEADERBOARD];const mi=all.findIndex(e=>e.pts<=me.pts);if(mi>=0)all.splice(mi,0,me);else all.push(me);const pc=['#FFD700','#C0C0C0','#CD7F32'];const ph=[88,68,52];const po=[1,0,2];const top3=all.slice(0,3);document.getElementById('podium').innerHTML=po.map(i=>{const e=top3[i];if(!e)return'';const r=i+1;return`<div class="pod-item"><div class="pod-avatar" style="width:${46-i*4}px;height:${46-i*4}px;background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="pod-name">${e.name}</div><div class="pod-pts">${e.pts.toLocaleString()}</div><div class="pod-block" style="background:${pc[i]};height:${ph[i]}px;color:#000;font-size:.95rem">#${r}</div></div>`;}).join('');document.getElementById('lb-list').innerHTML=all.map((e,i)=>`<div class="lb-row${e.isMe?' me':''}"><div class="lb-rank">${i+1}</div><div class="lb-avatar" style="background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="lb-info"><h4>${e.name}${e.isMe?' (you)':''}</h4><p>${e.wins} wins · ${e.cards} cards</p></div><div class="lb-pts"><div class="pts">${e.pts.toLocaleString()}</div><div class="sub">points</div></div></div>`).join('');}
-function getPlayer(id){return PLAYERS.find(p=>String(p.id)===String(id));}
+function getPlayer(id){
+  // Check live MLB API data first (most accurate)
+  if(_allMLBPlayers.length > 0){
+    const live = _allMLBPlayers.find(p=>String(p.id)===String(id));
+    if(live){
+      // Merge with static data for any extra fields, but use live for team/position
+      const stat = PLAYERS.find(p=>String(p.id)===String(id));
+      return {...(stat||{}), ...live};
+    }
+  }
+  return PLAYERS.find(p=>String(p.id)===String(id));
+}
 function playerPhoto(player){
   if(!player) return '';
   const mid = player.mlbamId;
-  if(!mid) return player.photoUrl||'';
+  if(!mid) return '';
   return `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mid}/headshot/67/current`;
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
