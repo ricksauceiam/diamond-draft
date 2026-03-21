@@ -790,7 +790,7 @@ function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened[0]?0:1;pb.style.display=pl>0?'':'none';pb.textContent=pl;const opened=userData.packsOpened[0];const btn=document.getElementById('pb1');const card=document.getElementById('hp1');if(card){if(opened){card.classList.add('claimed');btn.textContent='✅ Already Opened';btn.className='pack-cta sec';btn.onclick=()=>openPackOv(0);}else{card.classList.remove('claimed');btn.textContent='Open Pack';btn.className='pack-cta';btn.onclick=()=>openPackOv(0);}}const ml=document.getElementById('home-matchups');ml.innerHTML='<div style="color:var(--muted);font-size:13px;padding:14px 0">No live battles yet. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
 function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';const elite=isElite(p);
-return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)'};border-radius:10px;box-shadow:${elite?'0 0 14px rgba(255,215,0,.4)':'none'};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${p?.photoUrl||''}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:var(--muted)">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
+return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)'};border-radius:10px;box-shadow:${elite?'0 0 14px rgba(255,215,0,.4)':'none'};display:flex;flex-direction:column;overflow:hidden;background:#0a0a12;cursor:pointer;transition:transform .15s;max-height:160px;${extraStyle}" onmouseenter="this.style.transform='scale(1.04)'" onmouseleave="this.style.transform='scale(1)'"><div class="card-chrome-bar" style="background:${bar}"></div><div class="card-art"><img src="${playerPhoto(p)}" alt="${p?.name||''}" loading="lazy" onerror="this.parentElement.style.background='#1a1a2e'"><div class="card-art-overlay"></div><div class="card-rarity-pill" style="background:${color};color:#000">${rl}</div>${nb}${cb}${cpb}${fb}</div><div class="cbp"><div class="cbn">${p?.lastName||p?.name||'—'}</div><div class="cbm" style="color:var(--muted)">${p?.position||p?.pos||'—'} · ${p?.team||'—'}</div></div>${prog}</div>`;}
 function openPackOv(idx){
   curPackIdx=idx;
   if(!packResults[idx]) packResults[idx]=generatePack(idx);
@@ -1080,7 +1080,7 @@ const color=RARITY_COLORS[player.rarity||'COMMON'];
 const pos=player.position||player.pos||'';
 const glow=color+'55', border=color+'66';
 return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${glow};border-color:${border};">
-<img src="${player.photoUrl||''}" onerror="this.parentElement.style.background='var(--surface2)';this.style.display='none'" loading="lazy">
+<img src="${playerPhoto(player)}" onerror="this.parentElement.style.background='#111122';this.style.display='none'" loading="lazy">
 <div class="mc-pos">${pos}</div>
 <div class="mc-bar" style="background:${color}"></div>
 </div>`;
@@ -1129,7 +1129,7 @@ incoming.forEach(c=>{
         </div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">${new Date(c.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
         <div style="display:flex;gap:5px;margin-bottom:12px;">
-          ${theirCards.map(p=>`<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);"><img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'"></div>`).join('')}
+          ${theirCards.map(p=>`<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);"><img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'"></div>`).join('')}
         </div>
         <div style="display:flex;gap:8px;">
           <button onclick="acceptChallenge('${c.id}')" style="flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">✅ Accept</button>
@@ -1529,7 +1529,7 @@ document.getElementById('b-over').style.display='none';
     const fullName=c.fullName||c.displayName||((c.firstName||'')+' '+(c.lastName||c.name||'')).trim();
     return `<div style="display:flex;align-items:center;gap:9px;background:var(--surface2);border-radius:10px;padding:8px 10px;margin-bottom:6px;border-left:3px solid rgba(255,255,255,.1);">
       <div style="width:38px;height:38px;border-radius:7px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.08);">
-        <img src="${c.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;" onerror="this.parentElement.style.background='var(--surface3)'">
+        <img src="${playerPhoto(c)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 8%;" onerror="this.parentElement.style.background='#111122'">
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);">${fullName}</div>
@@ -1649,7 +1649,7 @@ if(yourLineupEl){
     if(!p)return'';
     const color=RARITY_COLORS[p.rarity||'COMMON'];
     return `<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.08);flex-shrink:0;position:relative;">
-      <img src="${p.photoUrl||''}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
+      <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
       <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:${color};"></div>
     </div>`;
   }).join('');
@@ -2355,7 +2355,7 @@ function updateTonightSection(games){
     const color = RARITY_COLORS[p.rarity||'COMMON'];
     const pts = liveScores[p.mlbamId] || 0;
     return `<div class="tonight-card${pts > 0 ? ' playing' : ''}" onclick="openCardModal('${item.id}')" title="${p.fullName||p.displayName}">
-      <img src="${p.photoUrl||''}" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
+      <img src="${playerPhoto(p)}" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'">
       <div style="background:#080810;padding:3px 4px;">
         <div style="font-size:8px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.lastName||p.name}</div>
         <div style="font-size:7px;color:${color};">${pts > 0 ? pts.toFixed(1)+' pts' : p.position||p.pos}</div>
