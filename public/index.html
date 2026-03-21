@@ -805,33 +805,55 @@ const MOCK_MATCHUPS=[];
 const LEADERBOARD=[{name:'CardKing99',pts:14820,cards:312,wins:48,avatar:'CK',color:'#FFD700'},{name:'SluggerKing',pts:12440,cards:287,wins:41,avatar:'SK',color:'#FF006E'},{name:'AceHunter',pts:11200,cards:264,wins:38,avatar:'AH',color:'#BF40FF'},{name:'DiamondPro',pts:9880,cards:241,wins:33,avatar:'DP',color:'#00F5FF'},{name:'BaseballGod',pts:8760,cards:219,wins:29,avatar:'BG',color:'#FF8C00'},{name:'TheVeteran',pts:7450,cards:198,wins:26,avatar:'TV',color:'#6c63ff'},{name:'SpeedDemon',pts:6320,cards:177,wins:22,avatar:'SD',color:'#00d48a'},{name:'Rookie2024',pts:2140,cards:88,wins:8,avatar:'RK',color:'#8899AA'}];
 let PLAYERS=[],currentUser=null,userData=null,colFilter='ALL',packResults=[null],revealedCards=[new Set()],curPackIdx=0,currentModalCard=null,lineup=[null,null,null,null],selectedRival=null,selectedRivalId=null,selectedRivalName=null,battleState=null,battleTimer=null,battleRecord={wins:0,losses:0};
 async function loadPlayers(){
-  // Load from MLB Stats API (same source as All Cards tab)
+  // Load players.json first (has all historical + collection players)
+  try{
+    const r2=await fetch('/players.json');
+    const staticPlayers=await r2.json();
+    PLAYERS=[...staticPlayers];
+    console.log('Static players loaded:',PLAYERS.length);
+  }catch(e){
+    console.warn('players.json failed:',e);
+    PLAYERS=[];
+  }
+  // Then overlay with live MLB API data (current teams, active roster)
   try{
     const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
     const data=await r.json();
     const people=data.people||[];
-    PLAYERS=people.map((p,i)=>({
-      id: String(p.id),
-      mlbamId: p.id,
-      firstName: p.firstName||'',
-      lastName: p.lastName||'',
-      fullName: p.fullName||(p.firstName+' '+p.lastName),
-      displayName: p.fullName||(p.firstName+' '+p.lastName),
-      position: p.primaryPosition?.abbreviation||'',
-      pos: p.primaryPosition?.abbreviation||'',
-      team: p.currentTeam?.abbreviation||'',
-      teamName: p.currentTeam?.name||'',
-    }));
-    // Also populate _allMLBPlayers so All Cards tab is pre-loaded
+    const liveMap={};
+    people.forEach(p=>{
+      liveMap[String(p.id)]={
+        id: String(p.id),
+        mlbamId: p.id,
+        firstName: p.firstName||'',
+        lastName: p.lastName||'',
+        fullName: p.fullName||(p.firstName+' '+p.lastName),
+        displayName: p.fullName||(p.firstName+' '+p.lastName),
+        position: p.primaryPosition?.abbreviation||'',
+        pos: p.primaryPosition?.abbreviation||'',
+        team: p.currentTeam?.abbreviation||'',
+        teamName: p.currentTeam?.name||'',
+      };
+    });
+    // Update existing players with live data, add new ones
+    PLAYERS=PLAYERS.map(p=>{
+      const live=liveMap[String(p.mlbamId||p.id)];
+      return live?{...p,...live}:p;
+    });
+    // Add any live players not in static list
+    people.forEach(p=>{
+      const sid=String(p.id);
+      if(!PLAYERS.find(x=>String(x.mlbamId||x.id)===sid)){
+        PLAYERS.push(liveMap[sid]);
+      }
+    });
+    _allMLBPlayers=people.map(p=>liveMap[String(p.id)]);
+    _acLoaded=true;
+    console.log('Players merged with live API:',PLAYERS.length);
+  }catch(e){
+    console.warn('MLB API failed, using static only:',e);
     _allMLBPlayers=[...PLAYERS];
     _acLoaded=true;
-    console.log('Players loaded from MLB API:',PLAYERS.length);
-  }catch(e){
-    console.warn('MLB API failed, falling back to players.json:',e);
-    try{
-      const r2=await fetch('/players.json');
-      PLAYERS=await r2.json();
-    }catch(e2){PLAYERS=[];}
   }
 }
 function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>a.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));document.getElementById('login-form').style.display=t==='login'?'':'none';document.getElementById('register-form').style.display=t==='register'?'':'none';document.getElementById('auth-err').textContent='';}
@@ -1888,16 +1910,19 @@ showToast('Challenge declined.');renderMatchups();
 }
 function renderLeaderboard(){const uname=(currentUser?.email||'').split('@')[0];const me={name:uname,pts:Math.max(0,(userData?.collection?.length||0)*120+(battleRecord.wins||0)*500),cards:userData?.collection?.length||0,wins:battleRecord.wins||0,avatar:uname[0]?.toUpperCase()||'?',color:'var(--accent)',isMe:true};const all=[...LEADERBOARD];const mi=all.findIndex(e=>e.pts<=me.pts);if(mi>=0)all.splice(mi,0,me);else all.push(me);const pc=['#FFD700','#C0C0C0','#CD7F32'];const ph=[88,68,52];const po=[1,0,2];const top3=all.slice(0,3);document.getElementById('podium').innerHTML=po.map(i=>{const e=top3[i];if(!e)return'';const r=i+1;return`<div class="pod-item"><div class="pod-avatar" style="width:${46-i*4}px;height:${46-i*4}px;background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="pod-name">${e.name}</div><div class="pod-pts">${e.pts.toLocaleString()}</div><div class="pod-block" style="background:${pc[i]};height:${ph[i]}px;color:#000;font-size:.95rem">#${r}</div></div>`;}).join('');document.getElementById('lb-list').innerHTML=all.map((e,i)=>`<div class="lb-row${e.isMe?' me':''}"><div class="lb-rank">${i+1}</div><div class="lb-avatar" style="background:${e.color||'#888'}">${e.avatar||e.name[0]}</div><div class="lb-info"><h4>${e.name}${e.isMe?' (you)':''}</h4><p>${e.wins} wins · ${e.cards} cards</p></div><div class="lb-pts"><div class="pts">${e.pts.toLocaleString()}</div><div class="sub">points</div></div></div>`).join('');}
 function getPlayer(id){
-  // Check live MLB API data first (most accurate)
-  if(_allMLBPlayers.length > 0){
-    const live = _allMLBPlayers.find(p=>String(p.id)===String(id));
-    if(live){
-      // Merge with static data for any extra fields, but use live for team/position
-      const stat = PLAYERS.find(p=>String(p.id)===String(id));
-      return {...(stat||{}), ...live};
-    }
+  if(!id) return null;
+  const sid = String(id);
+  // Check live MLB API players first
+  if(PLAYERS.length > 0){
+    const p = PLAYERS.find(p=>String(p.id)===sid||String(p.mlbamId)===sid);
+    if(p) return p;
   }
-  return PLAYERS.find(p=>String(p.id)===String(id));
+  // Fall back to _allMLBPlayers cache
+  if(_allMLBPlayers.length > 0){
+    const p = _allMLBPlayers.find(p=>String(p.id)===sid||String(p.mlbamId)===sid);
+    if(p) return p;
+  }
+  return null;
 }
 function playerPhoto(player){
   if(!player) return '';
