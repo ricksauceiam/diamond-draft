@@ -1464,10 +1464,7 @@ pending.forEach(m=>{
   const old = isOld(m.sentAt);
   const pLineup=(m.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
   while(pLineup.length<4)pLineup.push(null);
-  const rPool=[...PLAYERS].sort(()=>Math.random()-.5);
-  const rPit=rPool.filter(p=>PITCHER_POS.has(p.position||p.pos||'')).slice(0,1);
-  const rBat=rPool.filter(p=>!PITCHER_POS.has(p.position||p.pos||'')).slice(0,3);
-  const rLineup=[...rPit,...rBat];
+  const rLineup=[null,null,null,null]; // unknown until accepted
   allItems.push({
     sortKey: new Date(m.sentAt).getTime(),
     priority: old ? 2 : 1,
@@ -1488,7 +1485,7 @@ pending.forEach(m=>{
         <div class="mbig-score-center"><div style="font-size:11px;color:var(--muted);">📨 Sent ${new Date(m.sentAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div>
         <div>
           <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;text-align:right;">${m.rival}</div>
-          <div class="mbig-cards right">${rLineup.map(p=>miniCard(p,true)).join('')}</div>
+          <div class="mbig-cards right">${[0,1,2,3].map(i=>'<div style="width:52px;height:72px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:1.3rem;color:var(--muted);">?</span></div>').join('')}</div>
         </div>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:8px;">
