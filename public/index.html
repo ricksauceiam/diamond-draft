@@ -768,6 +768,7 @@ async function initSession(){const key=`dd_${currentUser.id}`;const saved=localS
   upsertProfile();
   startChallengePoll();
   startLivePoll();
+  load40ManRoster();
 
 }
 
@@ -807,11 +808,14 @@ function generatePack(idx){
   let hash=0;
   for(let i=0;i<seed.length;i++){hash=(hash*31+seed.charCodeAt(i))>>>0;}
   const rng=()=>{hash=(hash*1664525+1013904223)>>>0;return(hash>>>0)/4294967296;};
-  const pool=[...PLAYERS];
+  // Only deal cards from active 40-man roster players
+  const pool = _roster40.size > 0
+    ? PLAYERS.filter(p => _roster40.has(Number(p.mlbamId)))
+    : [...PLAYERS];
   const cards=[];
   for(let i=0;i<4;i++){
     if(Math.floor(rng()*RAINBOW_ODDS)===0){
-      const t25=PLAYERS.filter(p=>TOP_25_IDS.has(Number(p.mlbamId)));
+      const t25=pool.filter(p=>TOP_25_IDS.has(Number(p.mlbamId)));
       const rc=t25[Math.floor(rng()*t25.length)];
       if(rc){cards.push({...rc,isRainbow:true});continue;}
     }
@@ -2564,6 +2568,19 @@ function adminDownload(){
 let _allMLBPlayers = [];
 let _acFilter = 'ALL';
 let _acLoaded = false;
+let _roster40 = new Set(); // mlbamIds of active 40-man roster players
+
+async function load40ManRoster(){
+  if(_roster40.size > 0) return;
+  try{
+    const r = await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
+    const data = await r.json();
+    (data.people||[]).forEach(p => _roster40.add(p.id));
+    console.log('40-man roster loaded:', _roster40.size, 'players');
+  } catch(e){
+    console.warn('Could not load 40-man roster:', e);
+  }
+}
 
 async function loadAllCards(){
   if(_acLoaded) return;
