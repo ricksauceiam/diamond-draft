@@ -1342,8 +1342,10 @@ const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.m
 const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
 const pitchEl=document.getElementById('ch-pitchers');
 const hitEl=document.getElementById('ch-hitters');
-if(pitchEl)pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
-if(hitEl)hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
+if(pitchEl){pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
+  pitchEl.querySelectorAll('[data-cid]').forEach(el=>el.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));}));}
+if(hitEl){hitEl.innerHTML=hitterHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No hitters in collection</div>';
+  hitEl.querySelectorAll('[data-cid]').forEach(el=>el.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));}));}
 const pc=document.getElementById('ch-p-count');
 const hc=document.getElementById('ch-h-count');
 if(pc)pc.textContent=`${pitcherItems.length} available`;
@@ -1372,7 +1374,6 @@ function playerRow(item,dimmed){
     +'cursor:'+(dimmed?'default':'pointer')+';margin-bottom:6px;opacity:'+(dimmed?0.4:1)+';transition:border-color .15s;';
   if(!dimmed){
     wrapper.setAttribute('data-cid',item.id);
-    wrapper.addEventListener('click',function(){toggleLineup(this.getAttribute('data-cid'));});
   }
   // Photo
   const photoWrap=document.createElement('div');
