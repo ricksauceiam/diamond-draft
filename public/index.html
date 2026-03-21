@@ -1315,6 +1315,75 @@ return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${glow};border-col
 </div>`;
 }
 
+
+function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, myScore, rivalScore, leading){
+  const myName = (currentUser?.email||'').split('@')[0];
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'background:var(--surface);border:2px solid '+(leading?'#00d48a':'#6c63ff')+';border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .15s;';
+  wrap.onmouseover = function(){this.style.transform='translateY(-2px)';};
+  wrap.onmouseout = function(){this.style.transform='none';};
+  wrap.onclick = function(){openActiveBattle(battleId);};
+
+  // Header
+  const head = document.createElement('div');
+  head.style.cssText = 'padding:10px 14px;background:linear-gradient(135deg,rgba(108,99,255,.15),transparent);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:13px;font-weight:900;';
+  title.textContent = '⚔️ vs ' + rivalName;
+  const badge = document.createElement('div');
+  badge.style.cssText = 'display:flex;align-items:center;gap:5px;';
+  badge.innerHTML = '<div class="live-dot"></div><span style="font-size:11px;font-weight:700;color:#ff4757;">LIVE</span>';
+  head.appendChild(title); head.appendChild(badge);
+
+  // Scores
+  const scores = document.createElement('div');
+  scores.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:14px;';
+
+  function sideEl(name, score, isLeading, lineup){
+    const d = document.createElement('div');
+    d.style.textAlign = 'center';
+    const nm = document.createElement('div');
+    nm.style.cssText = 'font-size:10px;color:#6a6a8a;text-transform:uppercase;font-weight:700;margin-bottom:4px;';
+    nm.textContent = name;
+    const sc = document.createElement('div');
+    sc.style.cssText = 'font-size:2rem;font-weight:900;color:'+(isLeading?'#00d48a':'#e8e8f0')+';';
+    sc.textContent = score.toFixed(1);
+    const cards = document.createElement('div');
+    cards.style.cssText = 'display:flex;gap:4px;justify-content:center;margin-top:6px;';
+    lineup.slice(0,4).forEach(id=>{
+      const p = getPlayer(id);
+      if(!p) return;
+      const cd = document.createElement('div');
+      cd.style.cssText = 'width:28px;height:36px;border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.1);';
+      const img = document.createElement('img');
+      img.src = playerPhoto(p);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:50% 10%;';
+      img.onerror = function(){this.style.display='none';};
+      cd.appendChild(img);
+      cards.appendChild(cd);
+    });
+    d.appendChild(nm); d.appendChild(sc); d.appendChild(cards);
+    return d;
+  }
+
+  scores.appendChild(sideEl(myName, myScore, leading, myLineup));
+  const vs = document.createElement('div');
+  vs.style.cssText = 'text-align:center;color:#6a6a8a;font-size:12px;font-weight:700;';
+  vs.textContent = 'VS';
+  scores.appendChild(vs);
+  scores.appendChild(sideEl(rivalName, rivalScore, !leading, rivalLineup));
+
+  // Footer
+  const foot = document.createElement('div');
+  foot.style.cssText = 'padding:8px 14px;background:#161622;border-top:1px solid rgba(255,255,255,.07);text-align:center;';
+  foot.innerHTML = '<span style="font-size:11px;color:#6a6a8a;">Tap to view live matchup →</span>';
+
+  wrap.appendChild(head);
+  wrap.appendChild(scores);
+  wrap.appendChild(foot);
+  return wrap.outerHTML;
+}
+
 function renderMatchups(){
 document.getElementById('sw').textContent=battleRecord.wins||0;
 document.getElementById('sl').textContent=battleRecord.losses||0;
@@ -1341,6 +1410,26 @@ function collapsedRow(m,resultClass,resultLabel,scoreStr){
 
 // Build all battle items into a single array with a sortKey timestamp
 const allItems = [];
+
+// 0. Active battles from Supabase (accepted/active)
+const activeBattles = window._activeBattles||[];
+activeBattles.forEach(b=>{
+  const isFrom = b.from_id===currentUser.id;
+  const rivalName = isFrom ? b.to_name : b.from_name;
+  const myLineup = isFrom ? (b.from_lineup||[]) : (b.to_lineup||[]);
+  const rivalLineup = isFrom ? (b.to_lineup||[]) : (b.from_lineup||[]);
+  const myScore = myLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+  const rivalScore = rivalLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+  const leading = myScore > rivalScore;
+  const date = new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const battle = {id:b.id,rivalName,youLineup:myLineup,rivalLineup,status:'active',sentAt:b.created_at};
+  window._histBattles = window._histBattles||{};
+  window._histBattles['active-'+b.id] = battle;
+  allItems.push({
+    sortKey: new Date(b.created_at).getTime(),
+    priority: 0,
+    html: buildActiveBattleCard(b.id, rivalName, myLineup, rivalLineup, myScore, rivalScore, leading)
+  });});
 
 // 1. Incoming challenges (highest priority — always fresh)
 const incoming = window._incomingChallenges||[];
@@ -1735,15 +1824,16 @@ fetchBattleHistory();
 let _battleHistory=[];
 async function fetchBattleHistory(){
   if(!currentUser)return;
+  // Fetch both active AND completed battles
   const{data}=await sb.from('challenges')
     .select('id,from_id,from_name,to_name,from_lineup,to_lineup,result,created_at,status')
     .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
-    .eq('status','completed')
+    .in('status',['accepted','active','completed'])
     .order('created_at',{ascending:false})
-    .limit(20);
+    .limit(30);
   if(data){
-    _battleHistory=data;
-    // Re-render if battle tab is open
+    _battleHistory=data.filter(b=>b.status==='completed');
+    window._activeBattles=data.filter(b=>b.status==='accepted'||b.status==='active');
     if(document.getElementById('tab-matchups')?.classList.contains('active')){
       renderMatchups();
     }
@@ -2031,6 +2121,21 @@ async function showBattleResult(battle){
   document.getElementById('result-ov').classList.add('open');
 }
 
+
+function openActiveBattle(battleId){
+  const battles = window._activeBattles||[];
+  const b = battles.find(x=>x.id===battleId);
+  if(!b) return;
+  const isFrom = b.from_id===currentUser.id;
+  openBattleDetail({
+    id: b.id,
+    rivalName: isFrom ? b.to_name : b.from_name,
+    youLineup: isFrom ? (b.from_lineup||[]) : (b.to_lineup||[]),
+    rivalLineup: isFrom ? (b.to_lineup||[]) : (b.from_lineup||[]),
+    status: 'active',
+    sentAt: b.created_at
+  });
+}
 function openBattleDetail(battle){
   const ov = document.getElementById('battle-detail-ov');
   ov.style.display='flex';
