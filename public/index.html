@@ -1138,10 +1138,13 @@ function claimPack(){
     userData.lastStreakDate=today;
   }
   saveData();
+  savePackSession();
   const hasRainbow = cards.some(c=>c.isRainbow);
-  showToast(hasRainbow?'🌈 Rainbow card added to collection!':'4 cards added to collection ✨');
+  showToast(hasRainbow?'🌈 Rainbow card added to collection!':'✨ '+cards.length+' cards added to your collection!');
   document.getElementById('ov-collect-btn').style.display='none';
+  closePackOv();
   renderHome();
+  goTab('collection');
 }
 
 function resetCollection(){
@@ -2777,6 +2780,250 @@ function showAcCardDetail(p){
   document.getElementById('mstats').innerHTML='';
   const fb=document.getElementById('fuse-btn');if(fb)fb.style.display='none';
   document.getElementById('card-modal').classList.add('open');
+}
+
+
+// ── BATTLE HISTORY + CHALLENGE POLLING ───────────────────────────────────────
+let _battleHistory = [];
+let battleDetailInterval = null;
+
+async function fetchBattleHistory(){
+  if(!currentUser)return;
+  const{data}=await sb.from('challenges')
+    .select('id,from_id,from_name,to_name,from_lineup,to_lineup,result,created_at,status')
+    .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
+    .in('status',['accepted','active','completed'])
+    .order('created_at',{ascending:false})
+    .limit(30);
+  if(data){
+    _battleHistory=data.filter(b=>b.status==='completed');
+    window._activeBattles=data.filter(b=>b.status==='accepted'||b.status==='active');
+    if(document.getElementById('tab-matchups')?.classList.contains('active')){
+      renderMatchups();
+    }
+  }
+}
+
+function updateChallengeBadge(count){
+  // Update mobile badge if present
+  const mob = document.querySelector('.mob-tab[data-tab="matchups"] .mob-badge');
+  if(mob){ mob.textContent=count; mob.style.display=count>0?'':'none'; }
+}
+
+async function startChallengePoll(){
+  // Initial fetch
+  await fetchBattleHistory();
+  await pollIncomingChallenges();
+  // Poll every 30s
+  setInterval(async()=>{
+    await pollIncomingChallenges();
+    await fetchBattleHistory();
+  }, 30000);
+}
+
+async function pollIncomingChallenges(){
+  if(!currentUser) return;
+  try{
+    const{data}=await sb.from('challenges')
+      .select('id,from_id,from_name,from_lineup,created_at')
+      .eq('to_id', currentUser.id)
+      .eq('status','pending')
+      .order('created_at',{ascending:false});
+    window._incomingChallenges = data||[];
+    window._incomingCount = (data||[]).length;
+    updateChallengeBadge(window._incomingCount);
+    // Refresh matchups tab if open
+    if(document.getElementById('tab-matchups')?.classList.contains('active')){
+      renderMatchups();
+    }
+  }catch(e){ console.warn('Poll challenges:', e); }
+}
+
+async function cancelChallenge(id){
+  await sb.from('challenges').update({status:'cancelled'}).eq('id',id);
+  if(!userData.pendingMatchups) userData.pendingMatchups=[];
+  userData.pendingMatchups = userData.pendingMatchups.filter(m=>m.id!==id);
+  saveData();
+  showToast('Challenge cancelled.');
+  renderMatchups();
+}
+
+function showBattleResult(battle){
+  // Simple result display
+  const youTotal = (battle.youLineup||[]).map(id=>getPlayer(id)).filter(Boolean)
+    .reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+  const rivalTotal = (battle.rivalLineup||[]).map(id=>getPlayer(id)).filter(Boolean)
+    .reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+  const won = youTotal >= rivalTotal;
+  document.getElementById('result-emoji').textContent = won?'🏆':'💀';
+  document.getElementById('result-title').textContent = won?'VICTORY!':'DEFEAT';
+  document.getElementById('result-subtitle').textContent = `vs ${battle.rivalName||battle.rival||'Rival'}`;
+  document.getElementById('result-you-name').textContent = (currentUser?.email||'').split('@')[0];
+  document.getElementById('result-rival-name').textContent = battle.rivalName||battle.rival||'Rival';
+  document.getElementById('result-you-score').textContent = youTotal.toFixed(1);
+  document.getElementById('result-rival-score').textContent = rivalTotal.toFixed(1);
+  document.getElementById('result-breakdown').innerHTML='';
+  document.getElementById('result-prize').style.display='none';
+  document.getElementById('result-ov').classList.add('open');
+  // Update record
+  if(won){battleRecord.wins=(battleRecord.wins||0)+1;}
+  else{battleRecord.losses=(battleRecord.losses||0)+1;}
+  saveData();
+  // Mark battle complete in Supabase
+  if(battle.id){
+    sb.from('challenges').update({
+      status:'completed',
+      result:{
+        winner: youTotal>=rivalTotal?'from':'to',
+        from_score: youTotal,
+        to_score: rivalTotal
+      }
+    }).eq('id',battle.id).then(()=>{});
+  }
+}
+
+function renderMatchups(){
+  if(!document.getElementById('mlist')) return;
+  document.getElementById('sw').textContent=battleRecord.wins||0;
+  document.getElementById('sl').textContent=battleRecord.losses||0;
+  document.getElementById('mt-rec').textContent=`${battleRecord.wins||0} wins · ${battleRecord.losses||0} losses`;
+
+  const now=Date.now();
+  const ONE_DAY=24*60*60*1000;
+  function isOld(t){return(now-new Date(t).getTime())>ONE_DAY;}
+
+  function collapsedRow(m,resultClass,resultLabel,scoreStr){
+    const age=new Date(m.sentAt||m.created_at||Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<div class="mbig-expandable" id="battle-${m.id}">
+      <div class="mbig-collapsed" onclick="toggleBattleExpand('battle-${m.id}')">
+        <div class="mc-result ${resultClass}">${resultLabel}</div>
+        <div class="mc-opp" style="flex:1;">vs ${m.rival||m.from_name||'Opponent'}</div>
+        <div class="mc-score">${scoreStr}</div>
+        <div class="mc-date">${age}</div>
+        <span style="color:var(--muted);font-size:11px;">›</span>
+      </div>
+      <div class="mbig-expanded"></div>
+    </div>`;
+  }
+
+  const allItems = [];
+
+  // Active battles from Supabase
+  const activeBattles = window._activeBattles||[];
+  activeBattles.forEach(b=>{
+    const isFrom = b.from_id===currentUser.id;
+    const rivalName = isFrom ? b.to_name : b.from_name;
+    const myLineup = isFrom ? (b.from_lineup||[]) : (b.to_lineup||[]);
+    const rivalLineup = isFrom ? (b.to_lineup||[]) : (b.from_lineup||[]);
+    const myScore = myLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+    const rivalScore = rivalLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+    const leading = myScore >= rivalScore;
+    allItems.push({
+      sortKey: new Date(b.created_at).getTime(),
+      priority: 0,
+      html: buildActiveBattleCard(b.id, rivalName, myLineup, rivalLineup, myScore, rivalScore, leading)
+    });
+  });
+
+  // Incoming challenges
+  const incoming = window._incomingChallenges||[];
+  incoming.forEach(c=>{
+    if(isOld(c.created_at)) return;
+    const theirCards=(c.from_lineup||[]).slice(0,4).map(id=>getPlayer(id)).filter(Boolean);
+    allItems.push({
+      sortKey: new Date(c.created_at).getTime(),
+      priority: 0,
+      html: `<div class="mbig" style="border-color:var(--danger);background:rgba(255,71,87,.05);">
+        <div class="mbig-head">
+          <span style="font-size:13px;font-weight:800;">⚔️ ${c.from_name} challenged you!</span>
+          <span class="mb-status live">🔴 Incoming</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">${new Date(c.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+        <div style="display:flex;gap:5px;margin-bottom:12px;">
+          ${theirCards.map(p=>`<div style="width:44px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);"><img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.style.display='none'"></div>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="openAcceptLineup('${c.id}','${c.from_name}')" style="flex:1;padding:9px;background:var(--success);color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">⚔️ Accept & Pick Lineup</button>
+          <button onclick="declineChallenge('${c.id}')" style="padding:9px 14px;background:none;border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;">Decline</button>
+        </div>
+      </div>`
+    });
+  });
+
+  // Sent pending challenges
+  const pending = userData?.pendingMatchups||[];
+  pending.forEach(m=>{
+    if(isOld(m.sentAt)) return;
+    const pLineup=(m.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
+    while(pLineup.length<4)pLineup.push(null);
+    allItems.push({
+      sortKey: new Date(m.sentAt).getTime(),
+      priority: 1,
+      html: `<div class="mbig" style="border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.05);">
+        <div class="mbig-head">
+          <span style="font-size:13px;font-weight:700">${m.rival}</span>
+          <span class="mb-status upcoming" style="display:flex;align-items:center;gap:5px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pendingPulse 1.4s infinite;"></span>
+            Awaiting Response
+          </span>
+        </div>
+        <div class="mbig-lineups">
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;">${(currentUser?.email||'').split('@')[0]}</div>
+            <div class="mbig-cards">${pLineup.map(p=>miniCard(p,false)).join('')}</div>
+          </div>
+          <div class="mbig-score-center"><div style="font-size:11px;color:var(--muted);">📨 Sent</div></div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;text-align:right;">${m.rival}</div>
+            <div class="mbig-cards right">${[0,1,2,3].map(()=>'<div style="width:52px;height:72px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:1.3rem;color:var(--muted);">?</span></div>').join('')}</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+          <button onclick="cancelChallenge('${m.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:11px;color:var(--muted);cursor:pointer;">Cancel</button>
+        </div>
+      </div>`
+    });
+  });
+
+  allItems.sort((a,b)=>a.priority-b.priority||b.sortKey-a.sortKey);
+  const html = allItems.map(i=>i.html).join('');
+  document.getElementById('mlist').innerHTML = html || '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:2rem;margin-bottom:10px;">⚔️</div><p style="font-weight:700;margin-bottom:6px;">No battles yet</p><p style="font-size:13px;">Challenge a player to get started!</p><button class="btn-p" style="margin-top:14px;padding:10px 22px;font-size:13px;" onclick="openChallengeOv()">Find a Player →</button></div>';
+
+  // Completed battle history
+  const myName=(currentUser?.email||'').split('@')[0];
+  if(_battleHistory.length>0){
+    const histEl = document.createElement('div');
+    histEl.innerHTML = '<div class="sec-title" style="margin-top:20px;">📋 Past Battles</div>';
+    _battleHistory.forEach(b=>{
+      const iFrom=b.from_id===currentUser.id;
+      const rivalName=iFrom?b.to_name:b.from_name;
+      const result=b.result||{};
+      const myScore=iFrom?result.from_score||0:result.to_score||0;
+      const theirScore=iFrom?result.to_score||0:result.from_score||0;
+      const won=(iFrom&&result.winner==='from')||(!iFrom&&result.winner==='to');
+      const tied=result.winner==='tie';
+      const resultClass=won?'win':tied?'':'loss';
+      const resultLabel=won?'🏆 W':tied?'🤝 T':'💀 L';
+      const scoreStr=`${Number(myScore).toFixed(1)}–${Number(theirScore).toFixed(1)}`;
+      const myLineup=(iFrom?b.from_lineup:b.to_lineup)||[];
+      const theirLineup=(iFrom?b.to_lineup:b.from_lineup)||[];
+      window._histBattles=window._histBattles||{};
+      window._histBattles['hist-'+b.id]={id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at};
+      const div = document.createElement('div');
+      div.className='mbig-expandable';
+      div.id='hist-'+b.id;
+      div.innerHTML=`<div class="mbig-collapsed" onclick="toggleBattleExpand('hist-${b.id}');renderHistoryExpand('hist-${b.id}')">
+        <div class="mc-result ${resultClass}">${resultLabel}</div>
+        <div class="mc-opp" style="flex:1;">vs ${rivalName}</div>
+        <div class="mc-score">${scoreStr}</div>
+        <div class="mc-date">${new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        <span style="color:var(--muted);font-size:11px;">›</span>
+      </div>
+      <div class="mbig-expanded" id="hist-exp-${b.id}"></div>`;
+      histEl.appendChild(div);
+    });
+    document.getElementById('mlist').appendChild(histEl);
+  }
 }
 
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}

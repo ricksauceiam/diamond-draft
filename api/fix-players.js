@@ -1,54 +1,22 @@
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Content-Type', 'application/json');
-
   try {
-    const r = await fetch(
-      'https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R',
-      { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } }
-    );
-    if (!r.ok) throw new Error(`MLB API ${r.status}`);
+    const r = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R');
     const data = await r.json();
-    const mlbPlayers = data.people || [];
-
-    // Normalize: strip accents, lowercase, remove suffixes like Jr./Sr./II/III
-    function norm(s) {
-      return (s || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
-        .replace(/\b(jr|sr|ii|iii|iv)\b\.?/gi, '')        // remove suffixes
-        .replace(/[^a-z0-9 ]/gi, '')                       // remove punctuation
-        .toLowerCase().trim().replace(/\s+/g, ' ');
-    }
-
-    // Build lookup by normalized full name AND by last+first
-    const byFull = {};
-    const byLast = {};
-    const byLastFirst = {};
-
-    for (const p of mlbPlayers) {
-      const full = norm(`${p.firstName} ${p.lastName}`);
-      const last = norm(p.lastName);
-      const lastFirst = norm(`${p.lastName} ${p.firstName}`);
-      const entry = {
-        mlbamId: p.id,
-        position: p.primaryPosition?.abbreviation || '',
-        team: p.currentTeam?.abbreviation || '',
-        teamName: p.currentTeam?.name || '',
-      };
+    const people = data.people || [];
+    const byFull = {}, byLast = {}, byLastFirst = {};
+    people.forEach(p => {
+      const fn = (p.firstName||'').toLowerCase().trim();
+      const ln = (p.lastName||'').toLowerCase().trim();
+      const full = fn + ' ' + ln;
+      const lastFirst = ln + ' ' + fn;
+      const entry = { mlbamId: p.id, firstName: p.firstName, lastName: p.lastName, team: p.currentTeam?.abbreviation, teamName: p.currentTeam?.name };
       byFull[full] = entry;
       byLastFirst[lastFirst] = entry;
-      if (!byLast[last]) byLast[last] = [];
-      byLast[last].push({ ...entry, firstName: norm(p.firstName) });
-    }
-
-    res.setHeader('Cache-Control', 'no-cache, no-store');
-    res.status(200).json({version: 2,
-      total: mlbPlayers.length,
-      byFull,
-      byLast,
-      byLastFirst
+      if(!byLast[ln]) byLast[ln] = [];
+      byLast[ln].push(entry);
     });
-  } catch (e) {
+    res.json({ total: people.length, byFull, byLast, byLastFirst });
+  } catch(e) {
     res.status(500).json({ error: e.message });
   }
 }
