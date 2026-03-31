@@ -2382,36 +2382,39 @@ function renderScores(){
     // Pitcher matchup if available
     const awayPitcher = game.teams?.away?.probablePitcher?.lastName || '';
     const homePitcher = game.teams?.home?.probablePitcher?.lastName || '';
-    const pitcherLine = (awayPitcher||homePitcher) ? `<div class="gt-footer" style="justify-content:center;gap:6px;font-size:10px;color:var(--muted);">⚾ ${awayPitcher||'TBD'} vs ${homePitcher||'TBD'}</div>` : '';
+    const pitcherLine = '';
 
     const tile = document.createElement('div');
     tile.className = `game-tile ${statusClass}`;
     tile.innerHTML = `
       <div class="gt-header">
-        <span class="gt-matchup" style="font-size:11px;font-weight:700;">${awayAbbr} @ ${homeAbbr}</span>
-        <span class="gt-badge ${statusClass}" style="font-size:10px;">${statusLabel}</span>
+        <span class="gt-matchup">${awayAbbr} @ ${homeAbbr}</span>
+        <span class="gt-badge ${statusClass}">${statusLabel}</span>
       </div>
-      <div class="gt-body">
-        <div class="gt-teams">
-          <div class="gt-team">
-            <img src="${teamLogo(awayId)}" style="width:56px;height:56px;object-fit:contain;" onerror="this.style.display='none'">
-            <div class="gt-name" style="font-weight:${awayWin?'900':'600'};color:${awayWin?'var(--text)':'var(--muted)'};">${awayName}</div>
-            ${awayRec?`<div class="gt-rec">${awayRec}</div>`:''}
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+        <!-- Away row -->
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="${teamLogo(awayId)}" style="width:36px;height:36px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:${awayWin?'900':'600'};color:${awayWin?'var(--text)':'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${awayName}</div>
+            ${awayRec?`<div style="font-size:10px;color:var(--muted);">${awayRec}</div>`:''}
           </div>
-          <div class="gt-score-box">
-            ${hasScore
-              ? `<div class="gt-score" style="font-size:2.2rem;letter-spacing:2px;font-weight:900;">${awayScore}<span class="sep"> – </span>${homeScore}</div>`
-              : `<div class="gt-vs">VS</div>`}
+          <div style="font-size:${hasScore?'1.8rem':'1rem'};font-weight:900;color:${awayWin?'var(--text)':'var(--muted)'};min-width:28px;text-align:right;line-height:1;">${hasScore?awayScore:'—'}</div>
+        </div>
+        <!-- Home row -->
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="${teamLogo(homeId)}" style="width:36px;height:36px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:${homeWin?'900':'600'};color:${homeWin?'var(--text)':'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${homeName}</div>
+            ${homeRec?`<div style="font-size:10px;color:var(--muted);">${homeRec}</div>`:''}
           </div>
-          <div class="gt-team">
-            <img src="${teamLogo(homeId)}" style="width:56px;height:56px;object-fit:contain;" onerror="this.style.display='none'">
-            <div class="gt-name" style="font-weight:${homeWin?'900':'600'};color:${homeWin?'var(--text)':'var(--muted)'};">${homeName}</div>
-            ${homeRec?`<div class="gt-rec">${homeRec}</div>`:''}
-          </div>
+          <div style="font-size:${hasScore?'1.8rem':'1rem'};font-weight:900;color:${homeWin?'var(--text)':'var(--muted)'};min-width:28px;text-align:right;line-height:1;">${hasScore?homeScore:'—'}</div>
         </div>
       </div>
-      ${venue?`<div class="gt-footer"><span style="font-size:10px;margin-right:3px">📍</span><span class="gt-venue">${venue}</span></div>`:''}
-      ${pitcherLine}
+      ${venue||pitcherLine?`<div class="gt-footer" style="flex-direction:column;align-items:flex-start;gap:3px;">
+        ${venue?`<div style="display:flex;align-items:center;gap:4px;"><span style="font-size:10px;">📍</span><span class="gt-venue">${venue}</span></div>`:''}
+        ${awayPitcher||homePitcher?`<div style="font-size:10px;color:var(--muted);">⚾ ${awayPitcher||'TBD'} vs ${homePitcher||'TBD'}</div>`:''}
+      </div>`:''}
     `;
     grid.appendChild(tile);
   });
