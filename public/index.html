@@ -1423,7 +1423,32 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
   wrap.style.cssText = 'background:var(--surface);border:2px solid '+(leading?'#00d48a':'#6c63ff')+';border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s;';
   wrap.onmouseover = function(){this.style.transform='translateY(-2px)';};
   wrap.onmouseout = function(){this.style.transform='none';};
-  wrap.onclick = function(){openActiveBattle(battleId);};
+  wrap.onclick = function(){
+    // Try _activeBattles first, fall back to passed data
+    const battles = window._activeBattles||[];
+    const b = battles.find(x=>x.id===battleId);
+    if(b){
+      const isFrom = b.from_id===currentUser.id;
+      openBattleDetail({
+        id: b.id,
+        rivalName: isFrom ? b.to_name : b.from_name,
+        youLineup: isFrom ? (b.from_lineup||[]) : (b.to_lineup||[]),
+        rivalLineup: isFrom ? (b.to_lineup||[]) : (b.from_lineup||[]),
+        status: 'active',
+        sentAt: b.created_at
+      });
+    } else {
+      // Fall back to data already passed into this function
+      openBattleDetail({
+        id: battleId,
+        rivalName: rivalName,
+        youLineup: myLineup,
+        rivalLineup: rivalLineup,
+        status: 'active',
+        sentAt: new Date().toISOString()
+      });
+    }
+  };
 
   // Header: name vs name + live badge + scores
   const head = document.createElement('div');
