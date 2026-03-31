@@ -3217,8 +3217,14 @@ function openGameModal(game){
     grid.innerHTML = '';
 
     // Split by team
-    const awayCards = myCards.filter(c=>(c.player.team||'').toUpperCase()===awayAbbr);
-    const homeCards = myCards.filter(c=>(c.player.team||'').toUpperCase()===homeAbbr);
+    const awayCards = myCards.filter(c=>{
+      const p=c.player; const ptId=String(p.currentTeamId||p.teamId||''); const ptFull=(p.teamName||'').toLowerCase();
+      return (p.team||'').toUpperCase()===awayAbbr||ptId===awayTeamId||ptFull===awayFullName;
+    });
+    const homeCards = myCards.filter(c=>{
+      const p=c.player; const ptId=String(p.currentTeamId||p.teamId||''); const ptFull=(p.teamName||'').toLowerCase();
+      return (p.team||'').toUpperCase()===homeAbbr||ptId===homeTeamId||ptFull===homeFullName;
+    });
 
     function makeCard(item){
       const p = item.player;
