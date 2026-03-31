@@ -1821,30 +1821,30 @@ function renderBdCard(player, sideTotal){
   const team = player.team||'';
 
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:10px;border:'+(pts>0?'1px solid rgba(0,212,138,.25)':elite?'1px solid rgba(255,215,0,.3)':'1px solid transparent')+';transition:all .2s;';
+  row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:'+(pts>0?'1px solid rgba(0,212,138,.3)':elite?'1px solid rgba(255,215,0,.3)':'1px solid rgba(255,255,255,.05)')+';transition:all .2s;';
 
-  // Small circular photo
+  // Photo
   const photoWrap = document.createElement('div');
-  photoWrap.style.cssText = 'width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.1)')+';background:#111122;';
+  photoWrap.style.cssText = 'width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;border:'+(elite?'2px solid #FFD700':'1.5px solid rgba(255,255,255,.12)')+';background:#111122;';
   const img = document.createElement('img');
   img.src = playerPhoto(player);
   img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:50% 15%;';
   img.onerror = function(){this.style.display='none';};
   photoWrap.appendChild(img);
 
-  // Name + position
+  // Name + position + stats
   const info = document.createElement('div');
   info.style.cssText = 'flex:1;min-width:0;';
   const nameEl = document.createElement('div');
-  nameEl.style.cssText = 'font-size:12px;font-weight:700;color:#e8e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+  nameEl.style.cssText = 'font-size:15px;font-weight:800;color:#e8e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
   nameEl.textContent = (elite?'👑 ':'')+nm;
   const subEl = document.createElement('div');
-  subEl.style.cssText = 'font-size:10px;color:#6a6a8a;margin-top:1px;';
+  subEl.style.cssText = 'font-size:12px;color:#6a6a8a;margin-top:2px;';
   subEl.textContent = pos + (team?' · '+team:'');
 
   const statLine = getStatLine(player.mlbamId);
   const statEl = document.createElement('div');
-  statEl.style.cssText = 'font-size:10px;color:'+(pts>0?'rgba(0,212,138,.7)':'#444')+';margin-top:3px;font-weight:600;';
+  statEl.style.cssText = 'font-size:12px;color:'+(pts>0?'rgba(0,212,138,.85)':'#555')+';margin-top:4px;font-weight:600;letter-spacing:.2px;';
   statEl.textContent = statLine;
 
   info.appendChild(nameEl);
@@ -1853,7 +1853,7 @@ function renderBdCard(player, sideTotal){
 
   // Points
   const ptsEl = document.createElement('div');
-  ptsEl.style.cssText = 'font-size:13px;font-weight:900;flex-shrink:0;color:'+(pts>0?'#00d48a':'#444')+';min-width:36px;text-align:right;';
+  ptsEl.style.cssText = 'font-size:18px;font-weight:900;flex-shrink:0;color:'+(pts>0?'#00d48a':'#444')+';min-width:44px;text-align:right;';
   ptsEl.id = 'bdpts-'+player.mlbamId;
   ptsEl.textContent = pts>0 ? pts.toFixed(1) : '—';
 
