@@ -1043,6 +1043,21 @@ async function loadStatsForVisibleCards(){
     promises.push(
       fetchSeasonStats(mid).then(stats=>{
         if(!stats){ el.textContent=''; return; }
+        // Refine pitcher label using gamesStarted from stats
+        if(isPitcher && stats.pitching){
+          const gs = stats.pitching.gamesStarted||0;
+          const gp = stats.pitching.gamesPlayed||0;
+          const cbmEl = el.closest('.cbp')?.querySelector('.cbm');
+          if(cbmEl){
+            const teamSpan = cbmEl.querySelector('span');
+            const teamText = teamSpan?.textContent||'';
+            if(gs > 0 && gs >= gp/2){
+              cbmEl.childNodes[0].textContent = 'Starting Pitcher';
+            } else if(gp > 0){
+              cbmEl.childNodes[0].textContent = 'Relief Pitcher';
+            }
+          }
+        }
         const line = isPitcher ? formatPitchingStats(stats.pitching) : formatHittingStats(stats.hitting);
         el.textContent = line || '—';
       })
