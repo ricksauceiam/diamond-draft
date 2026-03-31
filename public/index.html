@@ -947,7 +947,10 @@ async function fetchSeasonStats(mlbamId){
 }
 
 async function loadStatsForVisibleCards(){
-  // Find all stat placeholders and load them
+  // Update team + game info for all cards first (fast, no API needed)
+  updateCardGameInfo();
+
+  // Then load season stats
   const els = document.querySelectorAll('[id^="cbs-"]');
   const promises = [];
   els.forEach(el=>{
@@ -965,6 +968,33 @@ async function loadStatsForVisibleCards(){
     );
   });
   await Promise.all(promises);
+}
+
+function updateCardGameInfo(){
+  // Update team abbreviation on all cbm elements and game info on cbgame elements
+  document.querySelectorAll('[id^="cbg-"]').forEach(el=>{
+    const mid = el.id.replace('cbg-','');
+    if(!mid) return;
+    const p = getPlayer(mid);
+    if(!p) return;
+    const gi = getPlayerGameInfo(p);
+    if(gi){
+      el.textContent = gi.text;
+      el.className = 'cbgame' + (gi.live?' live':' today');
+    } else {
+      el.textContent = '';
+      el.className = 'cbgame';
+    }
+  });
+  // Also update the team abbreviation in cbm elements
+  document.querySelectorAll('[id^="cbteam-"]').forEach(el=>{
+    const mid = el.id.replace('cbteam-','');
+    if(!mid) return;
+    const live = _allMLBPlayers.find(x=>String(x.mlbamId||x.id)===mid)||PLAYERS.find(x=>String(x.mlbamId||x.id)===mid);
+    const p = getPlayer(mid);
+    const team = live?.team||p?.team||p?.teamAbbr||'';
+    if(team) el.textContent = ' · ' + team;
+  });
 }
 
 function formatHittingStats(s){
@@ -2773,6 +2803,10 @@ async function loadTonightGames(){
     console.log('Tonight team IDs:', [...window._tonightTeamIds]);
     console.log('Tonight abbrs:', [...tonightTeams]);
     updateTonightSection(games);
+    // Update any visible collection cards with game info
+    if(document.getElementById('tab-collection')?.classList.contains('active')){
+      updateCardGameInfo();
+    }
   } catch(e) {
     console.warn('Tonight games:', e.message);
     // During spring training / offseason show all cards
