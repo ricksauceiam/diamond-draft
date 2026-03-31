@@ -1502,16 +1502,14 @@ function openActiveBattle(battleId){
 }
 function openBattleDetail(battle){
   const ov = document.getElementById('battle-detail-ov');
+  if(!ov){ console.error('battle-detail-ov not found'); return; }
   ov.style.display='flex';
   const myName = (currentUser?.email||'').split('@')[0];
+  const rivalName = battle.rivalName||battle.rival||'Opponent';
 
-  document.getElementById('bd-title').textContent = myName + ' vs ' + (battle.rivalName||battle.rival||'Opponent');
+  document.getElementById('bd-title').textContent = myName + ' vs ' + rivalName;
   document.getElementById('bd-you-name').textContent = myName;
-  document.getElementById('bd-rival-name').textContent = battle.rivalName||battle.rival||'Opponent';
-  const ylbl=document.getElementById('bd-you-label');
-  const rlbl=document.getElementById('bd-rival-label');
-  if(ylbl) ylbl.textContent=myName;
-  if(rlbl) rlbl.textContent=battle.rivalName||battle.rival||'Rival';
+  document.getElementById('bd-rival-name').textContent = rivalName;
 
   const sentDate = new Date(battle.sentAt||battle.created_at||Date.now());
   document.getElementById('bd-subtitle').textContent = sentDate.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
