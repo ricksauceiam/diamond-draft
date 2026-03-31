@@ -2007,8 +2007,10 @@ function renderBdCard(player, sideTotal){
   const pos = player.position||player.pos||'';
   const team = player.team||'';
 
+  const hasStats = !!(window._liveStats && (window._liveStats[Number(player.mlbamId)] || window._liveStats[String(player.mlbamId)]));
+  const borderColor = pts>0 ? 'rgba(0,212,138,.35)' : pts<0 ? 'rgba(255,71,87,.4)' : (hasStats&&elite) ? 'rgba(255,215,0,.4)' : hasStats ? 'rgba(255,215,0,.3)' : elite ? 'rgba(255,215,0,.25)' : 'rgba(255,255,255,.05)';
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:'+(pts>0?'1px solid rgba(0,212,138,.3)':elite?'1px solid rgba(255,215,0,.3)':'1px solid rgba(255,255,255,.05)')+';transition:all .2s;';
+  row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1.5px solid '+borderColor+';transition:all .2s;';
 
   // Photo
   const photoWrap = document.createElement('div');
@@ -2044,9 +2046,7 @@ function renderBdCard(player, sideTotal){
   const ptsEl = document.createElement('div');
   ptsEl.style.cssText = 'font-size:18px;font-weight:900;flex-shrink:0;color:'+(pts>0?'#00d48a':'#444')+';min-width:44px;text-align:right;';
   ptsEl.id = 'bdpts-'+player.mlbamId;
-  const hasStats = !!(window._liveStats && (window._liveStats[Number(player.mlbamId)] || window._liveStats[String(player.mlbamId)]));
-  ptsEl.textContent = pts > 0 ? pts.toFixed(1) : (hasStats ? '0.0' : '—');
-  if(pts === 0 && hasStats) ptsEl.style.color = '#6a6a8a'; // grey 0.0
+
 
   row.appendChild(photoWrap);
   row.appendChild(info);
