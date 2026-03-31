@@ -1381,7 +1381,7 @@ const grid=document.getElementById('colgrid');
 if(!activeItems.length){
   grid.innerHTML='<div class="col-empty"><p style="font-size:1.05rem;margin-bottom:7px">No cards yet!</p><span>Open packs to start collecting.</span></div>';
 } else {
-  // Sort by team name alphabetically, then by player last name
+  // Sort by team name alphabetically, then by player last name within team
   activeItems.sort((a,b)=>{
     const epA = getPlayerEnriched(a.player.mlbamId||a.player.id);
     const epB = getPlayerEnriched(b.player.mlbamId||b.player.id);
@@ -1390,27 +1390,7 @@ if(!activeItems.length){
     if(teamA!==teamB) return teamA.localeCompare(teamB);
     return (a.player.lastName||'').localeCompare(b.player.lastName||'');
   });
-
-  // Build HTML with a team divider row before each new team
-  let lastTeam = null;
-  let html = '';
-  activeItems.forEach(item=>{
-    const ep = getPlayerEnriched(item.player.mlbamId||item.player.id);
-    const team = ep?.team||ep?.teamAbbr||'Unknown';
-    const teamName = ep?.teamName||team;
-    const teamId = ep?.currentTeamId || Object.keys(MLB_TEAMS).find(id=>MLB_TEAMS[id].abbr===team) || '';
-    const logoUrl = teamId ? `https://www.mlbstatic.com/team-logos/${teamId}.svg` : '';
-
-    if(teamName !== lastTeam){
-      html += `<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:14px 0 6px;border-bottom:1px solid var(--border);margin-bottom:2px;">
-        ${logoUrl?`<img src="${logoUrl}" style="width:24px;height:24px;object-fit:contain;" onerror="this.style.display='none'">` : '<span>⚾</span>'}
-        <span style="font-size:13px;font-weight:800;color:var(--text);">${teamName}</span>
-      </div>`;
-      lastTeam = teamName;
-    }
-    html += makeCardWrap(item, false);
-  });
-  grid.innerHTML = html;
+  grid.innerHTML = activeItems.map(item=>makeCardWrap(item,false)).join('');
 }
 const header=document.getElementById('stash-section-header');
 const sgrid=document.getElementById('stashgrid');
