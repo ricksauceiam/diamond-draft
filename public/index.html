@@ -1916,12 +1916,16 @@ async function submitAcceptLineup(){
 
 function isPlayingTonight(player){
   if(!player) return false;
-  if(tonightTeams.size === 0) return true;
+  if(tonightTeams.size === 0 && (!window._tonightTeamIds || window._tonightTeamIds.size === 0)) return true;
+  // Check abbreviation
   const team = (player.team || player.teamAbbr || '').toUpperCase();
-  if(tonightTeams.has(team)) return true;
-  // Also check full team name
-  const fullName = player.teamName || player.team || '';
-  if(tonightTeams.has(fullName)) return true;
+  if(team && tonightTeams.has(team)) return true;
+  // Check team ID (most reliable — players from live API have currentTeamId)
+  const teamId = String(player.currentTeamId || player.teamId || '');
+  if(teamId && window._tonightTeamIds?.has(teamId)) return true;
+  // Check full team name
+  const teamName = (player.teamName || '').toLowerCase();
+  if(teamName && window._tonightTeamNames?.has(teamName)) return true;
   return false;
 }
 
@@ -2140,7 +2144,7 @@ function renderChallengeOv(){
   }).join('');
 
   const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-  const hasGames=tonightGameIds.length>0;
+  const hasGames=tonightGameIds.length>0 && (tonightTeams.size>0 || (window._tonightTeamIds?.size||0)>0);
   const inBattleSet=window._inBattleIds||new Set();
   const availCards=col.filter(item=>{
     if(inBattleSet.has(String(item.id)))return false;
@@ -2458,17 +2462,26 @@ async function loadTonightGames(){
     window._tonightGames = games; // store for opponent lookup
     // Build set of team abbreviations playing tonight (simpler + more reliable)
     tonightTeams = new Set();
+    window._tonightTeamIds = new Set();
+    window._tonightTeamNames = new Set();
     games.forEach(game => {
       const awayAbbr = game.teams?.away?.team?.abbreviation;
       const homeAbbr = game.teams?.home?.team?.abbreviation;
       if(awayAbbr) tonightTeams.add(awayAbbr.toUpperCase());
       if(homeAbbr) tonightTeams.add(homeAbbr.toUpperCase());
-      // Also add full team names as fallback
+      // Team IDs (most reliable since abbr/name may be missing on player objects)
+      const awayId = game.teams?.away?.team?.id;
+      const homeId = game.teams?.home?.team?.id;
+      if(awayId) window._tonightTeamIds.add(String(awayId));
+      if(homeId) window._tonightTeamIds.add(String(homeId));
+      // Full names
       const awayName = game.teams?.away?.team?.name;
       const homeName = game.teams?.home?.team?.name;
-      if(awayName) tonightTeams.add(awayName);
-      if(homeName) tonightTeams.add(homeName);
+      if(awayName) window._tonightTeamNames.add(awayName.toLowerCase());
+      if(homeName) window._tonightTeamNames.add(homeName.toLowerCase());
     });
+    console.log('Tonight team IDs:', [...window._tonightTeamIds]);
+    console.log('Tonight abbrs:', [...tonightTeams]);
     updateTonightSection(games);
   } catch(e) {
     console.warn('Tonight games:', e.message);
