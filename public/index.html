@@ -3153,11 +3153,29 @@ function openGameModal(game){
   `;
 
   // Find my cards playing in this game
+  // Also collect team IDs and full names for robust matching
+  const awayTeamId = String(game.teams?.away?.team?.id||'');
+  const homeTeamId = String(game.teams?.home?.team?.id||'');
+  const awayFullName = (game.teams?.away?.team?.name||'').toLowerCase();
+  const homeFullName = (game.teams?.home?.team?.name||'').toLowerCase();
+
+  // Debug: log what we're matching against
+  console.log('Game filter: away='+awayAbbr+' (id:'+awayTeamId+') home='+homeAbbr+' (id:'+homeTeamId+')');
+
   const col = userData?.collection||[];
   const myCards = col.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>{
     if(!c.player) return false;
-    const pt = (c.player.team||c.player.teamAbbr||'').toUpperCase().trim();
-    return pt===awayAbbr||pt===homeAbbr;
+    const p = c.player;
+    const pt = (p.team||p.teamAbbr||'').toUpperCase().trim();
+    const ptFull = (p.teamName||p.team||'').toLowerCase();
+    const ptId = String(p.teamId||'');
+
+    // Match by abbreviation, full name, or team ID
+    const matchAway = awayAbbr && (pt===awayAbbr || ptFull===awayFullName || (ptId&&ptId===awayTeamId));
+    const matchHome = homeAbbr && (pt===homeAbbr || ptFull===homeFullName || (ptId&&ptId===homeTeamId));
+
+    if(matchAway||matchHome) console.log('  Matched: '+p.lastName+' pt='+pt+' team='+ptFull);
+    return matchAway||matchHome;
   });
 
   const grid = document.getElementById('gm-cards-grid');
