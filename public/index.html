@@ -2283,118 +2283,141 @@ scoresGameFilter=f;
 document.querySelectorAll('.scores-filter').forEach(el=>el.classList.toggle('active',el.dataset.sf===f));
 renderScores();
 }
-async function loadScores(){
-const dateStr=scoresApiDate(scoresDate);
-const today=scoresApiDate(new Date());
-const label=dateStr===today?'Today':scoresDateStr(scoresDate);
-document.getElementById('scores-date-label').textContent=label;
-document.getElementById('scores-subtitle').textContent=`🌴 Spring Training · ${scoresDateStr(scoresDate)}`;
-const todayGames = [
-{away:'Giants',home:'Padres',awayScore:'',homeScore:'',status:'Scheduled',time:'1:10 PM PT',venue:'Peoria Sports Complex'},
-{away:'Cubs',home:'Guardians',awayScore:'',homeScore:'',status:'Scheduled',time:'4:05 PM PT',venue:'Goodyear Ballpark'},
-{away:'Reds',home:'D-backs',awayScore:'',homeScore:'',status:'Scheduled',time:'1:10 PM PT',venue:'Salt River Fields'},
-{away:'Brewers',home:'Dodgers',awayScore:'',homeScore:'',status:'Scheduled',time:'1:05 PM PT',venue:'Camelback Ranch'},
-{away:'Angels',home:'Athletics',awayScore:'',homeScore:'',status:'Scheduled',time:'1:05 PM PT',venue:'Hohokam Stadium'},
-{away:'White Sox',home:'Rangers',awayScore:'',homeScore:'',status:'Scheduled',time:'3:05 PM PT',venue:'Surprise Stadium'},
-];
-const list = document.getElementById('scores-list');
-if(dateStr === today) {
-scoresData = todayGames.map((g,i)=>({
-gamePk:i,
-teams:{
-away:{team:{name:g.away},score:g.awayScore},
-home:{team:{name:g.home},score:g.homeScore}
-},
-status:{detailedState:g.status},
-gameDate: null,
-gameTime: g.time,
-venue:{name:g.venue}
-}));
-renderScores();
-const link = document.createElement('div');
-link.style.cssText='text-align:center;padding:16px;';
-link.innerHTML=`<a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
-list.appendChild(link);
-} else {
-list.innerHTML=`<div style="text-align:center;padding:40px 20px;">
-<p style="color:var(--muted);margin-bottom:16px;font-size:14px;">Scores for ${scoresDateStr(scoresDate)}</p>
-<a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:12px 24px;border-radius:10px;display:inline-block;">View on MLB.com →</a>
-</div>`;
+// Team logo URL from MLB CDN
+function teamLogo(teamId){
+  return `https://www.mlbstatic.com/team-logos/${teamId}.svg`;
 }
+
+// Game time formatting
+function formatGameTime(isoStr){
+  if(!isoStr) return '';
+  try{
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  }catch(e){ return ''; }
+}
+
+async function loadScores(){
+  const dateStr = scoresApiDate(scoresDate);
+  const today = scoresApiDate(new Date());
+  const label = dateStr===today ? 'Today' : scoresDateStr(scoresDate);
+  document.getElementById('scores-date-label').textContent = label;
+  document.getElementById('scores-subtitle').textContent = `⚾ MLB · ${scoresDateStr(scoresDate)}`;
+  const list = document.getElementById('scores-list');
+  list.innerHTML = '<div class="scores-loading"><div class="spinner"></div> Loading games...</div>';
+
+  try{
+    const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team,game(content(summary)),decisions,scoringplays`);
+    if(!r.ok) throw new Error('API '+r.status);
+    const data = await r.json();
+    const games = data?.dates?.[0]?.games || [];
+    scoresData = games;
+    renderScores();
+  } catch(e){
+    console.warn('Scores error:', e);
+    list.innerHTML = `<div style="text-align:center;padding:40px 20px;">
+      <p style="color:var(--muted);margin-bottom:16px;font-size:14px;">Could not load scores</p>
+      <a href="https://www.mlb.com/scores/${dateStr}" target="_blank" style="color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:12px 24px;border-radius:10px;display:inline-block;">View on MLB.com →</a>
+    </div>`;
+  }
 }
 function renderScores(){
-const list=document.getElementById('scores-list');
-let games=scoresData;
-if(scoresGameFilter!=='all'){
-games=games.filter(g=>{
-const s=g.status?.detailedState||'';
-if(scoresGameFilter==='live')return s.includes('In Progress')||s.includes('Warmup')||s.includes('Delayed: Start');
-if(scoresGameFilter==='final')return s.includes('Final')||s.includes('Completed');
-if(scoresGameFilter==='scheduled')return s.includes('Scheduled')||s.includes('Pre-Game');
-return true;
-});
-}
-if(!games.length){
-list.innerHTML='<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">No games found</p><span>Try a different date or filter.</span></div>';
-return;
-}
-const tilesHTML = games.map(game=>{
-const away=game.teams?.away;
-const home=game.teams?.home;
-const awayName=away?.team?.name||'Away';
-const homeName=home?.team?.name||'Home';
-const awayObj=Object.values(MLB_TEAMS).find(t=>awayName.includes(t.name))||{emoji:'⚾',abbr:awayName.slice(0,3).toUpperCase()};
-const homeObj=Object.values(MLB_TEAMS).find(t=>homeName.includes(t.name))||{emoji:'⚾',abbr:homeName.slice(0,3).toUpperCase()};
-const awayScore=away?.score??'';
-const homeScore=home?.score??'';
-const status=game.status?.detailedState||'Scheduled';
-const isLive=status.includes('In Progress')||status.includes('Warmup')||status==='Live';
-const isFinal=status.includes('Final')||status.includes('Completed');
-const isPost=status.includes('Postponed')||status.includes('Suspended');
-const statusClass=isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
-const statusLabel=isLive?'🔴 LIVE':isFinal?'✅ Final':isPost?'⚠️ Postponed':`🕐 ${game.gameTime||'TBD'}`;
-const inning=game.linescore?.currentInningOrdinal||'';
-const inningHalf=game.linescore?.inningHalf||'';
-const awayRec=away?.leagueRecord?`${away.leagueRecord.wins}-${away.leagueRecord.losses}`:'';
-const homeRec=home?.leagueRecord?`${home.leagueRecord.wins}-${home.leagueRecord.losses}`:'';
-const venue=game.venue?.name||'';
-const hasScore=awayScore!==''&&homeScore!=='';
-return `<div class="game-tile ${statusClass}">
-<div class="gt-header">
-<span class="gt-matchup">${awayObj.abbr} @ ${homeObj.abbr}</span>
-<span class="gt-badge ${statusClass}">${statusLabel}</span>
-</div>
-<div class="gt-body">
-<div class="gt-teams">
-<div class="gt-team">
-<div class="gt-emoji">${awayObj.emoji}</div>
-<div class="gt-name">${awayName}</div>
-${awayRec?`<div class="gt-rec">${awayRec}</div>`:''}
-</div>
-<div class="gt-score-box">
-${hasScore
-? `<div class="gt-score">${awayScore}<span class="sep">–</span>${homeScore}</div>`
-: `<div class="gt-vs">VS</div>`}
-${isLive&&inning?`<div class="gt-inning">${inningHalf} ${inning}</div>`:''}
-</div>
-<div class="gt-team">
-<div class="gt-emoji">${homeObj.emoji}</div>
-<div class="gt-name">${homeName}</div>
-${homeRec?`<div class="gt-rec">${homeRec}</div>`:''}
-</div>
-</div>
-</div>
-${venue?`<div class="gt-footer"><span style="font-size:10px;margin-right:3px">📍</span><span class="gt-venue">${venue}</span></div>`:''}
-</div>`;
-}).join('');
-const existingLink = list.querySelector('a[href*="mlb.com"]');
-list.innerHTML = `<div class="games-grid">${tilesHTML}</div>`;
-if(existingLink){
-const linkWrap = document.createElement('div');
-linkWrap.style.cssText='text-align:center;padding:16px;';
-linkWrap.innerHTML=`<a href="${existingLink.href}" target="_blank" style="color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;display:inline-block;">🔴 See Live Scores on MLB.com →</a>`;
-list.appendChild(linkWrap);
-}
+  const list = document.getElementById('scores-list');
+  let games = scoresData;
+  if(scoresGameFilter !== 'all'){
+    games = games.filter(g=>{
+      const s = g.status?.detailedState||'';
+      if(scoresGameFilter==='live') return s.includes('In Progress')||s.includes('Warmup')||s.includes('Manager Challenge')||s.includes('Delayed: Rain');
+      if(scoresGameFilter==='final') return s.includes('Final')||s.includes('Completed')||s.includes('Game Over');
+      if(scoresGameFilter==='scheduled') return s.includes('Scheduled')||s.includes('Pre-Game')||s.includes('Warmup');
+      return true;
+    });
+  }
+  if(!games.length){
+    list.innerHTML = '<div class="scores-empty"><p style="font-size:1rem;margin-bottom:8px">No games found</p><span>Try a different filter.</span></div>';
+    return;
+  }
+
+  const dateStr = scoresApiDate(scoresDate);
+  const grid = document.createElement('div');
+  grid.className = 'games-grid';
+
+  games.forEach(game=>{
+    const away = game.teams?.away;
+    const home = game.teams?.home;
+    const awayId = away?.team?.id;
+    const homeId = home?.team?.id;
+    const awayAbbr = away?.team?.abbreviation || away?.team?.name?.slice(0,3)||'';
+    const homeAbbr = home?.team?.abbreviation || home?.team?.name?.slice(0,3)||'';
+    const awayName = away?.team?.teamName || away?.team?.name||'Away';
+    const homeName = home?.team?.teamName || home?.team?.name||'Home';
+    const awayScore = away?.score ?? '';
+    const homeScore = home?.score ?? '';
+    const status = game.status?.detailedState||'Scheduled';
+    const abstractState = game.status?.abstractGameState||'';
+    const isLive = abstractState==='Live'||status.includes('In Progress')||status.includes('Manager Challenge');
+    const isFinal = abstractState==='Final'||status.includes('Final')||status.includes('Game Over')||status.includes('Completed');
+    const isPost = status.includes('Postponed')||status.includes('Suspended');
+    const statusClass = isLive?'live':isFinal?'final':isPost?'postponed':'scheduled';
+    const inning = game.linescore?.currentInningOrdinal||'';
+    const inningHalf = game.linescore?.inningState||game.linescore?.inningHalf||'';
+    const halfArrow = inningHalf.toLowerCase().includes('top')?'▲':inningHalf.toLowerCase().includes('bot')?'▼':'';
+    const awayRec = away?.leagueRecord ? `${away.leagueRecord.wins}-${away.leagueRecord.losses}` : '';
+    const homeRec = home?.leagueRecord ? `${home.leagueRecord.wins}-${home.leagueRecord.losses}` : '';
+    const venue = game.venue?.name||'';
+    const gameTime = formatGameTime(game.gameDate);
+    const hasScore = awayScore!==''&&homeScore!=='';
+
+    // Who's winning
+    const awayWin = isFinal && hasScore && Number(awayScore) > Number(homeScore);
+    const homeWin = isFinal && hasScore && Number(homeScore) > Number(awayScore);
+
+    let statusLabel;
+    if(isLive && inning) statusLabel = `<span style="color:#ff4757;font-weight:700;">LIVE</span> ${halfArrow}${inning}`;
+    else if(isLive) statusLabel = '🔴 LIVE';
+    else if(isFinal) statusLabel = 'Final';
+    else if(isPost) statusLabel = '⚠️ Postponed';
+    else statusLabel = gameTime || 'TBD';
+
+    // Pitcher matchup if available
+    const awayPitcher = game.teams?.away?.probablePitcher?.lastName || '';
+    const homePitcher = game.teams?.home?.probablePitcher?.lastName || '';
+    const pitcherLine = (awayPitcher||homePitcher) ? `<div class="gt-footer" style="justify-content:center;gap:6px;font-size:10px;color:var(--muted);">⚾ ${awayPitcher||'TBD'} vs ${homePitcher||'TBD'}</div>` : '';
+
+    const tile = document.createElement('div');
+    tile.className = `game-tile ${statusClass}`;
+    tile.innerHTML = `
+      <div class="gt-header">
+        <span class="gt-matchup" style="font-size:11px;font-weight:700;">${awayAbbr} @ ${homeAbbr}</span>
+        <span class="gt-badge ${statusClass}" style="font-size:10px;">${statusLabel}</span>
+      </div>
+      <div class="gt-body">
+        <div class="gt-teams">
+          <div class="gt-team">
+            <img src="${teamLogo(awayId)}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
+            <div class="gt-name" style="font-weight:${awayWin?'900':'600'};color:${awayWin?'var(--text)':'var(--muted)'};">${awayName}</div>
+            ${awayRec?`<div class="gt-rec">${awayRec}</div>`:''}
+          </div>
+          <div class="gt-score-box">
+            ${hasScore
+              ? `<div class="gt-score" style="font-size:1.8rem;">${awayScore}<span class="sep"> - </span>${homeScore}</div>`
+              : `<div class="gt-vs">VS</div>`}
+          </div>
+          <div class="gt-team">
+            <img src="${teamLogo(homeId)}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
+            <div class="gt-name" style="font-weight:${homeWin?'900':'600'};color:${homeWin?'var(--text)':'var(--muted)'};">${homeName}</div>
+            ${homeRec?`<div class="gt-rec">${homeRec}</div>`:''}
+          </div>
+        </div>
+      </div>
+      ${venue?`<div class="gt-footer"><span style="font-size:10px;margin-right:3px">📍</span><span class="gt-venue">${venue}</span></div>`:''}
+      ${pitcherLine}
+    `;
+    grid.appendChild(tile);
+  });
+
+  list.innerHTML = '';
+  list.appendChild(grid);
 }
 
 // ── LIVE BATTLE SYSTEM ───────────────────────────────────────────────────────
