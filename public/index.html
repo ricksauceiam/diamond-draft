@@ -2562,10 +2562,16 @@ function getPlayerEnriched(id){
   if(!id) return null;
   const sid = String(id);
   const base = getPlayer(id);
-  // Also look up in _allMLBPlayers for freshest team data
-  const live = _allMLBPlayers.find(p=>String(p.mlbamId||p.id)===sid);
+  const live = _allMLBPlayers.find(p=>String(p.mlbamId||p.id)===sid)
+            || PLAYERS.find(p=>String(p.mlbamId||p.id)===sid);
   if(!base && !live) return null;
-  return {...(base||{}), ...(live||{})};
+  const merged = {...(base||{}), ...(live||{})};
+  // If team is still empty, try MLB_TEAMS lookup via currentTeamId
+  if(!merged.team && merged.currentTeamId){
+    merged.team = MLB_TEAMS[merged.currentTeamId]?.abbr || '';
+    merged.teamName = MLB_TEAMS[merged.currentTeamId]?.name || '';
+  }
+  return merged;
 }
 function playerPhoto(player){
   if(!player) return '';
@@ -2801,15 +2807,15 @@ async function loadTonightGames(){
     window._tonightTeamIds = new Set();
     window._tonightTeamNames = new Set();
     games.forEach(game => {
-      const awayAbbr = game.teams?.away?.team?.abbreviation;
-      const homeAbbr = game.teams?.home?.team?.abbreviation;
-      if(awayAbbr) tonightTeams.add(awayAbbr.toUpperCase());
-      if(homeAbbr) tonightTeams.add(homeAbbr.toUpperCase());
-      // Team IDs (most reliable since abbr/name may be missing on player objects)
       const awayId = game.teams?.away?.team?.id;
       const homeId = game.teams?.home?.team?.id;
       if(awayId) window._tonightTeamIds.add(String(awayId));
       if(homeId) window._tonightTeamIds.add(String(homeId));
+      // Get abbreviation from API first, then fall back to MLB_TEAMS lookup by id
+      const awayAbbr = game.teams?.away?.team?.abbreviation || MLB_TEAMS[awayId]?.abbr;
+      const homeAbbr = game.teams?.home?.team?.abbreviation || MLB_TEAMS[homeId]?.abbr;
+      if(awayAbbr) tonightTeams.add(awayAbbr.toUpperCase());
+      if(homeAbbr) tonightTeams.add(homeAbbr.toUpperCase());
       // Full names
       const awayName = game.teams?.away?.team?.name;
       const homeName = game.teams?.home?.team?.name;
