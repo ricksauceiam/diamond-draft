@@ -2073,10 +2073,11 @@ function renderBdCard(player, sideTotal){
   if(statLine) info.appendChild(statEl);
 
   // Points
+  const ptsColor = pts>0 ? '#00d48a' : pts<0 ? '#ff4757' : hasStats ? '#FFD700' : '#444';
   const ptsEl = document.createElement('div');
-  ptsEl.style.cssText = 'font-size:18px;font-weight:900;flex-shrink:0;color:'+(pts>0?'#00d48a':'#444')+';min-width:44px;text-align:right;';
+  ptsEl.style.cssText = 'font-size:18px;font-weight:900;flex-shrink:0;color:'+ptsColor+';min-width:44px;text-align:right;';
   ptsEl.id = 'bdpts-'+player.mlbamId;
-
+  ptsEl.textContent = pts !== 0 ? pts.toFixed(1) : (hasStats ? '0.0' : '—');
 
   row.appendChild(photoWrap);
   row.appendChild(info);
