@@ -3213,17 +3213,22 @@ function openGameModal(game){
     noCards.style.display = 'block';
   } else {
     noCards.style.display = 'none';
+    grid.style.display = 'block';
     grid.innerHTML = '';
-    myCards.forEach(item=>{
+
+    // Split by team
+    const awayCards = myCards.filter(c=>(c.player.team||'').toUpperCase()===awayAbbr);
+    const homeCards = myCards.filter(c=>(c.player.team||'').toUpperCase()===homeAbbr);
+
+    function makeCard(item){
       const p = item.player;
       const pts = getPlayerLivePoints(p.mlbamId);
       const elite = isElite(p);
       const card = document.createElement('div');
-      card.style.cssText = 'border-radius:12px;overflow:hidden;background:var(--surface2);cursor:pointer;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)')+';transition:transform .15s;';
+      card.style.cssText = 'border-radius:10px;overflow:hidden;background:var(--surface2);cursor:pointer;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)')+';transition:transform .15s;';
       card.onmouseover = function(){this.style.transform='scale(1.04)';};
       card.onmouseleave = function(){this.style.transform='scale(1)';};
       card.onclick = ()=>{ document.getElementById('game-modal').classList.remove('open'); openCardModal(item.id); };
-      // Photo
       const photoWrap = document.createElement('div');
       photoWrap.style.cssText = 'aspect-ratio:3/4;overflow:hidden;position:relative;background:#111122;';
       const img = document.createElement('img');
@@ -3238,7 +3243,6 @@ function openGameModal(game){
         ptsEl.textContent=pts.toFixed(1)+' pts';
         photoWrap.appendChild(ptsEl);
       }
-      // Info
       const info = document.createElement('div');
       info.style.cssText = 'padding:5px 6px;background:#080810;';
       const nm = document.createElement('div');
@@ -3246,15 +3250,55 @@ function openGameModal(game){
       nm.textContent = p.lastName||p.fullName||'—';
       const pos = document.createElement('div');
       pos.style.cssText = 'font-size:9px;color:#6a6a8a;margin-top:1px;';
-      // Show who they're facing
-      const isAway = (p.team||'').toUpperCase()===awayAbbr;
-      pos.textContent = (p.position||p.pos||'') + ' · ' + (isAway ? 'vs '+homeAbbr : '@'+awayAbbr);
+      pos.textContent = p.position||p.pos||'';
       info.appendChild(nm);
       info.appendChild(pos);
       card.appendChild(photoWrap);
       card.appendChild(info);
-      grid.appendChild(card);
-    });
+      return card;
+    }
+
+    // Two-column layout: away on left, home on right
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:0;';
+
+    function makeTeamCol(cards, abbr, logoId, label, align){
+      const col = document.createElement('div');
+      col.style.cssText = 'padding:0 4px;';
+      // Team header
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 2px 8px;'+(align==='right'?'flex-direction:row-reverse;':'');
+      const logo = document.createElement('img');
+      logo.src = teamLogo(logoId);
+      logo.style.cssText = 'width:20px;height:20px;object-fit:contain;';
+      logo.onerror = function(){this.style.display='none';};
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;';
+      lbl.textContent = abbr + ' · ' + cards.length + ' card' + (cards.length!==1?'s':'');
+      hdr.appendChild(logo);
+      hdr.appendChild(lbl);
+      col.appendChild(hdr);
+      if(!cards.length){
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;padding:20px 8px;color:#333;font-size:12px;';
+        empty.textContent = 'No cards';
+        col.appendChild(empty);
+      } else {
+        const cardGrid = document.createElement('div');
+        cardGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;';
+        cards.forEach(c=>cardGrid.appendChild(makeCard(c)));
+        col.appendChild(cardGrid);
+      }
+      return col;
+    }
+
+    // Divider
+    const divider = document.createElement('div');
+    divider.style.cssText = 'position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);';
+    wrapper.style.position = 'relative';
+    wrapper.appendChild(makeTeamCol(awayCards, awayAbbr, awayId, awayName, 'left'));
+    wrapper.appendChild(makeTeamCol(homeCards, homeAbbr, homeId, homeName, 'right'));
+    grid.appendChild(wrapper);
   }
 
   document.getElementById('game-modal').classList.add('open');
