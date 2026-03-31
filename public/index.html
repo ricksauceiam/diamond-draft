@@ -3158,25 +3158,46 @@ function openGameModal(game){
   const homeTeamId = String(game.teams?.home?.team?.id||'');
   const awayFullName = (game.teams?.away?.team?.name||'').toLowerCase();
   const homeFullName = (game.teams?.home?.team?.name||'').toLowerCase();
+  // Also try clubName (e.g. "White Sox") and teamName (e.g. "Chicago White Sox")
+  const awayClub = (game.teams?.away?.team?.clubName||'').toLowerCase();
+  const homeClub = (game.teams?.home?.team?.clubName||'').toLowerCase();
 
-  // Debug: log what we're matching against
-  console.log('Game filter: away='+awayAbbr+' (id:'+awayTeamId+') home='+homeAbbr+' (id:'+homeTeamId+')');
+  // Debug: log everything
+  console.log('Game filter: away="'+awayAbbr+'" (id:'+awayTeamId+', name:"'+awayFullName+'") home="'+homeAbbr+'" (id:'+homeTeamId+', name:"'+homeFullName+'")');
 
   const col = userData?.collection||[];
+  // Log first 3 collection cards so we can see what team values look like
+  col.slice(0,5).forEach(c=>{
+    const p=getPlayer(c.id);
+    if(p) console.log('  Card: '+p.lastName+' team="'+(p.team||'')+'" teamName="'+(p.teamName||'')+'" id="'+(p.mlbamId||p.id)+'"');
+  });
+
   const myCards = col.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>{
     if(!c.player) return false;
     const p = c.player;
     const pt = (p.team||p.teamAbbr||'').toUpperCase().trim();
     const ptFull = (p.teamName||p.team||'').toLowerCase();
-    const ptId = String(p.teamId||'');
+    const ptId = String(p.teamId||p.mlbamId||'');
 
     // Match by abbreviation, full name, or team ID
-    const matchAway = awayAbbr && (pt===awayAbbr || ptFull===awayFullName || (ptId&&ptId===awayTeamId));
-    const matchHome = homeAbbr && (pt===homeAbbr || ptFull===homeFullName || (ptId&&ptId===homeTeamId));
+    const matchAway = awayAbbr && (
+      pt===awayAbbr ||
+      ptFull===awayFullName ||
+      ptFull.includes(awayClub) ||
+      awayFullName.includes(ptFull) ||
+      (ptId&&ptId===awayTeamId)
+    );
+    const matchHome = homeAbbr && (
+      pt===homeAbbr ||
+      ptFull===homeFullName ||
+      ptFull.includes(homeClub) ||
+      homeFullName.includes(ptFull) ||
+      (ptId&&ptId===homeTeamId)
+    );
 
-    if(matchAway||matchHome) console.log('  Matched: '+p.lastName+' pt='+pt+' team='+ptFull);
     return matchAway||matchHome;
   });
+  console.log('Matched '+myCards.length+' cards');
 
   const grid = document.getElementById('gm-cards-grid');
   const noCards = document.getElementById('gm-no-cards');
