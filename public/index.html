@@ -836,6 +836,7 @@ async function loadPlayers(){
         pos: p.primaryPosition?.abbreviation||'',
         team: p.currentTeam?.abbreviation||'',
         teamName: p.currentTeam?.name||'',
+        currentTeamId: p.currentTeam?.id||null,
       };
     });
     // Update existing players with live data, add new ones
@@ -3103,8 +3104,8 @@ function renderMatchups(){
 function openGameModal(game){
   const awayId = game.teams?.away?.team?.id;
   const homeId = game.teams?.home?.team?.id;
-  const awayAbbr = (game.teams?.away?.team?.abbreviation||'').toUpperCase();
-  const homeAbbr = (game.teams?.home?.team?.abbreviation||'').toUpperCase();
+  const awayAbbr = (game.teams?.away?.team?.abbreviation || MLB_TEAMS[game.teams?.away?.team?.id]?.abbr || '').toUpperCase();
+  const homeAbbr = (game.teams?.home?.team?.abbreviation || MLB_TEAMS[game.teams?.home?.team?.id]?.abbr || '').toUpperCase();
   const awayName = game.teams?.away?.team?.name||'Away';
   const homeName = game.teams?.home?.team?.name||'Home';
   const awayScore = game.teams?.away?.score??'';
@@ -3166,38 +3167,43 @@ function openGameModal(game){
   console.log('Game filter: away="'+awayAbbr+'" (id:'+awayTeamId+', name:"'+awayFullName+'") home="'+homeAbbr+'" (id:'+homeTeamId+', name:"'+homeFullName+'")');
 
   const col = userData?.collection||[];
-  // Log first 3 collection cards so we can see what team values look like
-  col.slice(0,5).forEach(c=>{
-    const p=getPlayer(c.id);
-    if(p) console.log('  Card: '+p.lastName+' team="'+(p.team||'')+'" teamName="'+(p.teamName||'')+'" id="'+(p.mlbamId||p.id)+'"');
-  });
 
-  const myCards = col.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>{
+  // Build a fast lookup from mlbamId -> live player data
+  // _allMLBPlayers has the freshest team data from the API
+  const liveById = {};
+  (_allMLBPlayers||[]).forEach(p=>{ liveById[String(p.mlbamId||p.id)] = p; });
+  // Also index PLAYERS array
+  (PLAYERS||[]).forEach(p=>{ if(!liveById[String(p.mlbamId||p.id)]) liveById[String(p.mlbamId||p.id)] = p; });
+
+  console.log('awayAbbr='+awayAbbr+' homeAbbr='+homeAbbr+' awayId='+awayTeamId+' homeId='+homeTeamId);
+
+  const myCards = col.map(c=>{
+    // Try getPlayer first, then fall back to liveById
+    let player = getPlayer(c.id);
+    if(!player || !player.team) {
+      // collection id might equal mlbamId
+      player = liveById[String(c.id)] || player;
+    }
+    return {...c, player};
+  }).filter(c=>{
     if(!c.player) return false;
     const p = c.player;
     const pt = (p.team||p.teamAbbr||'').toUpperCase().trim();
-    const ptFull = (p.teamName||p.team||'').toLowerCase();
-    const ptId = String(p.teamId||p.mlbamId||'');
+    const ptFull = (p.teamName||'').toLowerCase();
 
-    // Match by abbreviation, full name, or team ID
-    const matchAway = awayAbbr && (
-      pt===awayAbbr ||
-      ptFull===awayFullName ||
-      ptFull.includes(awayClub) ||
-      awayFullName.includes(ptFull) ||
-      (ptId&&ptId===awayTeamId)
-    );
-    const matchHome = homeAbbr && (
-      pt===homeAbbr ||
-      ptFull===homeFullName ||
-      ptFull.includes(homeClub) ||
-      homeFullName.includes(ptFull) ||
-      (ptId&&ptId===homeTeamId)
-    );
+    const matchAway = awayAbbr && pt===awayAbbr;
+    const matchHome = homeAbbr && pt===homeAbbr;
+    // Also try full name match
+    const matchAwayFull = awayFullName && ptFull && ptFull===awayFullName;
+    const matchHomeFull = homeFullName && ptFull && ptFull===homeFullName;
+    // Also match by team ID stored in player (some players have currentTeam.id)
+    const pTeamId = String(p.currentTeamId||p.teamId||'');
+    const matchAwayId = awayTeamId && pTeamId && pTeamId===awayTeamId;
+    const matchHomeId = homeTeamId && pTeamId && pTeamId===homeTeamId;
 
-    return matchAway||matchHome;
+    return matchAway||matchHome||matchAwayFull||matchHomeFull||matchAwayId||matchHomeId;
   });
-  console.log('Matched '+myCards.length+' cards');
+  console.log('Matched '+myCards.length+' cards from '+col.length+' total');
 
   const grid = document.getElementById('gm-cards-grid');
   const noCards = document.getElementById('gm-no-cards');
