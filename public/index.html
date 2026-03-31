@@ -3074,6 +3074,8 @@ async function refreshLiveScores(){
   console.log('Live scores updated:', totalUpdated, 'players. Sample:', Object.entries(liveScores).slice(0,5));
   updateTonightSection([]);
   updateLiveBattleScores();
+  // Re-render the matchup list so live scores show without needing to click in
+  if(document.getElementById('mlist')) renderMatchups();
 }
 
 function getPlayerLivePoints(mlbamId){
@@ -3107,8 +3109,8 @@ function updateLiveBattleScores(){
 }
 
 function startLivePoll(){
-  loadTonightGames();
-  // Poll live scores every 2 minutes during games
+  loadTonightGames().then(()=>refreshLiveScores());
+  // Poll live scores every 60 seconds during games
   livePollTimer = setInterval(refreshLiveScores, 60000);
 }
 
