@@ -1777,6 +1777,39 @@ function renderBattleDetail(battle){
   lineupEl.appendChild(rightCol);
 }
 
+
+function getStatLine(mlbamId){
+  if(!window._liveStats) return '';
+  const s = window._liveStats[Number(mlbamId)] || window._liveStats[String(mlbamId)];
+  if(!s) return '';
+  if(s.type === 'pitching'){
+    const parts = [];
+    const ipStr = String(s.inningsPitched||'0');
+    if(ipStr !== '0') parts.push(ipStr+' IP');
+    if(s.strikeOuts) parts.push(s.strikeOuts+'K');
+    if(s.earnedRuns) parts.push(s.earnedRuns+'ER');
+    if(s.hits) parts.push(s.hits+'H');
+    if(s.baseOnBalls) parts.push(s.baseOnBalls+'BB');
+    if(s.wins) parts.push('W');
+    if(s.losses) parts.push('L');
+    return parts.join(' · ') || 'No stats yet';
+  } else {
+    const parts = [];
+    const ab = s.atBats||0;
+    const h = s.hits||0;
+    if(ab > 0) parts.push(h+'-'+ab);
+    if(s.homeRuns) parts.push(s.homeRuns+'HR');
+    if(s.doubles) parts.push(s.doubles+'2B');
+    if(s.triples) parts.push(s.triples+'3B');
+    if(s.rbi) parts.push(s.rbi+' RBI');
+    if(s.runs) parts.push(s.runs+'R');
+    if(s.stolenBases) parts.push(s.stolenBases+'SB');
+    if(s.baseOnBalls) parts.push(s.baseOnBalls+'BB');
+    if(s.strikeOuts) parts.push(s.strikeOuts+'K');
+    return parts.join(' · ') || (ab === 0 ? 'Not yet batted' : '0-'+ab);
+  }
+}
+
 function renderBdCard(player, sideTotal){
   if(!player){
     return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:10px;opacity:.3;"><div style="width:32px;height:32px;border-radius:50%;background:#222;flex-shrink:0;"></div><div style="flex:1;font-size:12px;color:var(--muted);">—</div></div>';
@@ -1808,8 +1841,15 @@ function renderBdCard(player, sideTotal){
   const subEl = document.createElement('div');
   subEl.style.cssText = 'font-size:10px;color:#6a6a8a;margin-top:1px;';
   subEl.textContent = pos + (team?' · '+team:'');
+
+  const statLine = getStatLine(player.mlbamId);
+  const statEl = document.createElement('div');
+  statEl.style.cssText = 'font-size:10px;color:'+(pts>0?'rgba(0,212,138,.7)':'#444')+';margin-top:3px;font-weight:600;';
+  statEl.textContent = statLine;
+
   info.appendChild(nameEl);
   info.appendChild(subEl);
+  if(statLine) info.appendChild(statEl);
 
   // Points
   const ptsEl = document.createElement('div');
@@ -2661,9 +2701,17 @@ async function refreshLiveScores(){
           pts = calcBattingPoints(battingStats);
         }
 
+        // Always store stats (even 0 pts means player is in game)
+        liveScores[pid] = pts;
+        liveScores[String(pid)] = pts;
+        // Store raw stats for stat line display
+        if(!window._liveStats) window._liveStats = {};
+        if(pitchingStats && (pitchingStats.inningsPitched||pitchingStats.strikeOuts)){
+          window._liveStats[pid] = {type:'pitching', ...pitchingStats};
+        } else if(battingStats){
+          window._liveStats[pid] = {type:'batting', ...battingStats};
+        }
         if(pts !== 0){
-          liveScores[pid] = pts;
-          liveScores[String(pid)] = pts;
           totalUpdated++;
           console.log('  Scored:', p.person?.fullName, pid, pts, 'pts');
         }
