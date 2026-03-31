@@ -2386,6 +2386,8 @@ function renderScores(){
 
     const tile = document.createElement('div');
     tile.className = `game-tile ${statusClass}`;
+    tile.style.cursor = 'pointer';
+    tile.onclick = ()=>openGameModal(game);
     tile.innerHTML = `
       <div class="gt-header">
         <span class="gt-matchup">${awayAbbr} @ ${homeAbbr}</span>
@@ -3097,7 +3099,143 @@ function renderMatchups(){
   }
 }
 
+
+function openGameModal(game){
+  const awayId = game.teams?.away?.team?.id;
+  const homeId = game.teams?.home?.team?.id;
+  const awayAbbr = (game.teams?.away?.team?.abbreviation||'').toUpperCase();
+  const homeAbbr = (game.teams?.home?.team?.abbreviation||'').toUpperCase();
+  const awayName = game.teams?.away?.team?.name||'Away';
+  const homeName = game.teams?.home?.team?.name||'Home';
+  const awayScore = game.teams?.away?.score??'';
+  const homeScore = game.teams?.home?.score??'';
+  const hasScore = awayScore!==''&&homeScore!=='';
+  const status = game.status?.detailedState||'';
+  const isLive = game.status?.abstractGameState==='Live'||status.includes('In Progress');
+  const isFinal = game.status?.abstractGameState==='Final'||status.includes('Final');
+  const inning = game.linescore?.currentInningOrdinal||'';
+  const inningState = game.linescore?.inningState||'';
+
+  // Header
+  const header = document.getElementById('gm-header');
+  header.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">
+        ${isLive?'<span style="color:var(--danger);">● LIVE</span>':isFinal?'Final':'Scheduled'}
+        ${isLive&&inning?' · '+inningState+' '+inning:''}
+      </div>
+      <div style="font-size:11px;color:var(--muted);">${game.venue?.name||''}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <!-- Away -->
+      <div style="flex:1;display:flex;align-items:center;gap:10px;">
+        <img src="${teamLogo(awayId)}" style="width:44px;height:44px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:14px;font-weight:800;">${awayName}</div>
+          <div style="font-size:11px;color:var(--muted);">${game.teams?.away?.leagueRecord?game.teams.away.leagueRecord.wins+'-'+game.teams.away.leagueRecord.losses:''}</div>
+        </div>
+        ${hasScore?`<div style="font-size:2rem;font-weight:900;margin-left:auto;">${awayScore}</div>`:''}
+      </div>
+      <div style="font-size:14px;font-weight:700;color:var(--muted);flex-shrink:0;">@</div>
+      <!-- Home -->
+      <div style="flex:1;display:flex;align-items:center;gap:10px;flex-direction:row-reverse;text-align:right;">
+        <img src="${teamLogo(homeId)}" style="width:44px;height:44px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:14px;font-weight:800;">${homeName}</div>
+          <div style="font-size:11px;color:var(--muted);">${game.teams?.home?.leagueRecord?game.teams.home.leagueRecord.wins+'-'+game.teams.home.leagueRecord.losses:''}</div>
+        </div>
+        ${hasScore?`<div style="font-size:2rem;font-weight:900;margin-right:auto;">${homeScore}</div>`:''}
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px;">
+      <span>🃏</span> Your Cards In This Game
+    </div>
+  `;
+
+  // Find my cards playing in this game
+  const col = userData?.collection||[];
+  const myCards = col.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>{
+    if(!c.player) return false;
+    const pt = (c.player.team||c.player.teamAbbr||'').toUpperCase().trim();
+    return pt===awayAbbr||pt===homeAbbr;
+  });
+
+  const grid = document.getElementById('gm-cards-grid');
+  const noCards = document.getElementById('gm-no-cards');
+
+  if(!myCards.length){
+    grid.innerHTML = '';
+    noCards.style.display = 'block';
+  } else {
+    noCards.style.display = 'none';
+    grid.innerHTML = '';
+    myCards.forEach(item=>{
+      const p = item.player;
+      const pts = getPlayerLivePoints(p.mlbamId);
+      const elite = isElite(p);
+      const card = document.createElement('div');
+      card.style.cssText = 'border-radius:12px;overflow:hidden;background:var(--surface2);cursor:pointer;border:'+(elite?'2px solid #FFD700':'1px solid rgba(255,255,255,.08)')+';transition:transform .15s;';
+      card.onmouseover = function(){this.style.transform='scale(1.04)';};
+      card.onmouseleave = function(){this.style.transform='scale(1)';};
+      card.onclick = ()=>{ document.getElementById('game-modal').classList.remove('open'); openCardModal(item.id); };
+      // Photo
+      const photoWrap = document.createElement('div');
+      photoWrap.style.cssText = 'aspect-ratio:3/4;overflow:hidden;position:relative;background:#111122;';
+      const img = document.createElement('img');
+      img.src = playerPhoto(p);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:50% 10%;';
+      img.onerror = function(){this.parentElement.style.background='#1a1a2e';this.style.display='none';};
+      photoWrap.appendChild(img);
+      if(elite){ const cr=document.createElement('div');cr.style.cssText='position:absolute;top:3px;right:3px;font-size:11px;';cr.textContent='👑';photoWrap.appendChild(cr); }
+      if(pts>0){
+        const ptsEl=document.createElement('div');
+        ptsEl.style.cssText='position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.8);padding:3px 4px;text-align:center;font-size:10px;font-weight:900;color:#00d48a;';
+        ptsEl.textContent=pts.toFixed(1)+' pts';
+        photoWrap.appendChild(ptsEl);
+      }
+      // Info
+      const info = document.createElement('div');
+      info.style.cssText = 'padding:5px 6px;background:#080810;';
+      const nm = document.createElement('div');
+      nm.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      nm.textContent = p.lastName||p.fullName||'—';
+      const pos = document.createElement('div');
+      pos.style.cssText = 'font-size:9px;color:#6a6a8a;margin-top:1px;';
+      // Show who they're facing
+      const isAway = (p.team||'').toUpperCase()===awayAbbr;
+      pos.textContent = (p.position||p.pos||'') + ' · ' + (isAway ? 'vs '+homeAbbr : '@'+awayAbbr);
+      info.appendChild(nm);
+      info.appendChild(pos);
+      card.appendChild(photoWrap);
+      card.appendChild(info);
+      grid.appendChild(card);
+    });
+  }
+
+  document.getElementById('game-modal').classList.add('open');
+}
+
 async function init(){await loadPlayers();const{data:{session}}=await sb.auth.getSession();if(session?.user){currentUser=session.user;await initSession();}sb.auth.onAuthStateChange(async(event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}});}
 init();</script>
+
+<!-- GAME MODAL -->
+<div class="modal-ov" id="game-modal" onclick="if(event.target===this)this.classList.remove('open')" style="z-index:350;">
+  <div class="modal-sheet" style="max-width:520px;">
+    <button class="modal-x" onclick="document.getElementById('game-modal').classList.remove('open')">×</button>
+    <!-- Game header -->
+    <div id="gm-header" style="padding:18px 20px 14px;border-bottom:1px solid var(--border);"></div>
+    <!-- My cards section -->
+    <div style="padding:14px 18px;">
+      <div id="gm-cards-section">
+        <div id="gm-no-cards" style="display:none;text-align:center;padding:24px 0;color:var(--muted);">
+          <div style="font-size:1.5rem;margin-bottom:8px;">🃏</div>
+          <div style="font-size:13px;font-weight:600;">No cards in this game</div>
+          <div style="font-size:11px;margin-top:4px;">Open packs to collect more players!</div>
+        </div>
+        <div id="gm-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
