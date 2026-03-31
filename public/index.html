@@ -2617,11 +2617,13 @@ function calcBattingPoints(stats){
 function calcPitchingPoints(stats){
   if(!stats) return 0;
   let pts = 0;
-  // inningsPitched comes as "6.1" format
-  const ip = parseFloat(stats.inningsPitched || 0);
-  const fullInnings = Math.floor(ip);
-  const partial = (ip % 1) * 10 / 3; // .1 = 1/3 inning, .2 = 2/3
-  pts += (fullInnings + partial) * SCORING.inningPitched;
+  // IP comes as "6.1" where .1 = 1 out = 1/3 inning, .2 = 2 outs = 2/3 inning
+  const ipStr = String(stats.inningsPitched || '0');
+  const ipParts = ipStr.split('.');
+  const fullInnings = parseInt(ipParts[0]) || 0;
+  const outs = parseInt(ipParts[1]) || 0;
+  const totalInnings = fullInnings + (outs / 3);
+  pts += totalInnings * SCORING.inningPitched;
   pts += (stats.strikeOuts || 0) * SCORING.strikeoutP;
   pts += (stats.wins || 0) * SCORING.win;
   pts += (stats.losses || 0) * SCORING.loss;
@@ -2633,36 +2635,52 @@ function calcPitchingPoints(stats){
 
 async function refreshLiveScores(){
   if(!tonightGameIds.length) return;
+  console.log('Fetching live scores for', tonightGameIds.length, 'games...');
+  let totalUpdated = 0;
+
   for(const gameId of tonightGameIds){
     const box = await fetchLiveStats(gameId);
     if(!box) continue;
-    // Process all batters and pitchers
+
     ['away','home'].forEach(side => {
-      const batters = box.teams?.[side]?.batters || [];
-      const pitchers = box.teams?.[side]?.pitchers || [];
       const players = box.teams?.[side]?.players || {};
-      batters.forEach(pid => {
-        const p = players['ID'+pid];
-        if(!p) return;
-        const stats = p.stats?.batting?.summary ? p.stats.batting : null;
-        if(stats) liveScores[pid] = calcBattingPoints(stats);
-      });
-      pitchers.forEach(pid => {
-        const p = players['ID'+pid];
-        if(!p) return;
-        const stats = p.stats?.pitching ? p.stats.pitching : null;
-        if(stats) liveScores[pid] = calcPitchingPoints(stats);
+      // Process every player in the boxscore
+      Object.entries(players).forEach(([key, p]) => {
+        // key is like "ID123456"
+        const pid = Number(key.replace('ID',''));
+        if(!pid) return;
+
+        // Store pts under numeric AND string id
+        let pts = 0;
+        const battingStats = p.stats?.batting;
+        const pitchingStats = p.stats?.pitching;
+
+        if(pitchingStats && (pitchingStats.inningsPitched || pitchingStats.strikeOuts)){
+          pts = calcPitchingPoints(pitchingStats);
+        } else if(battingStats && (battingStats.atBats > 0 || battingStats.hits > 0 || battingStats.baseOnBalls > 0)){
+          pts = calcBattingPoints(battingStats);
+        }
+
+        if(pts !== 0){
+          liveScores[pid] = pts;
+          liveScores[String(pid)] = pts;
+          totalUpdated++;
+          console.log('  Scored:', p.person?.fullName, pid, pts, 'pts');
+        }
       });
     });
   }
-  // Update tonight section display
-  updateTonightSection([]); // refresh display with new scores
-  // Update any open live battles
+
+  console.log('Live scores updated:', totalUpdated, 'players. Sample:', Object.entries(liveScores).slice(0,5));
+  updateTonightSection([]);
   updateLiveBattleScores();
 }
 
 function getPlayerLivePoints(mlbamId){
-  return liveScores[Number(mlbamId)] || liveScores[String(mlbamId)] || 0;
+  if(!mlbamId) return 0;
+  const n = Number(mlbamId);
+  const s = String(mlbamId);
+  return liveScores[n] || liveScores[s] || 0;
 }
 
 function calcLineupPoints(lineupIds){
@@ -2691,7 +2709,7 @@ function updateLiveBattleScores(){
 function startLivePoll(){
   loadTonightGames();
   // Poll live scores every 2 minutes during games
-  livePollTimer = setInterval(refreshLiveScores, 120000);
+  livePollTimer = setInterval(refreshLiveScores, 60000);
 }
 
 
