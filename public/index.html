@@ -990,9 +990,8 @@ function updateCardGameInfo(){
   document.querySelectorAll('[id^="cbteam-"]').forEach(el=>{
     const mid = el.id.replace('cbteam-','');
     if(!mid) return;
-    const live = _allMLBPlayers.find(x=>String(x.mlbamId||x.id)===mid)||PLAYERS.find(x=>String(x.mlbamId||x.id)===mid);
-    const p = getPlayer(mid);
-    const team = live?.team||p?.team||p?.teamAbbr||'';
+    const ep = getPlayerEnriched(mid);
+    const team = ep?.team||ep?.teamAbbr||'';
     if(team) el.textContent = ' · ' + team;
   });
 }
@@ -1385,10 +1384,9 @@ if(!activeItems.length){
   // Group by team
   const teamGroups = {};
   activeItems.forEach(item=>{
-    const mid = String(item.player.mlbamId||item.player.id||'');
-    const live = _allMLBPlayers.find(x=>String(x.mlbamId||x.id)===mid) || PLAYERS.find(x=>String(x.mlbamId||x.id)===mid);
-    const team = live?.team || item.player.team || item.player.teamAbbr || 'Unknown';
-    const teamName = live?.teamName || item.player.teamName || team;
+    const ep = getPlayerEnriched(item.player.mlbamId||item.player.id);
+    const team = ep?.team || ep?.teamAbbr || 'Unknown';
+    const teamName = ep?.teamName || team;
     if(!teamGroups[team]) teamGroups[team] = {team, teamName, items:[]};
     teamGroups[team].items.push(item);
   });
@@ -1396,7 +1394,8 @@ if(!activeItems.length){
   let html = '';
   sortedTeams.forEach(team=>{
     const grp = teamGroups[team];
-    const teamId = _allMLBPlayers.find(x=>(x.team||'')===team)?.currentTeamId || '';
+    const teamId = _allMLBPlayers.find(x=>(x.team||'')===team)?.currentTeamId || 
+                  Object.keys(MLB_TEAMS).find(id=>MLB_TEAMS[id].abbr===team) || '';
     const logoUrl = teamId ? `https://www.mlbstatic.com/team-logos/${teamId}.svg` : '';
     html += `<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:14px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px;">
       ${logoUrl?`<img src="${logoUrl}" style="width:26px;height:26px;object-fit:contain;" onerror="this.style.display='none'">`: '⚾'}
@@ -2554,17 +2553,19 @@ function renderLeaderboard(){const uname=(currentUser?.email||'').split('@')[0];
 function getPlayer(id){
   if(!id) return null;
   const sid = String(id);
-  // Check live MLB API players first
-  if(PLAYERS.length > 0){
-    const p = PLAYERS.find(p=>String(p.id)===sid||String(p.mlbamId)===sid);
-    if(p) return p;
-  }
-  // Fall back to _allMLBPlayers cache
-  if(_allMLBPlayers.length > 0){
-    const p = _allMLBPlayers.find(p=>String(p.id)===sid||String(p.mlbamId)===sid);
-    if(p) return p;
-  }
-  return null;
+  const pool = PLAYERS.length > 0 ? PLAYERS : _allMLBPlayers;
+  return pool.find(p=>String(p.id)===sid||String(p.mlbamId)===sid) || null;
+}
+
+// Get enriched player — always tries to overlay live API data on top
+function getPlayerEnriched(id){
+  if(!id) return null;
+  const sid = String(id);
+  const base = getPlayer(id);
+  // Also look up in _allMLBPlayers for freshest team data
+  const live = _allMLBPlayers.find(p=>String(p.mlbamId||p.id)===sid);
+  if(!base && !live) return null;
+  return {...(base||{}), ...(live||{})};
 }
 function playerPhoto(player){
   if(!player) return '';
