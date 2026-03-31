@@ -2573,6 +2573,20 @@ function playerPhoto(player){
   if(!mid) return '';
   return `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mid}/headshot/67/current`;
 }
+function debugPlayer(name){
+  const n = name.toLowerCase();
+  const fromPlayers = PLAYERS.filter(p=>(p.fullName||p.lastName||'').toLowerCase().includes(n));
+  const fromLive = _allMLBPlayers.filter(p=>(p.fullName||p.lastName||'').toLowerCase().includes(n));
+  console.log('=== PLAYERS array ===');
+  fromPlayers.forEach(p=>console.log(JSON.stringify({id:p.id,mlbamId:p.mlbamId,name:p.fullName||p.lastName,team:p.team,teamName:p.teamName,currentTeamId:p.currentTeamId})));
+  console.log('=== _allMLBPlayers ===');
+  fromLive.forEach(p=>console.log(JSON.stringify({id:p.id,mlbamId:p.mlbamId,name:p.fullName||p.lastName,team:p.team,teamName:p.teamName,currentTeamId:p.currentTeamId})));
+  // Also check collection
+  const col = userData?.collection||[];
+  const colMatch = col.filter(c=>{const p=getPlayer(c.id);return p&&(p.fullName||p.lastName||'').toLowerCase().includes(n);});
+  console.log('=== Collection cards ===');
+  colMatch.forEach(c=>{const p=getPlayer(c.id);const ep=getPlayerEnriched(c.id);console.log('card id:'+c.id, JSON.stringify({base_team:p?.team,enriched_team:ep?.team,enriched_teamName:ep?.teamName}));});
+}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 let scoresDate = new Date();
 let scoresGameFilter = 'all';
