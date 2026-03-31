@@ -1792,7 +1792,7 @@ function getStatLine(mlbamId){
     if(s.baseOnBalls) parts.push(s.baseOnBalls+'BB');
     if(s.wins) parts.push('W');
     if(s.losses) parts.push('L');
-    return parts.join(' · ') || 'No stats yet';
+    return parts.join(' · ') || 'Not pitched yet';
   } else {
     const parts = [];
     const ab = s.atBats||0;
@@ -1806,7 +1806,7 @@ function getStatLine(mlbamId){
     if(s.stolenBases) parts.push(s.stolenBases+'SB');
     if(s.baseOnBalls) parts.push(s.baseOnBalls+'BB');
     if(s.strikeOuts) parts.push(s.strikeOuts+'K');
-    return parts.join(' · ') || (ab === 0 ? 'Not yet batted' : '0-'+ab);
+    return parts.join(' · ') || (ab === 0 ? 'Not batted yet' : '0-'+ab);
   }
 }
 
@@ -1845,7 +1845,9 @@ function renderBdCard(player, sideTotal){
   const statLine = getStatLine(player.mlbamId);
   const statEl = document.createElement('div');
   statEl.style.cssText = 'font-size:12px;color:'+(pts>0?'rgba(0,212,138,.85)':'#555')+';margin-top:4px;font-weight:600;letter-spacing:.2px;';
-  statEl.textContent = statLine;
+  const isPitcher = PITCHER_POS.has(player.position||player.pos||'');
+  const noDataMsg = isPitcher ? 'Not pitched yet' : 'Not batted yet';
+  statEl.textContent = statLine === 'Not batted yet' ? noDataMsg : statLine;
 
   info.appendChild(nameEl);
   info.appendChild(subEl);
