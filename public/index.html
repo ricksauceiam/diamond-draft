@@ -1380,14 +1380,14 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
   function makePlayerRow(id){
     const p = getPlayer(id);
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);';
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.05);';
     if(!p){
-      row.innerHTML = '<div style="width:28px;height:28px;border-radius:50%;background:#161622;flex-shrink:0;"></div><div style="font-size:11px;color:#333;">—</div>';
+      row.innerHTML = '<div style="width:40px;height:40px;border-radius:50%;background:#161622;flex-shrink:0;"></div><div style="font-size:13px;color:#333;">—</div>';
       return row;
     }
     // Avatar circle photo
     const photo = document.createElement('div');
-    photo.style.cssText = 'width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.12);background:#111122;';
+    photo.style.cssText = 'width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1.5px solid rgba(255,255,255,.14);background:#111122;';
     const img = document.createElement('img');
     img.src = playerPhoto(p);
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:50% 15%;';
@@ -1398,10 +1398,10 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
     const info = document.createElement('div');
     info.style.cssText = 'flex:1;min-width:0;';
     const nameLine = document.createElement('div');
-    nameLine.style.cssText = 'font-size:11px;font-weight:700;color:#e8e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    nameLine.style.cssText = 'font-size:13px;font-weight:800;color:#e8e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     nameLine.textContent = p.lastName||p.fullName||'—';
     const subLine = document.createElement('div');
-    subLine.style.cssText = 'font-size:9px;color:#6a6a8a;margin-top:1px;';
+    subLine.style.cssText = 'font-size:11px;color:#6a6a8a;margin-top:2px;';
     const opp = getOpponent(p);
     subLine.textContent = (p.position||p.pos||'') + (opp ? ' · ' + opp : '');
     info.appendChild(nameLine);
@@ -1410,7 +1410,7 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
     // Pts
     const pts = getPlayerLivePoints(p.mlbamId);
     const ptsEl = document.createElement('div');
-    ptsEl.style.cssText = 'font-size:11px;font-weight:900;flex-shrink:0;color:'+(pts>0?'#00d48a':'#444')+';';
+    ptsEl.style.cssText = 'font-size:15px;font-weight:900;flex-shrink:0;color:'+(pts>0?'#00d48a':'#444')+';min-width:36px;text-align:right;';
     ptsEl.textContent = pts>0 ? pts.toFixed(1) : '—';
 
     row.appendChild(photo);
@@ -1434,10 +1434,10 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
 
   const leftHead = document.createElement('div');
   const leftName = document.createElement('div');
-  leftName.style.cssText = 'font-size:10px;font-weight:700;color:#6a6a8a;text-transform:uppercase;letter-spacing:.5px;';
+  leftName.style.cssText = 'font-size:11px;font-weight:700;color:#6a6a8a;text-transform:uppercase;letter-spacing:.5px;';
   leftName.textContent = myName;
   const leftScore = document.createElement('div');
-  leftScore.style.cssText = 'font-size:1.6rem;font-weight:900;line-height:1.1;color:'+(leading?'#00d48a':'#e8e8f0')+';';
+  leftScore.style.cssText = 'font-size:2rem;font-weight:900;line-height:1.1;color:'+(leading?'#00d48a':'#e8e8f0')+';';
   leftScore.textContent = myScore.toFixed(1);
   leftHead.appendChild(leftName);
   leftHead.appendChild(leftScore);
@@ -1449,10 +1449,10 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
   const rightHead = document.createElement('div');
   rightHead.style.cssText = 'text-align:right;';
   const rightName = document.createElement('div');
-  rightName.style.cssText = 'font-size:10px;font-weight:700;color:#6a6a8a;text-transform:uppercase;letter-spacing:.5px;';
+  rightName.style.cssText = 'font-size:11px;font-weight:700;color:#6a6a8a;text-transform:uppercase;letter-spacing:.5px;';
   rightName.textContent = rivalName;
   const rightScore = document.createElement('div');
-  rightScore.style.cssText = 'font-size:1.6rem;font-weight:900;line-height:1.1;color:'+(!leading&&rivalScore>0?'#00d48a':'#e8e8f0')+';';
+  rightScore.style.cssText = 'font-size:2rem;font-weight:900;line-height:1.1;color:'+(!leading&&rivalScore>0?'#00d48a':'#e8e8f0')+';';
   rightScore.textContent = rivalScore.toFixed(1);
   rightHead.appendChild(rightName);
   rightHead.appendChild(rightScore);
@@ -1466,11 +1466,11 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
   body.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:0;';
 
   const leftCol = document.createElement('div');
-  leftCol.style.cssText = 'padding:8px 12px;border-right:1px solid rgba(255,255,255,.05);';
+  leftCol.style.cssText = 'padding:10px 14px;border-right:1px solid rgba(255,255,255,.05);';
   myLineup.slice(0,4).forEach(id=>leftCol.appendChild(makePlayerRow(id)));
 
   const rightCol = document.createElement('div');
-  rightCol.style.cssText = 'padding:8px 12px;';
+  rightCol.style.cssText = 'padding:10px 14px;';
   rivalLineup.slice(0,4).forEach(id=>rightCol.appendChild(makePlayerRow(id)));
 
   body.appendChild(leftCol);
