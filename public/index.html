@@ -1760,15 +1760,21 @@ function openBattleDetail(battle){
   window._prevLiveScores = {};
   window._tickerLog = [];
 
-  // Always try to load live scores when opening a battle
+  // Load live scores then re-render
   async function initBattleScores(){
-    // If we don't have tonight's games yet, load them first
-    if(tonightGameIds.length === 0){
-      await loadTonightGames();
+    // Show loading state on scores
+    const youEl = document.getElementById('bd-you-score');
+    const rivEl = document.getElementById('bd-rival-score');
+    const gsEl = document.getElementById('bd-game-status');
+    if(gsEl) gsEl.innerHTML = '<span style="font-size:11px;color:var(--muted);">Loading scores...</span>';
+
+    try{
+      if(tonightGameIds.length === 0) await loadTonightGames();
+      if(tonightGameIds.length > 0) await refreshLiveScores();
+    } catch(e){
+      console.warn('Score load error:', e);
     }
-    if(tonightGameIds.length > 0){
-      await refreshLiveScores();
-    }
+    // Always re-render with whatever we have
     renderBattleDetail(battle);
   }
 
@@ -1914,8 +1920,12 @@ function addToTicker(plays){
 }
 
 function renderBattleDetail(battle){
-  const youLineup = (battle.youLineup||battle.lineup||[]).map(id=>getPlayer(id)).filter(Boolean);
-  const rivalLineup = (battle.rivalLineup||[]).map(id=>getPlayer(id)).filter(Boolean);
+  const rawYou = battle.youLineup||battle.lineup||[];
+  const rawRival = battle.rivalLineup||[];
+  const youLineup = rawYou.map(id=>getPlayer(id)).filter(Boolean);
+  const rivalLineup = rawRival.map(id=>getPlayer(id)).filter(Boolean);
+  console.log('renderBattleDetail: you='+rawYou.length+' found='+youLineup.length+' rival='+rawRival.length+' found='+rivalLineup.length);
+  console.log('liveScores keys:', Object.keys(liveScores).length, 'sample:', JSON.stringify(Object.entries(liveScores).slice(0,3)));
 
   // Calc scores
   const youTotal = youLineup.reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
