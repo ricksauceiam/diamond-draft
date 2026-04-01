@@ -1140,25 +1140,42 @@ function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>
 async function doLogin(){const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;document.getElementById('auth-err').textContent='';const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doRegister(){const e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;document.getElementById('auth-err').textContent='';if(p.length<6){document.getElementById('auth-err').textContent='Password must be 6+ characters';return;}const{data,error}=await sb.auth.signUp({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doLogout(){await sb.auth.signOut();currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');document.body.classList.remove('app-ready');}
-async function initSession(){const key=`dd_${currentUser.id}`;const saved=localStorage.getItem(key);userData=saved?JSON.parse(saved):{collection:[],packsOpened:[false],lastPackDate:'',streak:0,lastStreakDate:''};const today=todayStr();if(userData.lastPackDate!==today){
-  // New day — reset packs
-  const wy=userData.lastPackDate===yesterdayStr();
-  userData.packsOpened=[false,false,false];
-  userData.lastPackDate=today;
-  userData.packResults=[null,null,null];
-  if(!wy)userData.streak=0;
-  packResults=[null,null,null];
-  revealedCards=[new Set(),new Set(),new Set()];
-  saveData();
-}else{
-  // Same day — restore pack state from localStorage
-  if(userData.packResults){
-    packResults=userData.packResults.map(p=>p||null);
-  } else {
-    packResults=[null,null,null];
+async function initSession(){
+  // Load from Supabase, fallback to localStorage for migration
+  let remoteData = null;
+  try {
+    const {data, error} = await sb.from('user_data').select('data').eq('user_id', currentUser.id).single();
+    if(!error && data) remoteData = data.data;
+  } catch(e) { console.warn('user_data fetch:', e); }
+
+  // Migrate from localStorage if no Supabase data yet
+  if(!remoteData) {
+    const key = `dd_${currentUser.id}`;
+    const saved = localStorage.getItem(key);
+    remoteData = saved ? JSON.parse(saved) : null;
   }
-  revealedCards=[new Set(),new Set(),new Set()];
-}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');document.body.classList.add('app-ready');
+
+  userData = remoteData || {collection:[], packsOpened:[false,false,false], lastPackDate:'', streak:0, lastStreakDate:''};
+
+  const today = todayStr();
+  if(userData.lastPackDate !== today) {
+    const wy = userData.lastPackDate === yesterdayStr();
+    userData.packsOpened = [false,false,false];
+    userData.lastPackDate = today;
+    userData.packResults = [null,null,null];
+    if(!wy) userData.streak = 0;
+    packResults = [null,null,null];
+    revealedCards = [new Set(),new Set(),new Set()];
+    await saveData();
+  } else {
+    packResults = (userData.packResults||[]).map(p=>p||null);
+    if(packResults.length < 3) packResults = [null,null,null];
+    revealedCards = [new Set(),new Set(),new Set()];
+  }
+  battleRecord = userData.battleRecord||{wins:0,losses:0};
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').classList.add('visible');
+  document.body.classList.add('app-ready');
   // Show/hide restricted tabs
   document.querySelectorAll('[data-tab="admin"],[data-tab="allcards"]').forEach(el=>{
     el.style.display = isAdmin() ? '' : 'none';
@@ -1174,17 +1191,31 @@ async function upsertProfile(){
   if(!currentUser)return;
   const username=(currentUser.email||'').split('@')[0];
   const cardCount=userData?.collection?.length||0;
+  const cardsTaken=(userData?.collection||[]).filter(c=>c.wonFrom).length;
   const{error}=await sb.from('profiles').upsert(
-    {id:currentUser.id,username,card_count:cardCount},
+    {id:currentUser.id, username, card_count:cardCount, cards_taken:cardsTaken},
     {onConflict:'id'}
   );
   if(error)console.warn('Profile upsert:',error.message);
 }
-function saveData(){if(!currentUser)return;userData.battleRecord=battleRecord;localStorage.setItem(`dd_${currentUser.id}`,JSON.stringify(userData));}
+async function saveData(){
+  if(!currentUser) return;
+  userData.battleRecord = battleRecord;
+  // Save to Supabase as primary store
+  try {
+    await sb.from('user_data').upsert(
+      {user_id: currentUser.id, data: userData, updated_at: new Date().toISOString()},
+      {onConflict: 'user_id'}
+    );
+  } catch(e) { console.warn('saveData error:', e); }
+  // Also keep localStorage as cache for instant load
+  localStorage.setItem(`dd_${currentUser.id}`, JSON.stringify(userData));
+  // Sync profile stats
+  upsertProfile();
+}
 function savePackSession(){
-  // Store pack results in localStorage so they survive refreshes
   userData.packResults = packResults.map(p=>p||null);
-  saveData();
+  saveData(); // async but fire-and-forget is fine here
 }
 function todayStr(){
   // Use Eastern Time to match MLB API date boundaries
@@ -2970,48 +3001,55 @@ async function renderLeaderboard(){
   listEl.innerHTML = '';
 
   try {
-    // Fetch all completed battles to tally wins per user
-    const {data: battles} = await sb.from('challenges')
-      .select('from_name,to_name,from_id,to_id,result,status')
-      .eq('status','completed');
+    // Fetch profiles (card counts, taken) and battles (wins) in parallel
+    const [{data: profiles}, {data: battles}] = await Promise.all([
+      sb.from('profiles').select('username,card_count,cards_taken'),
+      sb.from('challenges').select('from_name,to_name,result,status').eq('status','completed')
+    ]);
 
-    // Count wins per username
+    // Build profile map
+    const profileMap = {};
+    (profiles||[]).forEach(p=>{ if(p.username) profileMap[p.username] = p; });
+
+    // Tally wins
     const winsMap = {};
     (battles||[]).forEach(b=>{
       const result = b.result||{};
       if(!result.winner) return;
       const winnerName = result.winner==='from' ? b.from_name : result.winner==='to' ? b.to_name : null;
-      if(winnerName){
-        winsMap[winnerName] = (winsMap[winnerName]||0) + 1;
-      }
+      if(winnerName) winsMap[winnerName] = (winsMap[winnerName]||0) + 1;
     });
 
-    // Get current user info
     const myName = (currentUser?.email||'').split('@')[0];
-    const myCards = userData?.collection?.length||0;
-    const myWins = winsMap[myName]||battleRecord.wins||0;
 
-    // Build player list — include all unique names from battles + current user
-    const nameSet = new Set([myName]);
+    // Build unified player list from profiles + battle participants
+    const nameSet = new Set(Object.keys(profileMap));
     (battles||[]).forEach(b=>{ if(b.from_name) nameSet.add(b.from_name); if(b.to_name) nameSet.add(b.to_name); });
+    nameSet.add(myName);
 
-    const colors = ['#FFD700','#6c63ff','#ff6b9d','#00F5FF','#00d48a','#FF8C00','#BF40FF','#FF006E'];
-    const players = [...nameSet].map((name,i)=>({
-      name,
-      wins: winsMap[name]||0,
-      cards: name===myName ? myCards : 0, // only current user has local card count
-      isMe: name===myName,
-      avatar: name[0]?.toUpperCase()||'?',
-      color: colors[i % colors.length],
-    }));
+    const colors = ['#FFD700','#6c63ff','#ff6b9d','#00F5FF','#00d48a','#FF8C00','#BF40FF','#FF006E','#ff4757','#00d48a'];
+    const allNames = [...nameSet];
+    const players = allNames.map((name,i)=>{
+      const prof = profileMap[name];
+      const isMe = name===myName;
+      return {
+        name,
+        wins: winsMap[name]||0,
+        cards: prof?.card_count ?? (isMe ? userData?.collection?.length||0 : 0),
+        taken: prof?.cards_taken ?? (isMe ? (userData?.collection||[]).filter(c=>c.wonFrom).length : 0),
+        isMe,
+        avatar: name[0]?.toUpperCase()||'?',
+        color: colors[i % colors.length],
+      };
+    });
 
-    // Sort: wins first, then cards as tiebreaker
-    players.sort((a,b)=>b.wins-a.wins||b.cards-a.cards);
+    // Sort: cards desc, then taken desc, then wins desc
+    players.sort((a,b)=>b.cards-a.cards||b.taken-a.taken||b.wins-a.wins);
 
-    // Podium (top 3)
+    // Podium top 3
     const pc=['#FFD700','#C0C0C0','#CD7F32'];
     const ph=[88,68,52];
-    const po=[1,0,2]; // 2nd, 1st, 3rd
+    const po=[1,0,2];
     const top3 = players.slice(0,3);
     podiumEl.innerHTML = po.map(i=>{
       const e = top3[i];
@@ -3019,29 +3057,45 @@ async function renderLeaderboard(){
       return `<div class="pod-item">
         <div class="pod-avatar" style="width:${46-i*4}px;height:${46-i*4}px;background:${e.color}">${e.avatar}</div>
         <div class="pod-name">${e.name}${e.isMe?' (you)':''}</div>
-        <div class="pod-pts">${e.wins} W</div>
+        <div class="pod-pts">${typeof e.cards==='number'?e.cards+' cards':e.wins+' W'}</div>
         <div class="pod-block" style="background:${pc[i]};height:${ph[i]}px;color:#000;font-size:.95rem">#${i+1}</div>
       </div>`;
     }).join('');
 
+    // Column header
+    const header = `<div style="display:flex;align-items:center;gap:13px;padding:6px 15px;margin-bottom:4px;">
+      <div style="width:22px;"></div>
+      <div style="width:36px;"></div>
+      <div style="flex:1;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Player</div>
+      <div style="width:52px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Cards</div>
+      <div style="width:52px;text-align:center;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;">Taken</div>
+      <div style="width:44px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Wins</div>
+    </div>`;
+
     // Full list
-    listEl.innerHTML = players.map((e,i)=>`
-      <div class="lb-row${e.isMe?' me':''}">
+    const rows = players.map((e,i)=>`
+      <div class="lb-row${e.isMe?' me':''}" style="gap:13px;">
         <div class="lb-rank">${i+1}</div>
         <div class="lb-avatar" style="background:${e.color}">${e.avatar}</div>
-        <div class="lb-info">
+        <div class="lb-info" style="flex:1;min-width:0;">
           <h4>${e.name}${e.isMe?' (you)':''}</h4>
-          <p>${e.wins} wins${e.isMe?' · '+e.cards+' cards':''}</p>
         </div>
-        <div class="lb-pts">
-          <div class="pts">${e.wins}</div>
-          <div class="sub">wins</div>
+        <div style="width:52px;text-align:center;">
+          <div style="font-size:14px;font-weight:800;color:${e.cards>0?'var(--text)':'var(--muted)'};">${e.cards}</div>
+          <div style="font-size:9px;color:var(--muted);">cards</div>
+        </div>
+        <div style="width:52px;text-align:center;">
+          <div style="font-size:14px;font-weight:800;color:${e.taken>0?'var(--accent)':'var(--muted)'};">${e.taken}</div>
+          <div style="font-size:9px;color:var(--muted);">taken</div>
+        </div>
+        <div style="width:44px;text-align:center;">
+          <div style="font-size:14px;font-weight:800;color:${e.wins>0?'var(--success)':'var(--muted)'};">${e.wins}</div>
+          <div style="font-size:9px;color:var(--muted);">wins</div>
         </div>
       </div>`).join('');
 
-    if(!players.length){
-      listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);">No battles yet — be the first!</div>';
-    }
+    listEl.innerHTML = players.length ? header+rows : '<div style="text-align:center;padding:40px 20px;color:var(--muted);">No battles yet — be the first!</div>';
+
   } catch(e){
     listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--danger);">Failed to load leaderboard</div>';
     console.warn('Leaderboard error:', e);
