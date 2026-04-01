@@ -2672,7 +2672,15 @@ function playerRow(item, dimmed){
     <div style="flex:1;min-width:0;">
       <div style="font-size:12px;font-weight:800;color:${elite ? '#FFD700' : '#fff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite ? '👑 ' : ''}${p.lastName || p.name || '—'}</div>
       <div style="font-size:10px;color:var(--muted);margin-top:1px;">${p.position || p.pos || '—'} · ${p.team || '—'}</div>
-      ${pts > 0 ? `<div style="font-size:10px;font-weight:700;color:var(--success);margin-top:2px;">${pts.toFixed(1)} pts</div>` : ''}
+      ${(()=>{
+        const teamId = String(p.currentTeamId||'');
+        const abbr = (p.team||'').toUpperCase();
+        const playsToday = window._tonightTeamIds?.has(teamId) || tonightTeams.has(abbr);
+        if(!playsToday) return '';
+        if(pts > 0) return `<div style="font-size:10px;font-weight:700;color:var(--success);margin-top:2px;">${pts.toFixed(1)} pts</div>`;
+        if(pts < 0) return `<div style="font-size:10px;font-weight:700;color:var(--danger);margin-top:2px;">${pts.toFixed(1)} pts</div>`;
+        return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Playing today</div>`;
+      })()}
     </div>
     <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;" title="${rarity}"></div>
     ${inLineup ? '<div style="font-size:10px;font-weight:900;color:var(--accent);flex-shrink:0;">✓</div>' : ''}
