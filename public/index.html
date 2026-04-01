@@ -4072,7 +4072,12 @@ function renderMatchups(){
       const tied=result.winner==='tie';
       const resultClass=won?'win':tied?'':'loss';
       const resultLabel=won?'🏆 W':tied?'🤝 T':'💀 L';
-      const scoreStr=`${Number(myScore).toFixed(1)}–${Number(theirScore).toFixed(1)}`;
+      const hasScores = myScore > 0 || theirScore > 0;
+      const myScoreColor = won ? 'var(--success)' : tied ? 'var(--text)' : 'var(--danger)';
+      const theirScoreColor = won ? 'var(--danger)' : tied ? 'var(--text)' : 'var(--success)';
+      const scoreStr = hasScores
+        ? `<span style="color:${myScoreColor};font-weight:900;">${Number(myScore).toFixed(1)}</span><span style="color:var(--muted);">–</span><span style="color:${theirScoreColor};font-weight:900;">${Number(theirScore).toFixed(1)}</span>`
+        : `<span style="color:var(--muted);font-size:10px;">No score</span>`;
       const myLineup=(iFrom?b.from_lineup:b.to_lineup)||[];
       const theirLineup=(iFrom?b.to_lineup:b.from_lineup)||[];
       window._histBattles=window._histBattles||{};
