@@ -3226,10 +3226,9 @@ function formatGameTime(isoStr){
 
 async function loadScores(){
   const dateStr = scoresApiDate(scoresDate);
-  const today = scoresApiDate(new Date());
-  const label = dateStr===today ? 'Today' : scoresDateStr(scoresDate);
-  document.getElementById('scores-date-label').textContent = label;
-  document.getElementById('scores-subtitle').textContent = `⚾ MLB · ${scoresDateStr(scoresDate)}`;
+  const todayStr2 = scoresApiDate(new Date());
+  document.getElementById('scores-date-label').textContent = '...';
+  document.getElementById('scores-subtitle').textContent = '⚾ MLB · Loading...';
   const list = document.getElementById('scores-list');
   list.innerHTML = '<div class="scores-loading"><div class="spinner"></div> Loading games...</div>';
 
@@ -3237,10 +3236,44 @@ async function loadScores(){
     const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team,game(content(summary)),decisions,scoringplays&_=${Date.now()}`);
     if(!r.ok) throw new Error('API '+r.status);
     const data = await r.json();
-    // Find the date entry matching our requested date exactly
-    const dateEntry = (data?.dates||[]).find(d=>d.date===dateStr) || data?.dates?.[0];
+
+    // Use exact date match if available, otherwise nearest date
+    const exactEntry = (data?.dates||[]).find(d=>d.date===dateStr);
+    const dateEntry = exactEntry || data?.dates?.[0];
+    const returnedDate = dateEntry?.date;
     const games = dateEntry?.games || [];
-    console.log('Requested date:', dateStr, '| API returned dates:', (data?.dates||[]).map(d=>d.date), '| Games:', games.length);
+
+    // Always show the actual date from API response
+    if(returnedDate){
+      const displayDate = new Date(returnedDate + 'T12:00:00'); // noon avoids tz shift
+      const isToday = returnedDate === todayStr2;
+      const isTomorrow = returnedDate === scoresApiDate(new Date(Date.now()+86400000));
+      const label = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : displayDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      document.getElementById('scores-date-label').textContent = label;
+      document.getElementById('scores-subtitle').textContent = `⚾ MLB · ${displayDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}`;
+    }
+
+    // If today's games not available yet, also try tomorrow
+    if(!exactEntry && returnedDate !== dateStr){
+      // Try fetching tomorrow to see if it has games
+      const tomorrowStr = scoresApiDate(new Date(Date.now()+86400000));
+      if(dateStr !== tomorrowStr){
+        const r2 = await fetch(`/api/mlb?endpoint=/schedule?sportId=1&date=${tomorrowStr}&hydrate=linescore,team,game(content(summary)),decisions,scoringplays&_=${Date.now()}`);
+        if(r2.ok){
+          const d2 = await r2.json();
+          const tomorrowEntry = (d2?.dates||[]).find(x=>x.date===tomorrowStr);
+          if(tomorrowEntry?.games?.length){
+            // Show tomorrow's games since today's aren't available
+            const tDisplay = new Date(tomorrowStr+'T12:00:00');
+            document.getElementById('scores-date-label').textContent = 'Tomorrow';
+            document.getElementById('scores-subtitle').textContent = `⚾ MLB · ${tDisplay.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}`;
+            scoresData = tomorrowEntry.games;
+            renderScores();
+            return;
+          }
+        }
+      }
+    }
     scoresData = games;
     renderScores();
   } catch(e){
