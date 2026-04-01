@@ -1130,12 +1130,12 @@ async function loadPlayers(){
       }
     });
     _allMLBPlayers=people.map(p=>liveMap[String(p.id)]);
-    _acLoaded=true;
+    _playersLoaded=true;
     console.log('Players merged with live API:',PLAYERS.length);
   }catch(e){
     console.warn('MLB API failed, using static only:',e);
     _allMLBPlayers=[...PLAYERS];
-    _acLoaded=true;
+    _playersLoaded=true;
   }
 }
 function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>a.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));document.getElementById('login-form').style.display=t==='login'?'':'none';document.getElementById('register-form').style.display=t==='register'?'':'none';document.getElementById('auth-err').textContent='';}
@@ -1160,7 +1160,11 @@ async function initSession(){const key=`dd_${currentUser.id}`;const saved=localS
     packResults=[null,null,null];
   }
   revealedCards=[new Set(),new Set(),new Set()];
-}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');document.body.classList.add('app-ready');const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';document.getElementById('mob-u-name').textContent=uname;document.getElementById('mob-u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');
+}battleRecord=userData.battleRecord||{wins:0,losses:0};document.getElementById('auth-screen').style.display='none';document.getElementById('app').classList.add('visible');document.body.classList.add('app-ready');
+  // Show/hide restricted tabs
+  document.querySelectorAll('[data-tab="admin"],[data-tab="allcards"]').forEach(el=>{
+    el.style.display = isAdmin() ? '' : 'none';
+  });const uname=(currentUser.email||'').split('@')[0];document.getElementById('u-name').textContent=uname;document.getElementById('u-avatar').textContent=uname[0]?.toUpperCase()||'?';document.getElementById('mob-u-name').textContent=uname;document.getElementById('mob-u-avatar').textContent=uname[0]?.toUpperCase()||'?';goTab('home');
   upsertProfile();
   startChallengePoll();
   startLivePoll();
@@ -1197,6 +1201,8 @@ function isBattleExpired(battle){
   return createdDate < todayDate;
 }
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
+function isAdmin(){ return (currentUser?.email||'').toLowerCase() === 'michal.perconte@gmail.com'; }
+
 function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection'){getInBattleIds().then(()=>renderCollection());}if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();if(id==='allcards')loadAllCards();}
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';document.getElementById('mob-u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened[0]?0:1;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1,2].forEach(i=>{
     const opened=userData.packsOpened[i];
@@ -3366,6 +3372,7 @@ function adminDownload(){
 let _allMLBPlayers = [];
 let _acFilter = 'ALL';
 let _acLoaded = false;
+let _playersLoaded = false;
 let _roster40 = new Set(); // mlbamIds of active 40-man roster players
 
 async function load40ManRoster(){
@@ -3381,31 +3388,42 @@ async function load40ManRoster(){
 }
 
 async function loadAllCards(){
-  if(_acLoaded) return;
   document.getElementById('ac-loading').style.display='block';
   document.getElementById('ac-grid').innerHTML='';
-  try{
-    const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
-    const data=await r.json();
-    _allMLBPlayers=(data.people||[]).map(p=>({
-      id: String(p.id),
-      mlbamId: p.id,
-      firstName: p.firstName||'',
-      lastName: p.lastName||'',
-      fullName: p.fullName||p.firstName+' '+p.lastName,
-      position: p.primaryPosition?.abbreviation||'',
-      team: p.currentTeam?.abbreviation||'',
-      teamName: p.currentTeam?.name||'',
-    })).sort((a,b)=>a.lastName.localeCompare(b.lastName));
-    _acLoaded=true;
-    // Populate team dropdown
-    const teams=[...new Set(_allMLBPlayers.map(p=>p.team).filter(Boolean))].sort();
-    const sel=document.getElementById('ac-team');
-    teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
-    filterAllCards();
-  }catch(e){
-    document.getElementById('ac-loading').innerHTML='<div style="color:var(--danger)">Failed to load. Try again.</div>';
+
+  // If players.json already loaded _allMLBPlayers, use that directly
+  if(_allMLBPlayers.length > 0){
+    _acLoaded = true;
   }
+
+  if(!_acLoaded){
+    try{
+      const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
+      const data=await r.json();
+      _allMLBPlayers=(data.people||[]).map(p=>({
+        id: String(p.id),
+        mlbamId: p.id,
+        firstName: p.firstName||'',
+        lastName: p.lastName||'',
+        fullName: p.fullName||p.firstName+' '+p.lastName,
+        position: p.primaryPosition?.abbreviation||'',
+        team: p.currentTeam?.abbreviation||'',
+        teamName: p.currentTeam?.name||'',
+      })).sort((a,b)=>a.lastName.localeCompare(b.lastName));
+      _acLoaded=true;
+    }catch(e){
+      document.getElementById('ac-loading').innerHTML='<div style="color:var(--danger)">Failed to load. Try again.</div>';
+      return;
+    }
+  }
+
+  // Populate team dropdown (only once)
+  const sel=document.getElementById('ac-team');
+  if(sel.options.length <= 1){
+    const teams=[...new Set(_allMLBPlayers.map(p=>p.team).filter(Boolean))].sort();
+    teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+  }
+  filterAllCards();
 }
 
 function setAcFilter(f){
