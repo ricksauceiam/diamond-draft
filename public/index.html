@@ -3237,7 +3237,10 @@ async function loadScores(){
     const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team,game(content(summary)),decisions,scoringplays&_=${Date.now()}`);
     if(!r.ok) throw new Error('API '+r.status);
     const data = await r.json();
-    const games = data?.dates?.[0]?.games || [];
+    // Find the date entry matching our requested date exactly
+    const dateEntry = (data?.dates||[]).find(d=>d.date===dateStr) || data?.dates?.[0];
+    const games = dateEntry?.games || [];
+    console.log('Requested date:', dateStr, '| API returned dates:', (data?.dates||[]).map(d=>d.date), '| Games:', games.length);
     scoresData = games;
     renderScores();
   } catch(e){
