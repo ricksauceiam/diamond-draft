@@ -869,9 +869,6 @@ const _origGoTab = window.goTab;
       <div style="font-size:10px;color:var(--muted);" id="bd-subtitle"></div>
     </div>
     <div id="bd-status-badge"></div>
-    <div id="bd-declare-wrap" style="display:none;">
-      <button class="btn-p" style="padding:8px 14px;font-size:12px;background:var(--success);color:#000;width:auto;" id="bd-declare-btn" onclick="declareFromDetail()">🏆 Final Result</button>
-    </div>
   </div>
 
   <!-- Hero score section -->
@@ -1834,7 +1831,25 @@ renderCollection();
 dragCardId=null;
 }
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${playerPhoto(p)}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;const modalName = p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
-  document.getElementById('m-name').textContent=modalName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.style.display='none';document.getElementById('m-power').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.style.display='none';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
+  document.getElementById('m-name').textContent=modalName;document.getElementById('m-meta').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;const b=document.getElementById('m-rbadge');b.style.display='none';document.getElementById('m-power').textContent=`${p.position||p.pos} · ${p.teamName||p.team}`;
+  // Battle provenance tag
+  const existingTag = document.getElementById('m-battle-tag');
+  if(existingTag) existingTag.remove();
+  if(col.wonFrom){
+    const tauntLines = [
+      `⚔️ Snatched from ${col.wonFrom} in battle`,
+      `🏆 Ripped from ${col.wonFrom}'s cold hands`,
+      `💀 ${col.wonFrom} never saw it coming`,
+      `😤 Dominated ${col.wonFrom} to claim this card`,
+      `🔥 Took this straight from ${col.wonFrom}`,
+    ];
+    const line = tauntLines[Math.abs(col.wonFrom.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % tauntLines.length];
+    const tag = document.createElement('div');
+    tag.id = 'm-battle-tag';
+    tag.style.cssText = 'margin-top:8px;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,140,0,.1));border:1px solid rgba(255,215,0,.35);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;color:#FFD700;';
+    tag.textContent = line;
+    document.getElementById('m-power').after(tag);
+  }document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.style.display='none';document.getElementById('mstats').innerHTML=Object.entries(p.stats||{}).slice(0,6).map(([k,v])=>`<div class="mstat"><div class="mstat-v">${v}</div><div class="mstat-k">${k}</div></div>`).join('');document.getElementById('card-modal').classList.add('open');}
 function fuseCard(){const col=userData.collection.find(c=>c.id===currentModalCard),p=getPlayer(currentModalCard);if(!col||!p)return;const need=NEED[p.rarity];if(col.copies<need||col.level>=5)return;col.copies=0;col.level=Math.min(5,col.level+1);col.mult=MULTS[col.level-1];saveData();showToast(`Upgraded to ${rarityLabel(col.level)}! ✨`);document.getElementById('card-modal').classList.remove('open');renderCollection();}
 function miniCard(player, isRival){
 if(!player) return `<div class="mbig-mini-card" style="background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:1.2rem">⚾</span></div>`;
@@ -2211,13 +2226,7 @@ function renderBattleDetail(battle){
     document.getElementById('bd-prog-bar').style.width = '0%';
   }
   // Show declare button if both lineups have players and it's active
-  const declareWrap = document.getElementById('bd-declare-wrap');
-  if(declareWrap){
-    const hasLineups = (battle.youLineup||[]).length>0 && (battle.rivalLineup||[]).length>0;
-    declareWrap.style.display = (hasLineups && battle.status==='active') ? 'block' : 'none';
-    const btn = document.getElementById('bd-declare-btn');
-    if(btn) btn.onclick = ()=>declareFromDetail(battle);
-  }
+
 
   // Build card grid: you on left, rival on right, paired by slot
   const maxLen = Math.max(youLineup.length, rivalLineup.length, 4);
@@ -3638,9 +3647,14 @@ function showBattleResult(battle){
 
   if(won && prizeCards.length){
     prizeCards.forEach(p=>{
-      const existing = userData.collection.find(c=>c.id===p.id||c.id===String(p.mlbamId||p.id));
-      if(existing){ existing.copies=(existing.copies||1)+1; }
-      else { userData.collection.push({id:p.id||String(p.mlbamId),copies:1,isNew:true}); }
+      const cardId = p.id||String(p.mlbamId);
+      const existing = userData.collection.find(c=>c.id===cardId||c.id===String(p.mlbamId||p.id));
+      if(existing){
+        existing.copies=(existing.copies||1)+1;
+        if(!existing.wonFrom) existing.wonFrom = rivalName; // tag only first time
+      } else {
+        userData.collection.push({id:cardId, copies:1, isNew:true, wonFrom:rivalName});
+      }
     });
     saveData();
   }
