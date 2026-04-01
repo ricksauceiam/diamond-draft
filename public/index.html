@@ -1455,9 +1455,8 @@ function openPackOv(idx){
     savePackSession();
   }
   document.getElementById('pov-title').textContent = userData.packsOpened[idx] ? '📦 Daily Pack — Already Opened' : '📦 Daily Pack';
-  document.getElementById('pov-sub').textContent = userData.packsOpened[idx] ? 'Your cards from today' : '4 cards · tap to open';
+  document.getElementById('pov-sub').textContent = userData.packsOpened[idx] ? 'Your cards from today' : 'Opening pack…';
   document.getElementById('rainbow-alert').style.display='none';
-  document.getElementById('ov-collect-btn').style.display='none';
   document.getElementById('pack-ov').classList.add('open');
   renderPackReveal(userData.packsOpened[idx]);
 }
