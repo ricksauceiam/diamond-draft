@@ -3063,7 +3063,7 @@ async function loadScores(){
   list.innerHTML = '<div class="scores-loading"><div class="spinner"></div> Loading games...</div>';
 
   try{
-    const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team,game(content(summary)),decisions,scoringplays`);
+    const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team,game(content(summary)),decisions,scoringplays&_=${Date.now()}`);
     if(!r.ok) throw new Error('API '+r.status);
     const data = await r.json();
     const games = data?.dates?.[0]?.games || [];
@@ -3268,7 +3268,7 @@ async function loadTonightGames(){
   const today = todayStr();
   try {
     // Use our Vercel proxy
-    const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1,17&date=${today}&hydrate=roster`);
+    const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1,17&date=${today}&hydrate=roster&_=${Date.now()}`);
     if(!r.ok) throw new Error('API error');
     const data = await r.json();
     const games = data?.dates?.[0]?.games || [];
