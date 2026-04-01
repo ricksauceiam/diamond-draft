@@ -1463,24 +1463,94 @@ function openPackOv(idx){
 }
 function closePackOv(){document.getElementById('pack-ov').classList.remove('open');}
 function generatePack(idx){
-  const RAINBOW_ODDS=5500;
-  const seed=currentUser.id+todayStr()+idx;
-  let hash=0;
+  const RAINBOW_ODDS = 800; // ~0.125% per card — rare but real
+
+  // ── Seed: user + date + pack index + a time-of-day bucket (changes every 6h)
+  // This means even if you open the same pack twice in a day you get variety
+  const timeBucket = Math.floor(Date.now() / (1000 * 60 * 60 * 6));
+  const seed = currentUser.id + todayStr() + idx + timeBucket + Math.random().toString(36).slice(2,8);
+  let hash = 0;
   for(let i=0;i<seed.length;i++){hash=(hash*31+seed.charCodeAt(i))>>>0;}
   const rng=()=>{hash=(hash*1664525+1013904223)>>>0;return(hash>>>0)/4294967296;};
-  // Only deal cards from active 40-man roster players
-  const pool = _roster40.size > 0
-    ? PLAYERS.filter(p => _roster40.has(Number(p.mlbamId)))
-    : [...PLAYERS];
-  const cards=[];
-  for(let i=0;i<4;i++){
-    if(Math.floor(rng()*RAINBOW_ODDS)===0){
-      const t25=pool.filter(p=>TOP_25_IDS.has(Number(p.mlbamId)));
-      const rc=t25[Math.floor(rng()*t25.length)];
-      if(rc){cards.push({...rc,isRainbow:true});continue;}
+
+  // ── Full pool = entire PLAYERS database (all MLB players we have)
+  // Fall back to _allMLBPlayers if PLAYERS is somehow empty
+  const fullPool = PLAYERS.length > 0 ? PLAYERS : _allMLBPlayers;
+
+  // ── Rarity buckets from the full pool
+  // Assign rarity by position tier: elite (TOP_25) = LEGENDARY/EPIC, rest by random weight
+  function assignRarity(p){
+    if(TOP_25_IDS.has(Number(p.mlbamId))) return rng()<0.4 ? 'LEGENDARY' : 'EPIC';
+    const r = rng()*100;
+    if(r < 1)  return 'MYTHIC';
+    if(r < 5)  return 'LEGENDARY';
+    if(r < 17) return 'EPIC';
+    if(r < 45) return 'RARE';
+    return 'COMMON';
+  }
+
+  const buckets = {MYTHIC:[], LEGENDARY:[], EPIC:[], RARE:[], COMMON:[]};
+  fullPool.forEach(p=>{
+    const rar = p.rarity || assignRarity(p);
+    (buckets[rar]||buckets.COMMON).push(p);
+  });
+
+  // ── Pick 4 cards with rarity weights, no duplicates within this pack
+  // Slot 0: guaranteed RARE or better
+  // Slots 1-3: weighted random
+  const SLOT_WEIGHTS = [
+    // slot 0: guaranteed RARE+
+    [{rarity:'MYTHIC',w:1},{rarity:'LEGENDARY',w:4},{rarity:'EPIC',w:15},{rarity:'RARE',w:80}],
+    // slots 1-3: standard weights
+    [{rarity:'MYTHIC',w:1},{rarity:'LEGENDARY',w:4},{rarity:'EPIC',w:12},{rarity:'RARE',w:28},{rarity:'COMMON',w:55}],
+    [{rarity:'MYTHIC',w:1},{rarity:'LEGENDARY',w:4},{rarity:'EPIC',w:12},{rarity:'RARE',w:28},{rarity:'COMMON',w:55}],
+    [{rarity:'MYTHIC',w:1},{rarity:'LEGENDARY',w:4},{rarity:'EPIC',w:12},{rarity:'RARE',w:28},{rarity:'COMMON',w:55}],
+  ];
+
+  function pickFromBucket(weights){
+    const total = weights.reduce((s,w)=>s+w.w,0);
+    let r = rng()*total;
+    for(const w of weights){
+      r -= w.w;
+      if(r<=0){
+        const bucket = buckets[w.rarity];
+        if(bucket && bucket.length) return {rarity:w.rarity, bucket};
+      }
     }
-    const pick=pool[Math.floor(rng()*pool.length)];
-    cards.push({...pick,isRainbow:false});
+    // fallback to COMMON
+    return {rarity:'COMMON', bucket:buckets.COMMON};
+  }
+
+  const usedIds = new Set();
+  const cards = [];
+
+  for(let i=0;i<4;i++){
+    // Rainbow check
+    if(Math.floor(rng()*RAINBOW_ODDS)===0){
+      const t25 = fullPool.filter(p=>TOP_25_IDS.has(Number(p.mlbamId))&&!usedIds.has(p.mlbamId||p.id));
+      if(t25.length){
+        const rc = t25[Math.floor(rng()*t25.length)];
+        usedIds.add(rc.mlbamId||rc.id);
+        cards.push({...rc, rarity:'LEGENDARY', isRainbow:true});
+        continue;
+      }
+    }
+
+    // Pick rarity then random player from that bucket, avoiding duplicates
+    const {rarity, bucket} = pickFromBucket(SLOT_WEIGHTS[i]);
+    // Shuffle-pick: try up to 8 times to avoid a duplicate
+    let pick = null;
+    for(let attempt=0;attempt<8;attempt++){
+      const candidate = bucket[Math.floor(rng()*bucket.length)];
+      if(candidate && !usedIds.has(candidate.mlbamId||candidate.id)){
+        pick = candidate; break;
+      }
+    }
+    if(!pick) pick = bucket[Math.floor(rng()*bucket.length)] || fullPool[Math.floor(rng()*fullPool.length)];
+    if(pick){
+      usedIds.add(pick.mlbamId||pick.id);
+      cards.push({...pick, rarity: pick.rarity||rarity, isRainbow:false});
+    }
   }
   return cards;
 }
