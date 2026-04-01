@@ -706,15 +706,15 @@ const _origGoTab = window.goTab;
 <!-- SCORING SYSTEM TAB -->
 <div class="tab-page" id="tab-scoring">
   <div class="pg-head"><h2>📊 Scoring System</h2><p>How fantasy points are calculated</p></div>
-  <div style="padding:18px 26px 26px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px;">
+  <div style="padding:18px 26px 80px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px;">
 
     <!-- Hitters -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;">
       <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
         <span style="font-size:1.2rem;">🏏</span>
         <span style="font-size:14px;font-weight:800;">Hitting</span>
       </div>
-      <div style="padding:10px 18px 20px;display:flex;flex-direction:column;">
+      <div style="padding:10px 18px 28px;display:flex;flex-direction:column;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
           <span style="font-size:13px;color:var(--muted);">Single</span>
           <span style="font-size:14px;font-weight:800;color:var(--success);">+1</span>
@@ -747,12 +747,12 @@ const _origGoTab = window.goTab;
     </div>
 
     <!-- Pitchers -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;">
       <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
         <span style="font-size:1.2rem;">⚾</span>
         <span style="font-size:14px;font-weight:800;">Pitching</span>
       </div>
-      <div style="padding:10px 18px 20px;display:flex;flex-direction:column;">
+      <div style="padding:10px 18px 28px;display:flex;flex-direction:column;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
           <span style="font-size:13px;color:var(--muted);">Inning Pitched</span>
           <span style="font-size:14px;font-weight:800;color:var(--success);">+3</span>
@@ -2484,9 +2484,25 @@ function renderHistoryExpand(wrapId, battle){
         </div>`).join('')}
       </div>
     </div>
-    <button class="btn-p" style="padding:8px;font-size:12px;" onclick="openBattleDetail(${JSON.stringify(battle)})">📊 Full View</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div style="font-size:11px;color:var(--muted);">Final score: <span style="color:${battle.won?'var(--success)':battle.tied?'var(--text)':'var(--danger)'};font-weight:800;">${Number(battle.myScore||0).toFixed(1)}–${Number(battle.theirScore||0).toFixed(1)}</span></div>
+      <button class="btn-p" style="padding:8px 14px;font-size:12px;flex:1;" onclick="openHistBattle('${wrapId}')">📊 Full View</button>
+    </div>
   `;
 }
+function openHistBattle(wrapId){
+  const battle = window._histBattles&&window._histBattles[wrapId];
+  if(!battle) return;
+  openBattleDetail({
+    id: battle.id,
+    rivalName: battle.rivalName,
+    youLineup: battle.youLineup||[],
+    rivalLineup: battle.rivalLineup||[],
+    status: 'completed',
+    sentAt: battle.sentAt
+  });
+}
+
 function toggleBattleExpand(id){
   const el=document.getElementById(id);
   if(!el)return;
@@ -3700,6 +3716,18 @@ async function fetchBattleHistory(){
   if(data){
     _battleHistory=data.filter(b=>b.status==='completed');
     window._activeBattles=data.filter(b=>(b.status==='accepted'||b.status==='active')&&!isBattleExpired(b));
+    // Recalculate W/L from Supabase truth
+    let wins=0,losses=0;
+    _battleHistory.forEach(b=>{
+      const iFrom=b.from_id===currentUser.id;
+      const result=b.result||{};
+      const won=(iFrom&&result.winner==='from')||(!iFrom&&result.winner==='to');
+      const tied=result.winner==='tie';
+      if(won) wins++;
+      else if(!tied && result.winner) losses++;
+    });
+    battleRecord={wins,losses};
+    saveData();
     // Expired active battles get folded into history as completed
     const expired = data.filter(b=>(b.status==='accepted'||b.status==='active')&&isBattleExpired(b));
     expired.forEach(b=>{ if(!_battleHistory.find(h=>h.id===b.id)) _battleHistory.unshift(b); });
@@ -4041,7 +4069,7 @@ function renderMatchups(){
       const myLineup=(iFrom?b.from_lineup:b.to_lineup)||[];
       const theirLineup=(iFrom?b.to_lineup:b.from_lineup)||[];
       window._histBattles=window._histBattles||{};
-      window._histBattles['hist-'+b.id]={id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at};
+      window._histBattles['hist-'+b.id]={id:b.id,rivalName,youLineup:myLineup,rivalLineup:theirLineup,status:'completed',sentAt:b.created_at,myScore,theirScore,won,tied};
       const div = document.createElement('div');
       div.className='mbig-expandable';
       div.id='hist-'+b.id;
