@@ -1170,6 +1170,17 @@ function savePackSession(){
   saveData();
 }
 function todayStr(){return new Date().toISOString().split('T')[0];}
+function isBattleExpired(battle){
+  // A battle is expired if it was created before today (CT midnight)
+  const created = new Date(battle.created_at||battle.sentAt||Date.now());
+  const todayCT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  todayCT.setHours(0,0,0,0);
+  // Use the local CT midnight as the cutoff
+  const createdCT = new Date(created.toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  const createdDate = createdCT.toISOString().split('T')[0];
+  const todayDate = todayCT.toISOString().split('T')[0];
+  return createdDate < todayDate;
+}
 function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
 function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection'){getInBattleIds().then(()=>renderCollection());}if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();if(id==='allcards')loadAllCards();}
 function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';document.getElementById('mob-u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened[0]?0:1;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1,2].forEach(i=>{
@@ -3539,7 +3550,10 @@ async function fetchBattleHistory(){
     .limit(30);
   if(data){
     _battleHistory=data.filter(b=>b.status==='completed');
-    window._activeBattles=data.filter(b=>b.status==='accepted'||b.status==='active');
+    window._activeBattles=data.filter(b=>(b.status==='accepted'||b.status==='active')&&!isBattleExpired(b));
+    // Expired active battles get folded into history as completed
+    const expired = data.filter(b=>(b.status==='accepted'||b.status==='active')&&isBattleExpired(b));
+    expired.forEach(b=>{ if(!_battleHistory.find(h=>h.id===b.id)) _battleHistory.unshift(b); });
     if(document.getElementById('tab-matchups')?.classList.contains('active')){
       renderMatchups();
     }
@@ -3651,7 +3665,7 @@ function renderMatchups(){
   const allItems = [];
 
   // Active battles from Supabase
-  const activeBattles = window._activeBattles||[];
+  const activeBattles = (window._activeBattles||[]).filter(b=>!isBattleExpired(b));
   activeBattles.forEach(b=>{
     const isFrom = b.from_id===currentUser.id;
     const rivalName = isFrom ? b.to_name : b.from_name;
