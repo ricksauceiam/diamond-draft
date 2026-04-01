@@ -1885,85 +1885,7 @@ renderCollection();
 }
 dragCardId=null;
 }
-const ELITE_BLURBS = {
-  660271: { // Juan Soto
-    text: "Juan Soto has a strike zone eye so precise that umpires double-check their own calls when he doesn't swing. He's walked more times than most players get hits, because pitchers would genuinely rather face someone else. Superhero power: the ability to stare down any pitch and make the pitcher feel like they threw it wrong.",
-  },
-  592450: { // Gerrit Cole
-    text: "Gerrit Cole throws a fastball that hitters describe as 'arriving early' — like it cheated through time. He's the kind of pitcher who makes a 98-mph sinker feel like an insult to your reflexes. Superhero power: controlling the spin rate of anything he touches, including conversations he wants to end.",
-  },
-  665742: { // Ronald Acuña Jr.
-    text: "Ronald Acuña Jr. plays baseball like someone gave him cheat codes and he still chose to work hard anyway. His combination of speed, power, and defense makes him the rare player who can hurt you five different ways in a single at-bat. Superhero power: super-speed that somehow doesn't sacrifice any of the power.",
-  },
-  605141: { // Mookie Betts
-    text: "Mookie Betts is the only player in baseball who makes Gold Glove defense look like a hobby he picked up last weekend. He bowls a perfect game recreationally, which honestly tracks. Superhero power: perfect spatial awareness — he always knows exactly where the ball is going before anyone else does.",
-  },
-  518692: { // Mike Trout
-    text: "Mike Trout has been the best player in baseball for over a decade, which is unfair to basically everyone else. If he played in New York or LA he'd be on a cereal box and a national holiday. Superhero power: weather manipulation — there's a reason it always seems to rain when he needs to stay healthy.",
-  },
-  596019: { // Nolan Arenado
-    text: "Nolan Arenado at third base is like having a gravitational field that pulls every ground ball directly into his glove. He's won so many Gold Gloves that the award committee just mails it to him automatically in August. Superhero power: magnetic control over anything hit in his direction — nothing gets through.",
-  },
-  669373: { // Vladimir Guerrero Jr.
-    text: "Vlad Jr. can hit a pitch that bounces in front of the plate and still make it look like a mistake by the pitcher. His raw power is the kind that makes opposing managers quietly recalculate the rest of the inning. Superhero power: the ability to make contact with literally anything — bat, ball, or bad idea.",
-  },
-  663728: { // Fernando Tatis Jr.
-    text: "Fernando Tatis Jr. plays with the energy of someone who just found out baseball is the most fun sport and nobody told him to dial it back. When he's healthy and locked in, every at-bat feels like appointment television. Superhero power: infectious momentum — his energy physically raises the performance of everyone around him.",
-  },
-  677951: { // Julio Rodriguez
-    text: "Julio Rodriguez arrived in Seattle and immediately made the city believe baseball was actually exciting again. He's got the kind of arm, speed, and bat that show up separately on most players' Hall of Fame resumes. Superhero power: acceleration — he goes from zero to 'already at second base' faster than you can process it.",
-  },
-  683002: { // Gunnar Henderson
-    text: "Gunnar Henderson is what happens when you build a shortstop in a lab and then give him a chip on his shoulder too. He hits for power at a position where power used to be a bonus and is now just his baseline expectation. Superhero power: structural integrity — the man is built to absorb punishment and hit harder because of it.",
-  },
-  670541: { // Kyle Tucker
-    text: "Kyle Tucker quietly puts up numbers that would make him the face of any other franchise, which is what happens when you play next to Yordan Alvarez. He's the definition of a player other teams' fans are secretly jealous of. Superhero power: invisibility — somehow flies completely under the radar while being elite.",
-  },
-  663538: { // Adley Rutschman
-    text: "Adley Rutschman calls a game so well that pitchers throw better just because he's back there. He hits from both sides, blocks everything, and reads the field like he has a copy of the scouting report in his helmet. Superhero power: tactical foresight — he always knows what the opposing manager is about to do before they do.",
-  },
-  682998: { // Jackson Holliday
-    text: "Jackson Holliday is the son of a legend who is somehow on pace to eclipse his father's career, which is a genuinely uncomfortable thing to say out loud. The plate discipline at his age is the kind that scouts write 'generational' next to in their notes. Superhero power: time dilation — he processes pitches so slowly they might as well be coming in slow motion.",
-  },
-  682079: { // Jordan Walker
-    text: "Jordan Walker has the frame of someone who plays a different, larger sport and the hands of a guy who's been doing this his whole life. He's the kind of prospect who makes evaluators nervous because the ceiling hasn't shown up yet and it's already very high. Superhero power: growth — his best attributes are still developing and nobody knows where it stops.",
-  },
-  675911: { // Corbin Carroll
-    text: "Corbin Carroll turned himself into an MVP candidate through sheer controlled aggression, which is a rare personality type for a leadoff hitter. He takes extra bases like he calculated the risk in real time and decided it was fine every single time. Superhero power: calculated risk assessment — he's never wrong about when to run.",
-  },
-  554430: { // Freddie Freeman
-    text: "Freddie Freeman has the most reliable left-handed swing in baseball and the demeanor of someone who's never once panicked at the plate. He wins batting titles, drives in runs, and plays October baseball like it's just another Tuesday. Superhero power: ice-cold nerves — the moment gets big and Freeman just gets more comfortable.",
-  },
-  543037: { // Bryce Harper
-    text: "Bryce Harper plays baseball with a flair that suggests he thinks it should be a more dramatic sport, and honestly he might be right. He's one of the few players who can carry a franchise's identity on his back and make it look like a fashion choice. Superhero power: force of will — he performs best when the situation demands something it shouldn't be possible to deliver.",
-  },
-  646240: { // Rafael Devers
-    text: "Rafael Devers hits the ball so hard that fielders have started positioning themselves using fear rather than analytics. His third base defense has come a long way, which is notable because it started as a topic people whispered about. Superhero power: raw force — the ability to turn any pitch in the zone into a structural engineering problem for the outfield wall.",
-  },
-  624413: { // Pete Alonso
-    text: "Pete Alonso hits home runs with the urgency of someone who has a personal grievance against outfield walls. He set the all-time single-season home run record for rookies and then just kept going, which is either inspiring or alarming depending on which team you root for. Superhero power: gravitational pull — baseballs simply cannot escape his bat once they enter the strike zone.",
-  },
-  660670: { // Jeremy Peña
-    text: "Jeremy Peña won a World Series MVP as a rookie, replacing one of the best shortstops ever, and somehow made it look like a smooth transition. He plays defense with the confidence of someone who has never considered the possibility of an error. Superhero power: clutch immunity — pressure doesn't exist in his body the way it does in other humans.",
-  },
-  673237: { // Yordan Alvarez
-    text: "Yordan Alvarez has a swing that looks like it was designed by someone who wanted to make opposing pitchers' careers feel shorter. He's one of the most feared left-handed hitters in the game and he knows it, which somehow makes him better. Superhero power: pure destructive output — his bat-to-ball connection generates more damage per swing than any physics model predicts.",
-  },
-  668939: { // Bobby Witt Jr.
-    text: "Bobby Witt Jr. does everything — hits, runs, throws, fields — at a level that makes scouts use phrases like 'once in a generation' while trying to stay professional. He's the kind of player who makes Kansas City relevant on the national baseball radar, which is not a small feat. Superhero power: complete athleticism — there is genuinely no baseball skill that represents a weakness.",
-  },
-  682928: { // Druw Jones
-    text: "Druw Jones carries the weight of being Andruw Jones' son and somehow makes it look like extra motivation rather than pressure. The defensive instincts are genetic — he tracks fly balls like he's got GPS — and the bat is coming along faster than expected. Superhero power: inherited instinct — reads the ball off the bat before most hitters have finished their swing.",
-  },
-  608070: { // Shane Bieber
-    text: "Shane Bieber won a Cy Young in a shortened season and made it look so comfortable that it almost seemed unfair to the other pitchers. His command is so precise that his catcher barely has to move the glove, which is either relaxing or deeply unsettling depending on which team you're on. Superhero power: surgical precision — his pitches go exactly where he decides, every time, without exception.",
-  },
-  665487: { // Julio Urías
-    text: "Julio Urías throws with a smooth, effortless delivery that disguises just how much the ball moves once it gets to the plate. He's a left-hander who makes right-handed hitters feel like they've never actually seen a baseball before. Superhero power: deception — every pitch looks identical leaving his hand, and none of them arrive the way you expected.",
-  },
-};
-// Also index by string so both "660271" and 660271 work
-Object.keys(ELITE_BLURBS).forEach(k=>{ ELITE_BLURBS[String(k)] = ELITE_BLURBS[k]; });
+
 
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${playerPhoto(p)}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;const modalName = p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
   const ep = getPlayerEnriched(p.mlbamId||p.id);
@@ -1991,19 +1913,7 @@ function openCardModal(cardId){const col=userData.collection.find(c=>c.id===card
     tag.textContent = line;
     document.getElementById('m-power').after(tag);
   }
-  // Elite blurb
-  const existingBlurb = document.getElementById('m-elite-blurb');
-  if(existingBlurb) existingBlurb.remove();
-  // Look up blurb — try string and number forms of every possible ID
-  const _bid = ep?.mlbamId||p.mlbamId||p.id||cardId;
-  const blurbData = ELITE_BLURBS[_bid] || ELITE_BLURBS[String(_bid)] || ELITE_BLURBS[Number(_bid)] || null;
-  if(blurbData){
-    const blurb = document.createElement('div');
-    blurb.id = 'm-elite-blurb';
-    blurb.style.cssText = 'margin:0 18px 13px;background:linear-gradient(135deg,rgba(108,99,255,.12),rgba(255,107,157,.08));border:1px solid rgba(108,99,255,.25);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--text);line-height:1.6;';
-    blurb.innerHTML = '<div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">👑 Elite Profile</div>' + blurbData.text;
-    document.getElementById('fuse-btn').after(blurb);
-  }
+
   document.getElementById('m-cv').textContent=`${col.copies} / ${need}`;document.getElementById('m-dots').innerHTML=Array.from({length:need},(_,i)=>`<div class="cdot${i<col.copies?' filled':''}"></div>`).join('');const fb=document.getElementById('fuse-btn');fb.style.display='none';document.getElementById('mstats').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:11px;padding:8px;">Loading stats…</div>';
   document.getElementById('card-modal').classList.add('open');
   // Load season stats async
@@ -3669,23 +3579,8 @@ function showAcCardDetail(p){
   document.getElementById('m-dots').innerHTML='';
 
   // Remove stale tags/blurbs
-  document.getElementById('m-battle-tag')?.remove();
-  document.getElementById('m-elite-blurb')?.remove();
-
-  // Elite blurb
   const fb=document.getElementById('fuse-btn');
   if(fb) fb.style.display='none';
-  if(elite){
-    const bid = Number(p.mlbamId);
-    const blurbData = ELITE_BLURBS[bid]||ELITE_BLURBS[String(bid)];
-    if(blurbData){
-      const blurb=document.createElement('div');
-      blurb.id='m-elite-blurb';
-      blurb.style.cssText='margin:0 18px 13px;background:linear-gradient(135deg,rgba(108,99,255,.12),rgba(255,107,157,.08));border:1px solid rgba(108,99,255,.25);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--text);line-height:1.6;';
-      blurb.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">👑 Elite Profile</div>'+blurbData.text;
-      fb.after(blurb);
-    }
-  }
 
   // Stats
   document.getElementById('mstats').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:11px;padding:8px;">Loading stats…</div>';
