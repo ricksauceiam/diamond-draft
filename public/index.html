@@ -1394,6 +1394,17 @@ function getPlayerGameInfo(player){
   return {text: prefix+' '+oppAbbr+(timeStr?' · '+timeStr:''), live:false};
 }
 
+function positionLabel(pos){
+  const map = {
+    'C':'Catcher','1B':'First Base','2B':'Second Base','3B':'Third Base',
+    'SS':'Shortstop','LF':'Left Field','CF':'Center Field','RF':'Right Field',
+    'OF':'Outfield','DH':'Designated Hitter',
+    'SP':'Starting Pitcher','RP':'Relief Pitcher','CL':'Closer','CP':'Closer',
+    'P':'Pitcher','IF':'Infielder'
+  };
+  return map[(pos||'').toUpperCase()] || pos || '—';
+}
+
 function getPitcherRole(player){
   const pos = (player.position||player.pos||'').toUpperCase();
   if(pos==='SP') return 'SP';
@@ -1406,12 +1417,7 @@ function getPitcherRole(player){
 }
 
 function getPitcherLabel(player){
-  const pos = (player.position||player.pos||'').toUpperCase();
-  if(pos==='SP') return 'Starting Pitcher';
-  if(pos==='RP') return 'Relief Pitcher';
-  if(pos==='CP'||pos==='CL') return 'Closer';
-  if(pos==='P') return 'Pitcher';
-  return pos;
+  return positionLabel(player.position||player.pos||'');
 }
 
 function chromeCard({player:p,rarity,level,copies,pct,isNew,isCopy,fuseReady,onclick,extraStyle='',extraClass=''}){const r=rarity||p?.rarity||'COMMON';const bar=CHROME_BARS[r]||CHROME_BARS.COMMON;const glow=CHROME_GLOW[r]||CHROME_GLOW.COMMON;const color=RARITY_COLORS[r]||'#8899AA';const rl=level?rarityLabel(level):r;const prog=pct!==undefined?`<div class="copy-prog"><div class="copy-bar" style="width:${pct}%;background:${color}"></div></div>`:'';const fb=fuseReady?`<div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:7px;font-weight:900;color:var(--legendary);letter-spacing:1px;text-shadow:0 0 8px #FFD700">⚗ FUSE</div>`:'';const nb=isNew?'<div class="new-badge">NEW!</div>':'';const cb=isCopy?`<div class="copy-badge" style="background:${color}cc">+COPY</div>`:'';const cpb=(copies&&copies>1)?`<div class="copy-badge" style="background:${color}cc">×${copies}</div>`:'';const cl=onclick?`onclick="${onclick}"`:'';const elite=isElite(p);
@@ -1427,7 +1433,7 @@ return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD70
   }
   return full;
 })()}</div>
-    <div class="cbm" style="color:${color}">${(()=>{const pos=(p?.position||p?.pos||'').toUpperCase();const isPit=PITCHER_POS.has(pos);if(isPit){if(pos==='SP')return'Starting Pitcher';if(pos==='RP')return'Relief Pitcher';if(pos==='CP'||pos==='CL')return'Closer';return'Pitcher';}return pos||'—';})()}  ·  ${(()=>{
+    <div class="cbm" style="color:${color}">${(()=>{const pos=(p?.position||p?.pos||'').toUpperCase();const isPit=PITCHER_POS.has(pos);return positionLabel(pos);})()}  ·  ${(()=>{
   const mid=String(p?.mlbamId||p?.id||'');
   const live=_allMLBPlayers.find(x=>String(x.mlbamId||x.id)===mid)||PLAYERS.find(x=>String(x.mlbamId||x.id)===mid);
   return live?.team||p?.team||p?.teamAbbr||'';
@@ -1920,7 +1926,7 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:15px;font-weight:800;color:#e8e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite?'👑 ':''}${nm}</div>
-        <div style="font-size:12px;color:#6a6a8a;margin-top:2px;">${pos}${team?' · '+team:''}</div>
+        <div style="font-size:12px;color:#6a6a8a;margin-top:2px;">${positionLabel(pos)}${team?' · '+team:''}</div>
         <div style="font-size:12px;color:${pts>0?'rgba(0,212,138,.85)':pts<0?'rgba(255,71,87,.85)':'#555'};margin-top:4px;font-weight:600;">${statText}</div>
       </div>
       <div style="font-size:18px;font-weight:900;flex-shrink:0;color:${ptsColor};min-width:44px;text-align:right;">${ptsDisplay}</div>
@@ -2345,7 +2351,7 @@ function renderBdCard(player, sideTotal){
   nameEl.textContent = (elite?'👑 ':'')+nm;
   const subEl = document.createElement('div');
   subEl.style.cssText = 'font-size:12px;color:#6a6a8a;margin-top:2px;';
-  subEl.textContent = pos + (team?' · '+team:'');
+  subEl.textContent = positionLabel(pos) + (team?' · '+team:'');
 
   const statLine = getStatLine(player.mlbamId);
   const statEl = document.createElement('div');
