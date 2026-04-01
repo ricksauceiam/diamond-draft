@@ -1187,8 +1187,9 @@ function savePackSession(){
   saveData();
 }
 function todayStr(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  // Use Eastern Time to match MLB API date boundaries
+  const et = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  return et.getFullYear()+'-'+String(et.getMonth()+1).padStart(2,'0')+'-'+String(et.getDate()).padStart(2,'0');
 }
 function isBattleExpired(battle){
   // A battle is expired if it was created before today (CT midnight)
@@ -3024,10 +3025,11 @@ function scoresDateStr(d){
 return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
 function scoresApiDate(d){
-  // Use local date (not UTC) so Chicago evening doesn't roll to next day
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
+  // MLB API uses Eastern Time for date boundaries
+  const et = new Date(d.toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const y = et.getFullYear();
+  const m = String(et.getMonth()+1).padStart(2,'0');
+  const day = String(et.getDate()).padStart(2,'0');
   return y+'-'+m+'-'+day;
 }
 function scoresChangeDate(delta){
