@@ -766,12 +766,12 @@ const _origGoTab = window.goTab;
 <div class="overlay" id="pack-ov" style="z-index:400;background:rgba(0,0,0,.97);flex-direction:column;align-items:center;justify-content:center;padding:24px;">
   <div style="text-align:center;margin-bottom:20px;width:100%;max-width:420px;">
     <div style="font-size:1.1rem;font-weight:900;" id="pov-title">📦 Daily Pack</div>
-    <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="pov-sub">Tap each card to reveal</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="pov-sub">Get ready…</div>
   </div>
 
   <!-- Single card spotlight (reveal one at a time) -->
   <div id="pack-spotlight" style="display:none;flex-direction:column;align-items:center;width:100%;max-width:260px;">
-    <div id="pack-card-stage" style="width:200px;height:280px;perspective:1000px;cursor:pointer;" onclick="revealSpotlightCard()">
+    <div id="pack-card-stage" style="width:200px;height:280px;perspective:1000px;">
       <div id="pack-card-inner" style="width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,0,.2,1);">
         <div id="pack-card-back" style="position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;background:repeating-linear-gradient(45deg,#0d0d1a,#0d0d1a 10px,#111124 10px,#111124 20px);border:2px solid rgba(108,99,255,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
           <div style="font-size:3rem;">⚾</div>
@@ -785,7 +785,7 @@ const _origGoTab = window.goTab;
     <div id="pack-card-name" style="margin-top:14px;font-size:1.1rem;font-weight:900;text-align:center;opacity:0;transition:opacity .4s;"></div>
     <div id="pack-card-meta" style="font-size:12px;color:var(--muted);margin-top:4px;opacity:0;transition:opacity .4s;"></div>
     <div id="pack-card-status" style="font-size:10px;font-weight:900;margin-top:6px;opacity:0;transition:opacity .4s;"></div>
-    <button id="pack-next-btn" onclick="packNextCard()" style="display:none;margin-top:16px;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;"></button>
+    <!-- pack-next-btn removed -->
   </div>
 
   <!-- Collected cards strip at bottom -->
@@ -798,7 +798,7 @@ const _origGoTab = window.goTab;
   </div>
 
   <div style="margin-top:20px;display:flex;gap:10px;width:100%;max-width:420px;">
-    <button class="btn-p" id="ov-collect-btn" style="display:none;flex:1;padding:12px;font-size:14px;" onclick="claimPack()">✅ Add to Collection</button>
+    <!-- ov-collect-btn removed -->
     <button style="flex:1;padding:12px;font-size:14px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;color:var(--text);cursor:pointer;" onclick="closePackOv()">Close</button>
   </div>
   <!-- Legacy stage (hidden, keep for already-opened packs) -->
@@ -1461,7 +1461,10 @@ function openPackOv(idx){
   document.getElementById('pack-ov').classList.add('open');
   renderPackReveal(userData.packsOpened[idx]);
 }
-function closePackOv(){document.getElementById('pack-ov').classList.remove('open');}
+function closePackOv(){
+  document.getElementById('pack-ov').classList.remove('open');
+  if(window._packRevealTimer){ clearTimeout(window._packRevealTimer); window._packRevealTimer=null; }
+}
 function generatePack(idx){
   const RAINBOW_ODDS = 800; // ~0.125% per card — rare but real
 
@@ -1558,22 +1561,18 @@ function generatePack(idx){
 function pickRarity(rand){let c=0,r=rand()*100;for(const w of PACK_WEIGHTS){c+=w.weight;if(r<c)return w.rarity;}return'COMMON';}
 function renderPackReveal(alreadyOpened){
   const cards = packResults[curPackIdx];
-  window._packSpotlightIdx = 0;
   window._packCards = cards;
-  window._packRevealed = false;
+  if(window._packRevealTimer) clearTimeout(window._packRevealTimer);
 
   // Reset UI
   document.getElementById('pack-collected-strip').innerHTML = '';
   document.getElementById('rainbow-alert').style.display = 'none';
-  document.getElementById('ov-collect-btn').style.display = 'none';
   document.getElementById('pack-card-name').style.opacity = '0';
   document.getElementById('pack-card-meta').style.opacity = '0';
   document.getElementById('pack-card-status').style.opacity = '0';
-  document.getElementById('pack-next-btn').style.display = 'none';
   document.getElementById('pack-card-inner').style.transform = 'rotateY(0deg)';
 
   if(alreadyOpened){
-    // Show all cards in strip without animation
     document.getElementById('pack-spotlight').style.display = 'none';
     const strip = document.getElementById('pack-collected-strip');
     cards.forEach(card=>{
@@ -1584,115 +1583,99 @@ function renderPackReveal(alreadyOpened){
       strip.appendChild(d);
     });
     if(cards.some(c=>c.isRainbow)) document.getElementById('rainbow-alert').style.display='block';
-    document.getElementById('ov-collect-btn').style.display = 'none';
     document.getElementById('pov-sub').textContent = 'Already opened today';
   } else {
-    // Start spotlight reveal
     document.getElementById('pack-spotlight').style.display = 'flex';
-    document.getElementById('pack-card-stage').style.animation = 'spotlightPop .5s ease both';
-    showPackSpotlight(0);
+    document.getElementById('pov-sub').textContent = 'Opening pack…';
+    // Kick off auto-reveal after brief pause
+    window._packRevealTimer = setTimeout(()=>autoRevealCard(0), 600);
   }
 }
 
-function showPackSpotlight(idx){
+function autoRevealCard(idx){
   const cards = window._packCards || [];
   if(idx >= cards.length) return;
-  window._packSpotlightIdx = idx;
-  window._packRevealed = false;
 
-  // Reset flip
+  const card = cards[idx];
+  const owned = userData.collection.find(c=>c.id===card.id);
+  const fullName = card.fullName||card.displayName||((card.firstName||'')+' '+(card.lastName||card.name||'')).trim();
+  const isRare = card.isRainbow||isElite(card)||(card.rarity==='LEGENDARY'||card.rarity==='MYTHIC'||card.rarity==='EPIC');
+
+  // Reset card to face-down
   const inner = document.getElementById('pack-card-inner');
   inner.style.transition = 'none';
   inner.style.transform = 'rotateY(0deg)';
-  setTimeout(()=>{ inner.style.transition = 'transform .7s cubic-bezier(.4,0,.2,1)'; }, 50);
 
-  // Reset name/meta
-  document.getElementById('pack-card-name').style.opacity = '0';
-  document.getElementById('pack-card-meta').style.opacity = '0';
-  document.getElementById('pack-card-status').style.opacity = '0';
-  document.getElementById('pack-next-btn').style.display = 'none';
-
-  // Animate card in
+  // Animate card entrance
   const stage = document.getElementById('pack-card-stage');
   stage.style.animation = 'none';
   void stage.offsetWidth;
-  stage.style.animation = 'spotlightPop .45s ease both';
+  stage.style.animation = 'spotlightPop .4s ease both';
 
-  document.getElementById('pov-sub').textContent = 'Card ' + (idx+1) + ' of ' + cards.length + ' — tap to reveal';
+  document.getElementById('pack-card-name').style.opacity = '0';
+  document.getElementById('pack-card-meta').style.opacity = '0';
+  document.getElementById('pack-card-status').style.opacity = '0';
+  document.getElementById('pov-sub').textContent = 'Card ' + (idx+1) + ' of ' + cards.length;
+
+  // For rare cards, build suspense with longer pause before flip
+  const flipDelay = isRare ? 900 : 500;
+  const holdDelay = isRare ? 2200 : 1500; // how long to show before moving on
+
+  window._packRevealTimer = setTimeout(()=>{
+    // Fill front face
+    const front = document.getElementById('pack-card-front');
+    front.innerHTML = buildPackCardFront(card, owned) + (card.isRainbow ? '<div class="rainbow-shine"></div>' : '');
+
+    // Flip!
+    inner.style.transition = 'transform .75s cubic-bezier(.4,0,.2,1)';
+    inner.style.transform = 'rotateY(180deg)';
+
+    // After flip completes — show info + add to strip
+    setTimeout(()=>{
+      const nameEl = document.getElementById('pack-card-name');
+      const metaEl = document.getElementById('pack-card-meta');
+      const statusEl = document.getElementById('pack-card-status');
+
+      nameEl.textContent = fullName;
+      nameEl.style.color = card.isRainbow ? '#FFD700' : isElite(card) ? '#FFD700' : 'var(--text)';
+      nameEl.style.animation = 'nameSlide .35s ease both';
+      nameEl.style.opacity = '1';
+
+      metaEl.textContent = positionLabel(card.position||card.pos||'') + ' · ' + (card.team||'');
+      metaEl.style.opacity = '1';
+
+      if(owned){ statusEl.textContent = '+COPY'; statusEl.style.color = 'var(--muted)'; }
+      else { statusEl.textContent = '✨ NEW!'; statusEl.style.color = 'var(--success)'; }
+      statusEl.style.opacity = '1';
+
+      if(card.isRainbow){
+        document.getElementById('rainbow-alert').style.display = 'block';
+        document.getElementById('rainbow-name').textContent = fullName;
+        showToast('🌈 RAINBOW PULL! Incredible!');
+      } else if(isRare && !owned){
+        showToast((card.rarity==='MYTHIC'?'🔥 MYTHIC':card.rarity==='LEGENDARY'?'⭐ LEGENDARY':'💜 EPIC')+' — '+fullName+'!');
+      }
+
+      // Add to strip
+      const strip = document.getElementById('pack-collected-strip');
+      const d = document.createElement('div');
+      d.style.cssText = 'width:54px;height:76px;border-radius:9px;overflow:hidden;border:'+(card.isRainbow||isElite(card)?'2px solid #FFD700':'1px solid rgba(255,255,255,.15)')+';flex-shrink:0;animation:stripIn .4s ease both;';
+      d.innerHTML = buildPackCardFront(card, owned);
+      strip.appendChild(d);
+
+      // Auto-advance or finish
+      if(idx < cards.length - 1){
+        window._packRevealTimer = setTimeout(()=>autoRevealCard(idx+1), holdDelay);
+      } else {
+        // All done — award cards and close
+        window._packRevealTimer = setTimeout(()=>claimPack(), holdDelay);
+      }
+    }, 800);
+  }, flipDelay);
 }
 
-function revealSpotlightCard(){
-  if(window._packRevealed) return;
-  window._packRevealed = true;
-  const cards = window._packCards || [];
-  const idx = window._packSpotlightIdx;
-  const card = cards[idx];
-  if(!card) return;
-
-  // Fill front
-  const owned = userData.collection.find(c=>c.id===card.id);
-  const front = document.getElementById('pack-card-front');
-  front.innerHTML = buildPackCardFront(card, owned) + (card.isRainbow ? '<div class="rainbow-shine"></div>' : '');
-
-  // Flip!
-  const inner = document.getElementById('pack-card-inner');
-  inner.style.transform = 'rotateY(180deg)';
-
-  // After flip, show name + meta
-  setTimeout(()=>{
-    const fullName = card.fullName||card.displayName||((card.firstName||'')+' '+(card.lastName||card.name||'')).trim();
-    const nameEl = document.getElementById('pack-card-name');
-    const metaEl = document.getElementById('pack-card-meta');
-    const statusEl = document.getElementById('pack-card-status');
-
-    nameEl.textContent = fullName;
-    nameEl.style.opacity = '1';
-    nameEl.style.animation = 'nameSlide .4s ease both';
-    nameEl.style.color = card.isRainbow ? '#FFD700' : isElite(card) ? '#FFD700' : 'var(--text)';
-
-    metaEl.textContent = (card.position||card.pos||'') + ' · ' + (card.team||'');
-    metaEl.style.opacity = '1';
-
-    if(owned){
-      statusEl.textContent = '+COPY';
-      statusEl.style.color = 'var(--muted)';
-    } else {
-      statusEl.textContent = '✨ NEW CARD!';
-      statusEl.style.color = 'var(--success)';
-    }
-    statusEl.style.opacity = '1';
-
-    if(card.isRainbow){
-      document.getElementById('rainbow-alert').style.display = 'block';
-      document.getElementById('rainbow-name').textContent = fullName;
-      showToast('🌈 RAINBOW PULL! Incredible!');
-    }
-
-    // Add to strip
-    const strip = document.getElementById('pack-collected-strip');
-    const d = document.createElement('div');
-    d.style.cssText = 'width:54px;height:76px;border-radius:9px;overflow:hidden;border:'+(card.isRainbow||isElite(card)?'2px solid #FFD700':'1px solid rgba(255,255,255,.15)')+';flex-shrink:0;animation:stripIn .4s ease both;';
-    d.innerHTML = buildPackCardFront(card, owned);
-    strip.appendChild(d);
-
-    // Show next button
-    const nextBtn = document.getElementById('pack-next-btn');
-    if(idx < cards.length - 1){
-      nextBtn.textContent = 'Next Card →';
-      nextBtn.style.display = 'block';
-    } else {
-      // Last card
-      nextBtn.style.display = 'none';
-      document.getElementById('pack-spotlight').style.display = 'none';
-      document.getElementById('ov-collect-btn').style.display = 'block';
-      document.getElementById('pov-sub').textContent = 'All ' + cards.length + ' cards revealed!';
-    }
-  }, 750);
-}
-
-function packNextCard(){
-  showPackSpotlight(window._packSpotlightIdx + 1);
-}
+function revealSpotlightCard(){ /* no-op — auto reveal */ }
+function packNextCard(){ /* no-op — auto advance */ }
 
 function _legacyRenderGrid(){}
 
@@ -1725,7 +1708,6 @@ function claimPack(){
   cards.forEach(card=>awardCard(card));
   userData.packsOpened[curPackIdx]=true;
   const today=todayStr();
-  // Streak - just need pack 0 now (single pack)
   if(userData.lastStreakDate!==today){
     userData.streak=(userData.streak||0)+1;
     userData.lastStreakDate=today;
@@ -1733,11 +1715,11 @@ function claimPack(){
   saveData();
   savePackSession();
   const hasRainbow = cards.some(c=>c.isRainbow);
-  showToast(hasRainbow?'🌈 Rainbow card added to collection!':'✨ '+cards.length+' cards added to your collection!');
-  document.getElementById('ov-collect-btn').style.display='none';
-  closePackOv();
-  renderHome();
-  goTab('collection');
+  // Show a brief "added!" message then close
+  document.getElementById('pov-sub').textContent = '🎉 Added to your collection!';
+  document.getElementById('pack-spotlight').style.display = 'none';
+  showToast(hasRainbow?'🌈 Rainbow card added!':'✅ '+cards.length+' cards collected!');
+  setTimeout(()=>{ closePackOv(); renderHome(); }, 1400);
 }
 
 function resetCollection(){
