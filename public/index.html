@@ -3488,16 +3488,16 @@ function startLivePoll(){
 async function fixNullBattleResult(){
   // Find completed battles with null or missing scores between these two users
   const {data, error} = await sb.from('challenges')
-    .select('id,from_id,from_name,to_name,status,result,created_at')
-    .eq('status','completed')
-    .or('from_name.ilike.%michal%,to_name.ilike.%michal%')
+    .select('id,from_id,from_name,to_name,status,result,created_at,from_lineup,to_lineup')
+    .in('status',['completed','accepted','active'])
+    .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
     .order('created_at',{ascending:false})
     .limit(20);
 
   if(error){ console.error('Error:', error); return; }
   console.log('Found battles:', data.length);
 
-  const nullBattles = data.filter(b=>!b.result || (!b.result.winner && !b.result.from_score));
+  const nullBattles = data.filter(b=>isBattleExpired(b) && (!b.result || !b.result.winner));
   console.log('Battles with null result:', nullBattles.length);
   nullBattles.forEach(b=>console.log('  ID:', b.id, '|', b.from_name, 'vs', b.to_name, '|', b.created_at));
 
@@ -3514,6 +3514,7 @@ async function fixNullBattleResult(){
 
     console.log('Updating battle', b.id, '— setting from_score:', fromScore, 'to_score:', toScore, 'winner:', winner);
     const {error: updateErr} = await sb.from('challenges').update({
+      status: 'completed',
       result: { winner, from_score: fromScore, to_score: toScore }
     }).eq('id', b.id);
 
@@ -3783,8 +3784,35 @@ async function fetchBattleHistory(){
     .order('created_at',{ascending:false})
     .limit(30);
   if(data){
+    // Auto-complete any expired accepted/active battles in Supabase
+    const expired = data.filter(b=>(b.status==='accepted'||b.status==='active')&&isBattleExpired(b));
+    for(const b of expired){
+      // Calculate final scores from stored lineup + live scores (best effort)
+      const iFrom = b.from_id===currentUser.id;
+      const myLineup = (iFrom?b.from_lineup:b.to_lineup)||[];
+      const rivalLineup = (iFrom?b.to_lineup:b.from_lineup)||[];
+      const myTotal = myLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+      const rivalTotal = rivalLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+      const fromTotal = iFrom ? myTotal : rivalTotal;
+      const toTotal = iFrom ? rivalTotal : myTotal;
+      const winner = fromTotal > toTotal ? 'from' : toTotal > fromTotal ? 'to' : 'tie';
+      // Only update if we have meaningful scores, otherwise just mark completed
+      const hasScores = fromTotal > 0 || toTotal > 0;
+      const updateResult = hasScores
+        ? { winner, from_score: fromTotal, to_score: toTotal }
+        : (b.result || { winner: 'tie', from_score: 0, to_score: 0 });
+      sb.from('challenges').update({
+        status: 'completed',
+        result: updateResult
+      }).eq('id', b.id).then(()=>{});
+      // Fold into history locally
+      b.status = 'completed';
+      b.result = updateResult;
+    }
+
     _battleHistory=data.filter(b=>b.status==='completed');
     window._activeBattles=data.filter(b=>(b.status==='accepted'||b.status==='active')&&!isBattleExpired(b));
+
     // Recalculate W/L from Supabase truth
     let wins=0,losses=0;
     _battleHistory.forEach(b=>{
@@ -3797,9 +3825,7 @@ async function fetchBattleHistory(){
     });
     battleRecord={wins,losses};
     saveData();
-    // Expired active battles get folded into history as completed
-    const expired = data.filter(b=>(b.status==='accepted'||b.status==='active')&&isBattleExpired(b));
-    expired.forEach(b=>{ if(!_battleHistory.find(h=>h.id===b.id)) _battleHistory.unshift(b); });
+
     if(document.getElementById('tab-matchups')?.classList.contains('active')){
       renderMatchups();
     }
