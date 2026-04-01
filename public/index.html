@@ -3483,6 +3483,45 @@ function startLivePoll(){
 }
 
 
+
+// ── ADMIN: Fix null battle result ────────────────────────────────────────────
+async function fixNullBattleResult(){
+  // Find completed battles with null or missing scores between these two users
+  const {data, error} = await sb.from('challenges')
+    .select('id,from_id,from_name,to_name,status,result,created_at')
+    .eq('status','completed')
+    .or('from_name.ilike.%michal%,to_name.ilike.%michal%')
+    .order('created_at',{ascending:false})
+    .limit(20);
+
+  if(error){ console.error('Error:', error); return; }
+  console.log('Found battles:', data.length);
+
+  const nullBattles = data.filter(b=>!b.result || (!b.result.winner && !b.result.from_score));
+  console.log('Battles with null result:', nullBattles.length);
+  nullBattles.forEach(b=>console.log('  ID:', b.id, '|', b.from_name, 'vs', b.to_name, '|', b.created_at));
+
+  if(!nullBattles.length){ console.log('No null results found'); return; }
+
+  // The specific battle: michal.perconte(2.5) vs mpercont(19.0) — mpercont won
+  // from_id = michal.perconte, to_name = mpercont (or vice versa)
+  // Winner is whoever is NOT michal.perconte since score was 2.5 vs 19.0
+  for(const b of nullBattles){
+    const michalIsFrom = (b.from_name||'').toLowerCase().includes('michal');
+    const fromScore = michalIsFrom ? 2.5 : 19.0;
+    const toScore = michalIsFrom ? 19.0 : 2.5;
+    const winner = michalIsFrom ? 'to' : 'from'; // mpercont won
+
+    console.log('Updating battle', b.id, '— setting from_score:', fromScore, 'to_score:', toScore, 'winner:', winner);
+    const {error: updateErr} = await sb.from('challenges').update({
+      result: { winner, from_score: fromScore, to_score: toScore }
+    }).eq('id', b.id);
+
+    if(updateErr) console.error('Update error:', updateErr);
+    else console.log('✅ Updated!');
+  }
+}
+
 // ── ADMIN: Player ID Fixer ───────────────────────────────────────────────────
 let _adminMLBLookup = {};
 let _adminFixedPlayers = [];
