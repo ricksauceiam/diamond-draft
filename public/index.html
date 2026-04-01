@@ -1328,29 +1328,41 @@ function formatPitchingStats(s){
 
 
 function getPlayerGameInfo(player){
-  // Find the game this player's team is in tonight
   const games = window._tonightGames || [];
   if(!games.length) return null;
+
   const mid = String(player?.mlbamId||player?.id||'');
   const live = _allMLBPlayers.find(x=>String(x.mlbamId||x.id)===mid)||PLAYERS.find(x=>String(x.mlbamId||x.id)===mid);
-  const teamAbbr = (live?.team||player?.team||'').toUpperCase();
+  const teamAbbr = (live?.team||player?.team||player?.teamAbbr||'').toUpperCase();
   const teamId = String(live?.currentTeamId||player?.currentTeamId||'');
+
   if(!teamAbbr && !teamId) return null;
 
+  // Helper: get abbr from team object, falling back to MLB_TEAMS lookup
+  function abbr(teamObj){
+    return (teamObj?.abbreviation || MLB_TEAMS[teamObj?.id]?.abbr || teamObj?.name?.slice(0,3) || '').toUpperCase();
+  }
+
   const game = games.find(g=>{
-    const awayAbbr = (g.teams?.away?.team?.abbreviation||'').toUpperCase();
-    const homeAbbr = (g.teams?.home?.team?.abbreviation||'').toUpperCase();
+    const awayAbbr = abbr(g.teams?.away?.team);
+    const homeAbbr = abbr(g.teams?.home?.team);
     const awayId = String(g.teams?.away?.team?.id||'');
     const homeId = String(g.teams?.home?.team?.id||'');
-    return awayAbbr===teamAbbr||homeAbbr===teamAbbr||awayId===teamId||homeId===teamId;
+    return awayAbbr===teamAbbr||homeAbbr===teamAbbr||
+           (teamId && (awayId===teamId||homeId===teamId));
   });
   if(!game) return null;
 
-  const awayAbbr = (game.teams?.away?.team?.abbreviation||'').toUpperCase();
-  const homeAbbr = (game.teams?.home?.team?.abbreviation||'').toUpperCase();
-  const isHome = homeAbbr===teamAbbr || String(game.teams?.home?.team?.id||'')===teamId;
+  const awayAbbr = abbr(game.teams?.away?.team);
+  const homeAbbr = abbr(game.teams?.home?.team);
+  const awayId = String(game.teams?.away?.team?.id||'');
+  const homeId = String(game.teams?.home?.team?.id||'');
+
+  const isHome = homeAbbr===teamAbbr || (teamId && homeId===teamId);
+  const myAbbr = isHome ? homeAbbr : awayAbbr;
   const oppAbbr = isHome ? awayAbbr : homeAbbr;
   const prefix = isHome ? 'vs' : '@';
+  const oppDisplay = oppAbbr || (isHome ? awayAbbr : homeAbbr) || '?';
 
   // Format time
   let timeStr = '';
@@ -1362,17 +1374,22 @@ function getPlayerGameInfo(player){
   }
 
   const status = game.status?.abstractGameState||'';
-  const isLive = status==='Live'||game.status?.detailedState?.includes('In Progress');
-  const isFinal = status==='Final';
+  const detailedState = game.status?.detailedState||'';
+  const isLive = status==='Live'||detailedState.includes('In Progress')||detailedState.includes('Live');
+  const isFinal = status==='Final'||detailedState.includes('Final')||detailedState.includes('Game Over');
 
-  if(isFinal) return {text: prefix+' '+oppAbbr+' · Final', live:false};
+  if(isFinal){
+    const awayScore = game.teams?.away?.score??'';
+    const homeScore = game.teams?.home?.score??'';
+    const scoreStr = awayScore!==''&&homeScore!=='' ? (isHome?homeScore:awayScore)+'-'+(isHome?awayScore:homeScore) : '';
+    return {text: prefix+' '+oppDisplay+(scoreStr?' · '+scoreStr:'')+' · Final', live:false};
+  }
   if(isLive){
     const inn = game.linescore?.currentInningOrdinal||'';
-    const half = game.linescore?.inningState||'';
     const awayScore = game.teams?.away?.score??'';
     const homeScore = game.teams?.home?.score??'';
     const score = awayScore!==''&&homeScore!=='' ? awayScore+'-'+homeScore : '';
-    return {text: prefix+' '+oppAbbr+(score?' · '+score:'')+(inn?' · '+inn:''), live:true};
+    return {text: prefix+' '+oppDisplay+(score?' · '+score:'')+(inn?' · '+inn:''), live:true};
   }
   return {text: prefix+' '+oppAbbr+(timeStr?' · '+timeStr:''), live:false};
 }
