@@ -460,21 +460,41 @@ const _origGoTab = window.goTab;
           <div class="hstat"><div class="val" id="st-mythic">0</div><div class="lbl">Mythic</div></div>
         </div>
         <div>
-          <div class="sec-title">📦 Daily Packs</div>
+          <div class="sec-title">⚾ Packs</div>
           <div class="packs-row">
-            <div class="pack-card" id="hp1">
-              <div class="pc-top"><div class="pc-icon">📦</div><div><h3>Pack 1</h3><p>5 cards · resets daily</p></div></div>
-              <div class="odds-row">
+            <!-- Daily pack card -->
+            <div class="pack-card" id="hp1" style="background:linear-gradient(135deg,#0f0f1a,#1a1035);border-color:rgba(108,99,255,.3);">
+              <div class="pc-top">
+                <div class="pc-icon" style="background:linear-gradient(135deg,#6c63ff,#ff6b9d);font-size:1.5rem;box-shadow:0 4px 15px rgba(108,99,255,.4);">⚾</div>
+                <div><h3 style="font-size:1rem;">Daily Pack</h3><p style="color:var(--accent);font-weight:700;">4 cards · new packs daily</p></div>
+              </div>
+              <div class="odds-row" style="margin-bottom:10px;">
                 <span class="odds-pill" style="background:rgba(136,153,170,.2);color:var(--common)">55% Common</span>
                 <span class="odds-pill" style="background:rgba(0,245,255,.15);color:var(--rare)">28% Rare</span>
                 <span class="odds-pill" style="background:rgba(191,64,255,.15);color:var(--epic)">12% Epic</span>
+                <span class="odds-pill" style="background:rgba(255,215,0,.15);color:var(--legendary)">4% Legendary</span>
               </div>
-              <button class="pack-cta" id="pb1" onclick="openPackOv(0)">Open Pack 1</button>
+              <button class="pack-cta" id="pb1" onclick="openPackOv(0)" style="background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:14px;padding:12px;">Open Pack 1</button>
               <button class="pack-cta sec" id="pb2" onclick="openPackOv(1)" style="margin-top:6px;">Open Pack 2</button>
               <button class="pack-cta sec" id="pb3" onclick="openPackOv(2)" style="margin-top:6px;">Open Pack 3</button>
             </div>
-            <div class="pack-card" id="hp2">
-
+            <!-- Purchase card -->
+            <div class="pack-card" id="hp2" style="background:linear-gradient(135deg,#0f0f1a,#1a1a0a);border-color:rgba(255,215,0,.2);">
+              <div class="pc-top">
+                <div class="pc-icon" style="background:linear-gradient(135deg,#b8860b,#FFD700);font-size:1.5rem;box-shadow:0 4px 15px rgba(255,215,0,.3);">💎</div>
+                <div><h3 style="font-size:1rem;">Extra Packs</h3><p style="color:#FFD700;font-weight:700;">More cards, more wins</p></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+                <button onclick="showToast('Coming soon! 🚀')" style="width:100%;padding:12px;background:linear-gradient(135deg,#b8860b,#FFD700);color:#000;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                  <span>1 Pack</span>
+                  <span style="font-size:15px;font-weight:900;">$2</span>
+                </button>
+                <button onclick="showToast('Coming soon! 🚀')" style="width:100%;padding:12px;background:linear-gradient(135deg,#1a1a0a,#2a2a10);color:#FFD700;border:1px solid rgba(255,215,0,.4);border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                  <span>2 Packs <span style="font-size:10px;background:rgba(255,215,0,.2);padding:2px 6px;border-radius:6px;margin-left:4px;">BEST VALUE</span></span>
+                  <span style="font-size:15px;font-weight:900;">$3</span>
+                </button>
+              </div>
+              <div style="margin-top:10px;font-size:10px;color:var(--muted);text-align:center;">Each pack = 4 cards with same odds</div>
             </div>
           </div>
         </div>
