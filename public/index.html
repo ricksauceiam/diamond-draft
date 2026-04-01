@@ -1962,6 +1962,8 @@ const ELITE_BLURBS = {
     text: "Julio Urías throws with a smooth, effortless delivery that disguises just how much the ball moves once it gets to the plate. He's a left-hander who makes right-handed hitters feel like they've never actually seen a baseball before. Superhero power: deception — every pitch looks identical leaving his hand, and none of them arrive the way you expected.",
   },
 };
+// Also index by string so both "660271" and 660271 work
+Object.keys(ELITE_BLURBS).forEach(k=>{ ELITE_BLURBS[String(k)] = ELITE_BLURBS[k]; });
 
 function openCardModal(cardId){const col=userData.collection.find(c=>c.id===cardId),p=getPlayer(cardId);if(!col||!p)return;currentModalCard=cardId;const color=RARITY_COLORS[p.rarity],need=NEED[p.rarity],fr=col.copies>=need&&col.level<5;document.getElementById('m-img').innerHTML=`<img src="${playerPhoto(p)}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%">`;const modalName = p.fullName||p.displayName||((p.firstName||'')+' '+(p.lastName||p.name||'')).trim();
   const ep = getPlayerEnriched(p.mlbamId||p.id);
@@ -1992,8 +1994,9 @@ function openCardModal(cardId){const col=userData.collection.find(c=>c.id===card
   // Elite blurb
   const existingBlurb = document.getElementById('m-elite-blurb');
   if(existingBlurb) existingBlurb.remove();
-  const mlbamId = Number(ep?.mlbamId||p.mlbamId||p.id);
-  const blurbData = ELITE_BLURBS[mlbamId];
+  // Look up blurb — try string and number forms of every possible ID
+  const _bid = ep?.mlbamId||p.mlbamId||p.id||cardId;
+  const blurbData = ELITE_BLURBS[_bid] || ELITE_BLURBS[String(_bid)] || ELITE_BLURBS[Number(_bid)] || null;
   if(blurbData){
     const blurb = document.createElement('div');
     blurb.id = 'm-elite-blurb';
