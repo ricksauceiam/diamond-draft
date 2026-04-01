@@ -3033,6 +3033,56 @@ async function loadScores(){
     </div>`;
   }
 }
+
+function buildBattleTileSection(game, awayAbbr, homeAbbr, awayId, homeId){
+  const battles = (window._activeBattles||[]).filter(b=>!isBattleExpired(b));
+  if(!battles.length || !currentUser) return '';
+  const gameAbbrs = new Set([String(awayAbbr).toUpperCase(), String(homeAbbr).toUpperCase()]);
+  const gameIds = new Set([String(awayId), String(homeId)]);
+
+  function inThisGame(p){
+    if(!p) return false;
+    const t = (p.team||'').toUpperCase();
+    const tid = String(p.currentTeamId||'');
+    return gameAbbrs.has(t) || (tid && gameIds.has(tid));
+  }
+
+  let html = '';
+  battles.forEach(function(b){
+    const isFrom = b.from_id === currentUser.id;
+    const myLineup = (isFrom ? b.from_lineup : b.to_lineup) || [];
+    const rivalLineup = (isFrom ? b.to_lineup : b.from_lineup) || [];
+    const rivalName = (isFrom ? b.to_name : b.from_name) || 'Rival';
+    const myInGame = myLineup.map(function(id){ return getPlayer(id); }).filter(inThisGame);
+    const rivInGame = rivalLineup.map(function(id){ return getPlayer(id); }).filter(inThisGame);
+    if(!myInGame.length && !rivInGame.length) return;
+
+    html += '<div style="border-top:1px solid rgba(108,99,255,.25);padding:10px 14px;background:rgba(108,99,255,.07);">';
+    html += '<div style="font-size:9px;font-weight:800;color:#6c63ff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">\u2694\ufe0f Your Battle</div>';
+
+    function row(p, label, borderCol, posCol){
+      var pts = getPlayerLivePoints(p.mlbamId);
+      var ptsCol = pts > 0 ? posCol : pts < 0 ? (posCol === '#00d48a' ? '#ff4757' : '#00d48a') : '#6a6a8a';
+      var ptsStr = pts !== 0 ? pts.toFixed(1) : '—';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+        + '<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;border:1.5px solid ' + borderCol + ';flex-shrink:0;background:#111;">'
+        + '<img src="' + playerPhoto(p) + '" style="width:100%;height:100%;object-fit:cover;object-position:50% 15%;" onerror="this.style.display='none'">'
+        + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:11px;font-weight:700;color:#e8e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (p.lastName||p.fullName||'—') + '</div>'
+        + '<div style="font-size:9px;color:#6a6a8a;">' + label + ' · ' + positionLabel(p.position||p.pos||'') + '</div>'
+        + '</div>'
+        + '<div style="font-size:13px;font-weight:900;color:' + ptsCol + ';">' + ptsStr + '</div>'
+        + '</div>';
+    }
+
+    myInGame.forEach(function(p){ html += row(p, 'You', '#6c63ff', '#00d48a'); });
+    rivInGame.forEach(function(p){ html += row(p, rivalName, '#ff4757', '#ff4757'); });
+    html += '</div>';
+  });
+  return html;
+}
+
 function renderScores(){
   const list = document.getElementById('scores-list');
   let games = scoresData;
@@ -3141,71 +3191,8 @@ function renderScores(){
         ${venue?`<div style="display:flex;align-items:center;gap:4px;"><span style="font-size:10px;">📍</span><span class="gt-venue">${venue}</span></div>`:''}
         ${awayPitcher||homePitcher?`<div style="font-size:10px;color:var(--muted);">⚾ ${awayPitcher||'TBD'} vs ${homePitcher||'TBD'}</div>`:''}
       </div>`:''}
-      ${(()=>{
-        // Find active battle players in this game
-        const battles = (window._activeBattles||[]).filter(b=>!isBattleExpired(b));
-        if(!battles.length || !currentUser) return '';
-        const gameTeamIds = new Set([String(awayId), String(homeId)]);
-        const gameTeamAbbrs = new Set([awayAbbr.toUpperCase(), homeAbbr.toUpperCase()]);
-        let rows = '';
-        battles.forEach(b=>{
-          const isFrom = b.from_id===currentUser.id;
-          const myLineup = (isFrom?b.from_lineup:b.to_lineup)||[];
-          const rivalLineup = (isFrom?b.to_lineup:b.from_lineup)||[];
-          const rivalName = isFrom?b.to_name:b.from_name;
-          // Find my players in this game
-          const myInGame = myLineup.map(id=>getPlayer(id)).filter(p=>{
-            if(!p) return false;
-            const t = (p.team||'').toUpperCase();
-            const tid = String(p.currentTeamId||'');
-            return gameTeamAbbrs.has(t)||(tid&&gameTeamIds.has(tid));
-          });
-          // Find rival players in this game
-          const rivInGame = rivalLineup.map(id=>getPlayer(id)).filter(p=>{
-            if(!p) return false;
-            const t = (p.team||'').toUpperCase();
-            const tid = String(p.currentTeamId||'');
-            return gameTeamAbbrs.has(t)||(tid&&gameTeamIds.has(tid));
-          });
-          if(!myInGame.length && !rivInGame.length) return;
-          // Build the section
-          rows += '<div style="border-top:1px solid rgba(108,99,255,.2);margin:0;padding:10px 16px;background:rgba(108,99,255,.06);">';
-          rows += '<div style="font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">⚔️ Your Battle</div>';
-          // My players
-          myInGame.forEach(p=>{
-            const pts = getPlayerLivePoints(p.mlbamId);
-            const ptsColor = pts>0?'#00d48a':pts<0?'#ff4757':'var(--muted)';
-            rows += \`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-              <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;border:1.5px solid var(--accent);flex-shrink:0;background:#111;">
-                <img src="\${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 15%;" onerror="this.style.display='none'">
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\${p.lastName||p.fullName||'—'}</div>
-                <div style="font-size:9px;color:var(--muted);">You · \${positionLabel(p.position||p.pos||'')}</div>
-              </div>
-              <div style="font-size:13px;font-weight:900;color:\${ptsColor};">\${pts!==0?pts.toFixed(1):'—'}</div>
-            </div>\`;
-          });
-          // Rival players
-          rivInGame.forEach(p=>{
-            const pts = getPlayerLivePoints(p.mlbamId);
-            const ptsColor = pts>0?'#ff4757':pts<0?'#00d48a':'var(--muted)';
-            rows += \`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-              <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;border:1.5px solid var(--danger);flex-shrink:0;background:#111;">
-                <img src="\${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 15%;" onerror="this.style.display='none'">
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\${p.lastName||p.fullName||'—'}</div>
-                <div style="font-size:9px;color:var(--muted);">\${rivalName} · \${positionLabel(p.position||p.pos||'')}</div>
-              </div>
-              <div style="font-size:13px;font-weight:900;color:\${ptsColor};">\${pts!==0?pts.toFixed(1):'—'}</div>
-            </div>\`;
-          });
-          rows += '</div>';
-        });
-        return rows;
-      })()}
-    \`;
+      ${buildBattleTileSection(game, awayAbbr, homeAbbr, awayId, homeId)}
+    `;
     grid.appendChild(tile);
   });
 
