@@ -1186,7 +1186,10 @@ function savePackSession(){
   userData.packResults = packResults.map(p=>p||null);
   saveData();
 }
-function todayStr(){return new Date().toISOString().split('T')[0];}
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function isBattleExpired(battle){
   // A battle is expired if it was created before today (CT midnight)
   const created = new Date(battle.created_at||battle.sentAt||Date.now());
@@ -1198,7 +1201,7 @@ function isBattleExpired(battle){
   const todayDate = todayCT.toISOString().split('T')[0];
   return createdDate < todayDate;
 }
-function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
+function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function isAdmin(){ return (currentUser?.email||'').toLowerCase() === 'michal.perconte@gmail.com'; }
 
 function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection'){getInBattleIds().then(()=>renderCollection());}if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();if(id==='allcards')loadAllCards();}
@@ -3000,7 +3003,11 @@ function scoresDateStr(d){
 return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
 function scoresApiDate(d){
-return d.toISOString().split('T')[0];
+  // Use local date (not UTC) so Chicago evening doesn't roll to next day
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
 }
 function scoresChangeDate(delta){
 scoresDate.setDate(scoresDate.getDate()+delta);
@@ -3237,7 +3244,7 @@ let liveScores = {}; // mlbamId -> fantasy points
 let livePollTimer = null;
 
 async function loadTonightGames(){
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayStr();
   try {
     // Use our Vercel proxy
     const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1,17&date=${today}&hydrate=roster`);
