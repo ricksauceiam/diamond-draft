@@ -647,9 +647,8 @@ const _origGoTab = window.goTab;
           <div id="admin-log" style="margin-top:12px;background:var(--bg);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;max-height:260px;overflow-y:auto;line-height:1.8;display:none;"></div>
         </div>
         <div id="admin-step3" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;">
-          <h3 style="margin:0 0 10px;font-size:.95rem;">Step 3 — Download Fixed players.json</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Upload this to GitHub at <code>public/players.json</code></p>
-          <button onclick="adminDownload()" class="btn-p" style="width:auto;padding:10px 20px;font-size:13px;background:var(--success);color:#000;">⬇️ Download players.json</button>
+          <h3 style="margin:0 0 10px;font-size:.95rem;">✅ Fix Complete</h3>
+          <p style="font-size:12px;color:var(--muted);">Player IDs updated in memory. App now runs fully off the live MLB API — no static file needed.</p>
         </div>
       </div>
     </div>
@@ -1086,55 +1085,32 @@ const MOCK_MATCHUPS=[];
 const LEADERBOARD=[{name:'CardKing99',pts:14820,cards:312,wins:48,avatar:'CK',color:'#FFD700'},{name:'SluggerKing',pts:12440,cards:287,wins:41,avatar:'SK',color:'#FF006E'},{name:'AceHunter',pts:11200,cards:264,wins:38,avatar:'AH',color:'#BF40FF'},{name:'DiamondPro',pts:9880,cards:241,wins:33,avatar:'DP',color:'#00F5FF'},{name:'BaseballGod',pts:8760,cards:219,wins:29,avatar:'BG',color:'#FF8C00'},{name:'TheVeteran',pts:7450,cards:198,wins:26,avatar:'TV',color:'#6c63ff'},{name:'SpeedDemon',pts:6320,cards:177,wins:22,avatar:'SD',color:'#00d48a'},{name:'Rookie2024',pts:2140,cards:88,wins:8,avatar:'RK',color:'#8899AA'}];
 let PLAYERS=[],currentUser=null,userData=null,colFilter='ALL',packResults=[null],revealedCards=[new Set()],curPackIdx=0,currentModalCard=null,lineup=[null,null,null,null],selectedRival=null,selectedRivalId=null,selectedRivalName=null,battleState=null,battleTimer=null,battleRecord={wins:0,losses:0};
 async function loadPlayers(){
-  // Load players.json first (has all historical + collection players)
-  try{
-    const r2=await fetch('/players.json');
-    const staticPlayers=await r2.json();
-    PLAYERS=[...staticPlayers];
-    console.log('Static players loaded:',PLAYERS.length);
-  }catch(e){
-    console.warn('players.json failed:',e);
-    PLAYERS=[];
-  }
-  // Then overlay with live MLB API data (current teams, active roster)
+  // Fully live — no players.json dependency
   try{
     const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
     const data=await r.json();
     const people=data.people||[];
-    const liveMap={};
-    people.forEach(p=>{
-      liveMap[String(p.id)]={
-        id: String(p.id),
-        mlbamId: p.id,
-        firstName: p.firstName||'',
-        lastName: p.lastName||'',
-        fullName: p.fullName||(p.firstName+' '+p.lastName),
-        displayName: p.fullName||(p.firstName+' '+p.lastName),
-        position: p.primaryPosition?.abbreviation||'',
-        pos: p.primaryPosition?.abbreviation||'',
-        team: p.currentTeam?.abbreviation||'',
-        teamName: p.currentTeam?.name||'',
-        currentTeamId: p.currentTeam?.id||null,
-      };
-    });
-    // Update existing players with live data, add new ones
-    PLAYERS=PLAYERS.map(p=>{
-      const live=liveMap[String(p.mlbamId||p.id)];
-      return live?{...p,...live}:p;
-    });
-    // Add any live players not in static list
-    people.forEach(p=>{
-      const sid=String(p.id);
-      if(!PLAYERS.find(x=>String(x.mlbamId||x.id)===sid)){
-        PLAYERS.push(liveMap[sid]);
-      }
-    });
-    _allMLBPlayers=people.map(p=>liveMap[String(p.id)]);
-    _playersLoaded=true;
-    console.log('Players merged with live API:',PLAYERS.length);
-  }catch(e){
-    console.warn('MLB API failed, using static only:',e);
+    PLAYERS=people.map(p=>({
+      id: String(p.id),
+      mlbamId: p.id,
+      firstName: p.firstName||'',
+      lastName: p.lastName||'',
+      fullName: p.fullName||(p.firstName+' '+p.lastName),
+      displayName: p.fullName||(p.firstName+' '+p.lastName),
+      position: p.primaryPosition?.abbreviation||'',
+      pos: p.primaryPosition?.abbreviation||'',
+      team: p.currentTeam?.abbreviation||'',
+      teamName: p.currentTeam?.name||'',
+      currentTeamId: p.currentTeam?.id||null,
+      rarity: TOP_25_IDS.has(p.id) ? 'LEGENDARY' : 'COMMON',
+    }));
     _allMLBPlayers=[...PLAYERS];
+    _playersLoaded=true;
+    console.log('Players loaded from live API:',PLAYERS.length);
+  }catch(e){
+    console.warn('MLB API failed:',e);
+    PLAYERS=[];
+    _allMLBPlayers=[];
     _playersLoaded=true;
   }
 }
@@ -1435,8 +1411,8 @@ return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD70
 })()}</div>
     <div class="cbm" style="color:${color}">${(()=>{const pos=(p?.position||p?.pos||'').toUpperCase();const isPit=PITCHER_POS.has(pos);return positionLabel(pos);})()}  ·  ${(()=>{
   const mid=String(p?.mlbamId||p?.id||'');
-  const live=_allMLBPlayers.find(x=>String(x.mlbamId||x.id)===mid)||PLAYERS.find(x=>String(x.mlbamId||x.id)===mid);
-  return live?.team||p?.team||p?.teamAbbr||'';
+  const ep=getPlayerEnriched(mid);
+  return ep?.team||ep?.teamAbbr||p?.team||p?.teamAbbr||'';
 })()}</div>
     <div class="cbstats" id="cbs-${p?.mlbamId||p?.id}">Loading...</div>
     <div class="cbgame" id="cbg-${p?.mlbamId||p?.id}"></div>
@@ -1533,7 +1509,7 @@ function generatePack(idx){
       if(t25.length){
         const rc = t25[Math.floor(rng()*t25.length)];
         usedIds.add(rc.mlbamId||rc.id);
-        cards.push({...rc, rarity:'LEGENDARY', isRainbow:true});
+        cards.push({...rc, mlbamId:rc.mlbamId||rc.id, rarity:'LEGENDARY', isRainbow:true});
         continue;
       }
     }
@@ -1551,7 +1527,7 @@ function generatePack(idx){
     if(!pick) pick = bucket[Math.floor(rng()*bucket.length)] || fullPool[Math.floor(rng()*fullPool.length)];
     if(pick){
       usedIds.add(pick.mlbamId||pick.id);
-      cards.push({...pick, rarity: pick.rarity||rarity, isRainbow:false});
+      cards.push({...pick, mlbamId:pick.mlbamId||pick.id, rarity: pick.rarity||rarity, isRainbow:false});
     }
   }
   return cards;
@@ -1587,7 +1563,7 @@ function renderPackReveal(alreadyOpened){
     document.getElementById('pack-spotlight').style.display = 'flex';
     document.getElementById('pov-sub').textContent = 'Opening pack…';
     // Kick off auto-reveal after brief pause
-    window._packRevealTimer = setTimeout(()=>autoRevealCard(0), 600);
+    window._packRevealTimer = setTimeout(()=>autoRevealCard(0), 200);
   }
 }
 
@@ -1600,36 +1576,38 @@ function autoRevealCard(idx){
   const fullName = card.fullName||card.displayName||((card.firstName||'')+' '+(card.lastName||card.name||'')).trim();
   const isRare = card.isRainbow||isElite(card)||(card.rarity==='LEGENDARY'||card.rarity==='MYTHIC'||card.rarity==='EPIC');
 
-  // Reset card to face-down
-  const inner = document.getElementById('pack-card-inner');
-  inner.style.transition = 'none';
-  inner.style.transform = 'rotateY(0deg)';
-
-  // Animate card entrance
-  const stage = document.getElementById('pack-card-stage');
-  stage.style.animation = 'none';
-  void stage.offsetWidth;
-  stage.style.animation = 'spotlightPop .4s ease both';
-
+  // Reset text
   document.getElementById('pack-card-name').style.opacity = '0';
   document.getElementById('pack-card-meta').style.opacity = '0';
   document.getElementById('pack-card-status').style.opacity = '0';
   document.getElementById('pov-sub').textContent = 'Card ' + (idx+1) + ' of ' + cards.length;
 
-  // For rare cards, build suspense with longer pause before flip
-  const flipDelay = isRare ? 900 : 500;
-  const holdDelay = isRare ? 2200 : 1500; // how long to show before moving on
+  // Pre-load front face immediately (hidden behind back face)
+  const front = document.getElementById('pack-card-front');
+  front.innerHTML = buildPackCardFront(card, owned) + (card.isRainbow ? '<div class="rainbow-shine"></div>' : '');
+
+  // Reset to face-down instantly
+  const inner = document.getElementById('pack-card-inner');
+  inner.style.transition = 'none';
+  inner.style.transform = 'rotateY(0deg)';
+  void inner.offsetWidth; // force reflow
+
+  // Card entrance pop
+  const stage = document.getElementById('pack-card-stage');
+  stage.style.animation = 'none';
+  void stage.offsetWidth;
+  stage.style.animation = 'spotlightPop .35s ease both';
+
+  // Flip starts right as entrance finishes — no dead gap
+  // Rare cards get a tiny extra beat of suspense (just 200ms)
+  const flipDelay = isRare ? 550 : 350;
+  const holdDelay = isRare ? 1800 : 1200;
 
   window._packRevealTimer = setTimeout(()=>{
-    // Fill front face
-    const front = document.getElementById('pack-card-front');
-    front.innerHTML = buildPackCardFront(card, owned) + (card.isRainbow ? '<div class="rainbow-shine"></div>' : '');
-
-    // Flip!
-    inner.style.transition = 'transform .75s cubic-bezier(.4,0,.2,1)';
+    inner.style.transition = 'transform .65s cubic-bezier(.4,0,.2,1)';
     inner.style.transform = 'rotateY(180deg)';
 
-    // After flip completes — show info + add to strip
+    // After flip — show name/status, add to strip
     setTimeout(()=>{
       const nameEl = document.getElementById('pack-card-name');
       const metaEl = document.getElementById('pack-card-meta');
@@ -1637,12 +1615,10 @@ function autoRevealCard(idx){
 
       nameEl.textContent = fullName;
       nameEl.style.color = card.isRainbow ? '#FFD700' : isElite(card) ? '#FFD700' : 'var(--text)';
-      nameEl.style.animation = 'nameSlide .35s ease both';
+      nameEl.style.animation = 'nameSlide .3s ease both';
       nameEl.style.opacity = '1';
-
       metaEl.textContent = positionLabel(card.position||card.pos||'') + ' · ' + (card.team||'');
       metaEl.style.opacity = '1';
-
       if(owned){ statusEl.textContent = '+COPY'; statusEl.style.color = 'var(--muted)'; }
       else { statusEl.textContent = '✨ NEW!'; statusEl.style.color = 'var(--success)'; }
       statusEl.style.opacity = '1';
@@ -1658,18 +1634,16 @@ function autoRevealCard(idx){
       // Add to strip
       const strip = document.getElementById('pack-collected-strip');
       const d = document.createElement('div');
-      d.style.cssText = 'width:54px;height:76px;border-radius:9px;overflow:hidden;border:'+(card.isRainbow||isElite(card)?'2px solid #FFD700':'1px solid rgba(255,255,255,.15)')+';flex-shrink:0;animation:stripIn .4s ease both;';
+      d.style.cssText = 'width:54px;height:76px;border-radius:9px;overflow:hidden;border:'+(card.isRainbow||isElite(card)?'2px solid #FFD700':'1px solid rgba(255,255,255,.15)')+';flex-shrink:0;animation:stripIn .35s ease both;';
       d.innerHTML = buildPackCardFront(card, owned);
       strip.appendChild(d);
 
-      // Auto-advance or finish
       if(idx < cards.length - 1){
         window._packRevealTimer = setTimeout(()=>autoRevealCard(idx+1), holdDelay);
       } else {
-        // All done — award cards and close
         window._packRevealTimer = setTimeout(()=>claimPack(), holdDelay);
       }
-    }, 800);
+    }, 680); // just after flip completes
   }, flipDelay);
 }
 
@@ -2919,7 +2893,7 @@ function getPlayerEnriched(id){
 }
 function playerPhoto(player){
   if(!player) return '';
-  const mid = player.mlbamId;
+  const mid = player.mlbamId || player.id || player.personId;
   if(!mid) return '';
   return `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mid}/headshot/67/current`;
 }
@@ -3466,31 +3440,18 @@ async function loadAllCards(){
   document.getElementById('ac-loading').style.display='block';
   document.getElementById('ac-grid').innerHTML='';
 
-  // If players.json already loaded _allMLBPlayers, use that directly
-  if(_allMLBPlayers.length > 0){
-    _acLoaded = true;
+  // PLAYERS is already the full live list — no separate fetch needed
+  if(!_playersLoaded || PLAYERS.length === 0){
+    // Wait a tick for loadPlayers to finish if still in progress
+    await new Promise(r=>setTimeout(r,500));
   }
 
-  if(!_acLoaded){
-    try{
-      const r=await fetch('/api/mlb?endpoint=/sports/1/players?season=2026&gameType=R');
-      const data=await r.json();
-      _allMLBPlayers=(data.people||[]).map(p=>({
-        id: String(p.id),
-        mlbamId: p.id,
-        firstName: p.firstName||'',
-        lastName: p.lastName||'',
-        fullName: p.fullName||p.firstName+' '+p.lastName,
-        position: p.primaryPosition?.abbreviation||'',
-        team: p.currentTeam?.abbreviation||'',
-        teamName: p.currentTeam?.name||'',
-      })).sort((a,b)=>a.lastName.localeCompare(b.lastName));
-      _acLoaded=true;
-    }catch(e){
-      document.getElementById('ac-loading').innerHTML='<div style="color:var(--danger)">Failed to load. Try again.</div>';
-      return;
-    }
+  if(PLAYERS.length === 0){
+    document.getElementById('ac-loading').innerHTML='<div style="color:var(--danger)">Failed to load players. Refresh to try again.</div>';
+    return;
   }
+
+  _allMLBPlayers = [...PLAYERS].sort((a,b)=>(a.lastName||'').localeCompare(b.lastName||''));
 
   // Populate team dropdown (only once)
   const sel=document.getElementById('ac-team');
@@ -3498,6 +3459,7 @@ async function loadAllCards(){
     const teams=[...new Set(_allMLBPlayers.map(p=>p.team).filter(Boolean))].sort();
     teams.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
   }
+  _acLoaded=true;
   filterAllCards();
 }
 
