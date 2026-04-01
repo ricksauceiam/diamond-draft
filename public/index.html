@@ -2132,33 +2132,50 @@ function openBattleDetail(battle){
   renderBattleDetail(battle);
   ov.classList.add('open');
 
-  // Start live scoring
   if(battleDetailInterval) clearInterval(battleDetailInterval);
   window._currentBattle = battle;
   window._prevLiveScores = {};
   window._tickerLog = [];
 
-  // Load live scores then re-render
+  // For completed battles — show stored scores, no live polling
+  if(battle.status === 'completed'){
+    const hist = window._histBattles && Object.values(window._histBattles).find(h=>h.id===battle.id);
+    const myScore = hist?.myScore ?? battle.myScore ?? null;
+    const theirScore = hist?.theirScore ?? battle.theirScore ?? null;
+    const gsEl = document.getElementById('bd-game-status');
+    if(gsEl) gsEl.textContent = 'Final';
+    if(myScore !== null && theirScore !== null && (myScore > 0 || theirScore > 0)){
+      const youEl = document.getElementById('bd-you-score');
+      const rivEl = document.getElementById('bd-rival-score');
+      if(youEl) youEl.textContent = Number(myScore).toFixed(1);
+      if(rivEl) rivEl.textContent = Number(theirScore).toFixed(1);
+      if(youEl && rivEl){
+        if(myScore > theirScore){ youEl.style.color='var(--success)'; rivEl.style.color='var(--danger)'; }
+        else if(theirScore > myScore){ rivEl.style.color='var(--success)'; youEl.style.color='var(--danger)'; }
+      }
+    } else {
+      // Scores not saved — show message
+      const gsEl2 = document.getElementById('bd-game-status');
+      if(gsEl2) gsEl2.textContent = 'Final · Score not recorded';
+    }
+    return;
+  }
+
+  // Active battles — load live scores
   async function initBattleScores(){
-    // Show loading state on scores
-    const youEl = document.getElementById('bd-you-score');
-    const rivEl = document.getElementById('bd-rival-score');
     const gsEl = document.getElementById('bd-game-status');
     if(gsEl) gsEl.innerHTML = '<span style="font-size:11px;color:var(--muted);">Loading scores...</span>';
-
     try{
       if(tonightGameIds.length === 0) await loadTonightGames();
       if(tonightGameIds.length > 0) await refreshLiveScores();
     } catch(e){
       console.warn('Score load error:', e);
     }
-    // Always re-render with whatever we have
     renderBattleDetail(battle);
   }
 
   initBattleScores();
 
-  // Poll every 45 seconds while battle is open
   if(battle.status==='active'){
     battleDetailInterval = setInterval(async()=>{
       if(tonightGameIds.length === 0) await loadTonightGames();
@@ -2502,7 +2519,11 @@ function openHistBattle(wrapId){
     youLineup: battle.youLineup||[],
     rivalLineup: battle.rivalLineup||[],
     status: 'completed',
-    sentAt: battle.sentAt
+    sentAt: battle.sentAt,
+    myScore: battle.myScore,
+    theirScore: battle.theirScore,
+    won: battle.won,
+    tied: battle.tied
   });
 }
 
