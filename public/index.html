@@ -1238,6 +1238,8 @@ async function fetchSeasonStats(mlbamId){
 }
 
 async function loadStatsForVisibleCards(){
+  // If tonight games not loaded yet, load them first
+  if(!window._tonightGames) await loadTonightGames();
   // Update team + game info for all cards first (fast, no API needed)
   updateCardGameInfo();
 
@@ -1414,6 +1416,7 @@ return `<div ${cl} class="${extraClass}" style="border:${elite?'2px solid #FFD70
   return live?.team||p?.team||p?.teamAbbr||'';
 })()}</div>
     <div class="cbstats" id="cbs-${p?.mlbamId||p?.id}">Loading...</div>
+    <div class="cbgame" id="cbg-${p?.mlbamId||p?.id}"></div>
   </div>${prog}</div>`;
 }
 function openPackOv(idx){
@@ -3092,10 +3095,8 @@ async function loadTonightGames(){
     console.log('Tonight team IDs:', [...window._tonightTeamIds]);
     console.log('Tonight abbrs:', [...tonightTeams]);
     updateTonightSection(games);
-    // Update any visible collection cards with game info
-    if(document.getElementById('tab-collection')?.classList.contains('active')){
-      updateCardGameInfo();
-    }
+    // Update card game info whenever tonight games load
+    updateCardGameInfo();
   } catch(e) {
     console.warn('Tonight games:', e.message);
     // During spring training / offseason show all cards
