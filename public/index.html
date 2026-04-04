@@ -2820,6 +2820,58 @@ function isPlayingTonight(player){
   return false;
 }
 
+function getOpponent(player){
+  // Returns opponent abbr and time for a player's game tonight
+  if(!player || !window._tonightGames) return null;
+  const teamId = String(player.currentTeamId||'');
+  const abbr = (player.team||'').toUpperCase();
+  const game = window._tonightGames.find(g=>{
+    const awayId = String(g.teams?.away?.team?.id||'');
+    const homeId = String(g.teams?.home?.team?.id||'');
+    const awayAbbr = (g.teams?.away?.team?.abbreviation||'').toUpperCase();
+    const homeAbbr = (g.teams?.home?.team?.abbreviation||'').toUpperCase();
+    return (teamId&&(awayId===teamId||homeId===teamId))||(abbr&&(awayAbbr===abbr||homeAbbr===abbr));
+  });
+  if(!game) return null;
+  const isHome = String(game.teams?.home?.team?.id||'')=== teamId ||
+                 (game.teams?.home?.team?.abbreviation||'').toUpperCase()===abbr;
+  const oppTeam = isHome ? game.teams?.away?.team : game.teams?.home?.team;
+  const oppAbbr = oppTeam?.abbreviation||'';
+  const gameTime = game.gameDate ? new Date(game.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) : '';
+  return {opp: oppAbbr, home: isHome, time: gameTime};
+}
+
+async function getSeasonFantasyPts(mlbamId){
+  // Fetch season stats and calculate total fantasy points
+  try {
+    const stats = await fetchSeasonStats(mlbamId);
+    if(!stats) return null;
+    const p = PLAYERS.find(pl=>String(pl.mlbamId||pl.id)===String(mlbamId));
+    const isPitcher = PITCHER_POS.has((p?.position||p?.pos||'').toUpperCase());
+    const s = isPitcher ? stats.pitching : stats.hitting;
+    if(!s) return null;
+    if(isPitcher){
+      return (s.inningsPitched||0)*SCORING.inningPitched +
+             (s.strikeOuts||0)*SCORING.strikeoutP +
+             (s.wins||0)*SCORING.win +
+             (s.losses||0)*SCORING.loss +
+             (s.earnedRuns||0)*SCORING.earnedRun +
+             (s.hits||0)*SCORING.hitAllowed +
+             (s.baseOnBalls||0)*SCORING.walkAllowed;
+    } else {
+      return (s.singles||((s.hits||0)-(s.doubles||0)-(s.triples||0)-(s.homeRuns||0)))*SCORING.single +
+             (s.doubles||0)*SCORING.double +
+             (s.triples||0)*SCORING.triple +
+             (s.homeRuns||0)*SCORING.homeRun +
+             (s.rbi||0)*SCORING.rbi +
+             (s.runs||0)*SCORING.runs +
+             (s.stolenBases||0)*SCORING.stolenBase +
+             (s.baseOnBalls||0)*SCORING.walk +
+             (s.strikeOuts||0)*SCORING.strikeoutB;
+    }
+  } catch(e){ return null; }
+}
+
 function isGameUpcoming(player){
   // Returns true only if the player's game hasn't started yet
   if(!player) return false;
@@ -2866,10 +2918,13 @@ function playerRow(item, dimmed){
         const abbr = (p.team||'').toUpperCase();
         const playsToday = window._tonightTeamIds?.has(teamId) || tonightTeams.has(abbr);
         if(!playsToday) return '';
+        const opp = getOpponent(p);
+        const oppStr = opp ? (opp.home ? 'vs '+opp.opp : '@ '+opp.opp) + ' · ' + opp.time + ' ET' : 'Playing today';
         if(dimmed) return '<div style="font-size:10px;font-weight:700;color:#ff4757;margin-top:2px;">Game started — not eligible</div>';
-        if(pts > 0) return `<div style="font-size:10px;font-weight:700;color:var(--success);margin-top:2px;">${pts.toFixed(1)} pts</div>`;
-        if(pts < 0) return `<div style="font-size:10px;font-weight:700;color:var(--danger);margin-top:2px;">${pts.toFixed(1)} pts</div>`;
-        return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Playing today</div>`;
+        const seasonPtsEl = '<span id="spts-'+String(p.mlbamId||p.id)+'" style="color:var(--accent);"></span>';
+        if(pts > 0) return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${oppStr} · <span style="color:var(--success);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
+        if(pts < 0) return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${oppStr} · <span style="color:var(--danger);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
+        return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${oppStr}</div>${seasonPtsEl}`;
       })()}
     </div>
     <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;" title="${rarity}"></div>
@@ -3097,6 +3152,17 @@ function renderChallengeOv(){
   const hc=document.getElementById('ch-h-count');
   if(pc)pc.textContent=pitcherItems.length+' available';
   if(hc)hc.textContent=hitterItems.length+' available';
+  // Async load season pts for each visible player
+  setTimeout(async()=>{
+    const visibleIds = [...pitcherItems, ...hitterItems].map(i=>i.player?.mlbamId||i.player?.id).filter(Boolean);
+    for(const mid of visibleIds){
+      const el = document.getElementById('spts-'+String(mid));
+      if(!el) continue;
+      const pts = await getSeasonFantasyPts(mid);
+      if(pts!=null && el) el.textContent = ' · ' + pts.toFixed(1) + ' pts season';
+    }
+  }, 100);
+
   const filled2=lineup.filter(Boolean).length;
   const btn2=document.getElementById('ch-launch');
   if(btn2){btn2.disabled=filled2<4||(!selectedRivalId&&!_pendingAcceptId);btn2.textContent=filled2<4?'Pick '+(4-filled2)+' more':(!selectedRivalId&&!_pendingAcceptId)?'Find a player above':_pendingAcceptId?'✅ Accept & Start Battle':'⚔️ Send Challenge';}
@@ -3678,7 +3744,6 @@ async function loadTonightGames(){
       if(away?.id){ window._probablePitcherIds.add(String(away.id)); }
       if(home?.id){ window._probablePitcherIds.add(String(home.id)); }
     });
-    console.log('Probable pitchers:', [...window._probablePitcherIds], 'games with PP:', games.filter(g=>g.teams?.away?.probablePitcher||g.teams?.home?.probablePitcher).length);
     // Update card game info whenever tonight games load
     updateCardGameInfo();
   } catch(e) {
