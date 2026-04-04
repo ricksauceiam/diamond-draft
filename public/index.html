@@ -2914,10 +2914,11 @@ function playerRow(item, dimmed){
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:2px;">${(()=>{
         const rawPos = p.position||p.pos||'';
+        const ep = getPlayerEnriched(p.mlbamId||p.id);
+        const team = ep?.team||ep?.teamName||p.team||'—';
         const isPP = window._probablePitcherIds?.has(String(p.mlbamId||p.id));
-        // If position is generic P but they're a probable pitcher, show Starting Pitcher
-        if((rawPos.toUpperCase()==='P') && isPP) return 'Starting Pitcher · ' + (p.team||'—');
-        return positionLabel(rawPos) + ' · ' + (p.team||'—');
+        if((rawPos.toUpperCase()==='P') && isPP) return 'Starting Pitcher · ' + team;
+        return positionLabel(rawPos) + ' · ' + team;
       })()}</div>
       ${(()=>{
         const teamId = String(p.currentTeamId||'');
