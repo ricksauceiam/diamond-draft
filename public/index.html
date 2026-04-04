@@ -3135,8 +3135,22 @@ function renderChallengeOv(){
     ? col.filter(item=>!isGameUpcoming(item.player)&&!inBattleSet.has(String(item.id)))
     : col.filter(item=>inBattleSet.has(String(item.id)));
 
-  const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
-  const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
+  // Sort pitchers: probable pitchers first, then by name
+  const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''))
+    .sort((a,b)=>{
+      const aPP = window._probablePitcherIds?.has(String(a.player.mlbamId||a.player.id)) ? 0 : 1;
+      const bPP = window._probablePitcherIds?.has(String(b.player.mlbamId||b.player.id)) ? 0 : 1;
+      return aPP-bPP || (a.player.lastName||'').localeCompare(b.player.lastName||'');
+    });
+
+  // Hitters sorted by cached season pts (will re-sort after async load)
+  const hitterItems=availCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''))
+    .sort((a,b)=>{
+      const aPts = window._seasonPtsCache?.[String(a.player.mlbamId||a.player.id)]||0;
+      const bPts = window._seasonPtsCache?.[String(b.player.mlbamId||b.player.id)]||0;
+      return bPts-aPts;
+    });
+
   const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
   const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
 
@@ -3152,15 +3166,29 @@ function renderChallengeOv(){
   const hc=document.getElementById('ch-h-count');
   if(pc)pc.textContent=pitcherItems.length+' available';
   if(hc)hc.textContent=hitterItems.length+' available';
-  // Async load season pts for each visible player
+  // Async load season pts, cache them, then re-sort hitters
   setTimeout(async()=>{
-    const visibleIds = [...pitcherItems, ...hitterItems].map(i=>i.player?.mlbamId||i.player?.id).filter(Boolean);
-    for(const mid of visibleIds){
-      const el = document.getElementById('spts-'+String(mid));
-      if(!el) continue;
+    window._seasonPtsCache = window._seasonPtsCache||{};
+    const allItems = [...pitcherItems, ...hitterItems];
+    let hitterNeedsResort = false;
+    for(const item of allItems){
+      const mid = String(item.player?.mlbamId||item.player?.id||'');
+      if(!mid) continue;
+      const el = document.getElementById('spts-'+mid);
+      // Skip if already cached
+      if(window._seasonPtsCache[mid]!==undefined){
+        if(el) el.textContent = ' · ' + window._seasonPtsCache[mid].toFixed(1) + ' pts season';
+        continue;
+      }
       const pts = await getSeasonFantasyPts(mid);
-      if(pts!=null && el) el.textContent = ' · ' + pts.toFixed(1) + ' pts season';
+      if(pts!=null){
+        window._seasonPtsCache[mid] = pts;
+        if(el) el.textContent = ' · ' + pts.toFixed(1) + ' pts season';
+        if(!PITCHER_POS.has(item.player.position||item.player.pos||'')) hitterNeedsResort = true;
+      }
     }
+    // Re-render once all pts are loaded to apply correct hitter sort
+    if(hitterNeedsResort) renderChallengeOv();
   }, 100);
 
   const filled2=lineup.filter(Boolean).length;
