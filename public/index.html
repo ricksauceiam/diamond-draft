@@ -1285,7 +1285,7 @@ async function upsertProfile(){
   const cardCount=userData?.collection?.length||0;
   const cardsTaken=(userData?.collection||[]).filter(c=>c.wonFrom).length;
   const{error}=await sb.from('profiles').upsert(
-    {id:currentUser.id, username, card_count:cardCount, cards_taken:cardsTaken},
+    {id:currentUser.id, username, email:currentUser.email, card_count:cardCount, cards_taken:cardsTaken},
     {onConflict:'id'}
   );
   if(error)console.warn('Profile upsert:',error.message);
@@ -2912,7 +2912,14 @@ function playerRow(item, dimmed){
         <div style="font-size:15px;font-weight:800;color:${elite ? '#FFD700' : '#fff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite ? '👑 ' : ''}${p.lastName || p.name || '—'}</div>
         ${(()=>{ const isPP=window._probablePitcherIds?.has(String(p.mlbamId||p.id)); return isPP ? '<span style="font-size:10px;font-weight:900;color:#FF8C00;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.4);border-radius:4px;padding:2px 5px;flex-shrink:0;letter-spacing:.3px;">PP</span>' : ''; })()}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;">${p.position || p.pos || '—'} · ${p.team || '—'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">${(()=>{
+        const pos = (p.position||p.pos||'').toUpperCase();
+        const isP = PITCHER_POS.has(pos);
+        if(!isP) return (p.position||p.pos||'—') + ' · ' + (p.team||'—');
+        const isPP = window._probablePitcherIds?.has(String(p.mlbamId||p.id));
+        const role = isPP ? 'Starting Pitcher' : (pos==='SP'||pos==='SP/RP') ? 'Starting Pitcher' : (pos==='RP'||pos==='CP'||pos==='CL'||pos==='RP/SP') ? 'Relief Pitcher' : 'Pitcher';
+        return role + ' · ' + (p.team||'—');
+      })()}</div>
       ${(()=>{
         const teamId = String(p.currentTeamId||'');
         const abbr = (p.team||'').toUpperCase();
@@ -3090,6 +3097,21 @@ async function launchBattle(){
   }
   document.getElementById('pending-ov').classList.add('open');
   showToast('⚔️ Challenge sent to ' + selectedRivalName + '!');
+
+  // Send email notification to rival (fire and forget)
+  try {
+    const myName = (currentUser.email||'').split('@')[0];
+    // Get rival's email from auth via profiles table
+    const {data: profile} = await sb.from('profiles').select('email').eq('id', selectedRivalId).single();
+    const rivalEmail = profile?.email;
+    if(rivalEmail){
+      fetch('/api/send-challenge', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({toEmail: rivalEmail, toName: selectedRivalName, fromName: myName})
+      }).catch(e=>console.warn('Email notification failed:', e));
+    }
+  } catch(e){ console.warn('Could not send email notification:', e); }
 }
 
 function closeChallengeOv(){
