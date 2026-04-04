@@ -602,11 +602,7 @@ const _origGoTab = window.goTab;
             </div>
           </div>
         </div>
-        <!-- Tonight's eligible players -->
-        <div id="tonight-section" style="display:none;margin-bottom:16px;">
-          <div class="sec-title">⚾ Players In Tonight's Games</div>
-          <div id="tonight-players" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>
-        </div>
+
         <div class="sec-title"><div class="live-dot"></div>Active &amp; Recent</div>
         <div class="mlist" id="mlist"></div>
       </div>
@@ -2927,7 +2923,7 @@ function playerRow(item, dimmed){
         if(!playsToday) return '';
         const opp = getOpponent(p);
         const oppStr = opp ? (opp.home ? 'vs '+opp.opp : '@ '+opp.opp) + ' · ' + opp.time + ' ET' : 'Playing today';
-        if(dimmed) return '<div style="font-size:12px;font-weight:700;color:#ff4757;margin-top:3px;">Game started — not eligible</div>';
+
         const seasonPtsEl = '<span id="spts-'+String(p.mlbamId||p.id)+'" style="color:var(--accent);font-size:12px;font-weight:700;"></span>';
         if(pts > 0) return `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${oppStr} · <span style="color:var(--success);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
         if(pts < 0) return `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${oppStr} · <span style="color:var(--danger);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
@@ -3145,17 +3141,9 @@ function renderChallengeOv(){
   }).join('');
 
   const col=userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
-  const hasGames=tonightGameIds.length>0 && (tonightTeams.size>0 || (window._tonightTeamIds?.size||0)>0);
   const inBattleSet=window._inBattleIds||new Set();
-  const availCards=col.filter(item=>{
-    if(inBattleSet.has(String(item.id)))return false;
-    if(!hasGames)return true;
-    // Only allow players whose game hasn't started yet
-    return isGameUpcoming(item.player);
-  });
-  const otherCards=hasGames
-    ? col.filter(item=>!isGameUpcoming(item.player)&&!inBattleSet.has(String(item.id)))
-    : col.filter(item=>inBattleSet.has(String(item.id)));
+  // Show all cards — no game-based filtering
+  const availCards=col.filter(item=>!inBattleSet.has(String(item.id)));
 
   // Sort pitchers: probable pitchers first, then by name
   const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''))
@@ -3173,11 +3161,8 @@ function renderChallengeOv(){
       return bPts-aPts;
     });
 
-  const offPitchers=otherCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
-  const offHitters=otherCards.filter(item=>!PITCHER_POS.has(item.player.position||item.player.pos||''));
-
-  const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('')+offPitchers.map(i=>playerRow(i,true)).join('');
-  const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('')+offHitters.map(i=>playerRow(i,true)).join('');
+  const pitcherHTML=pitcherItems.map(i=>playerRow(i,false)).join('');
+  const hitterHTML=hitterItems.map(i=>playerRow(i,false)).join('');
   const pitchEl=document.getElementById('ch-pitchers');
   const hitEl=document.getElementById('ch-hitters');
   if(pitchEl){pitchEl.innerHTML=pitcherHTML||'<div style="color:var(--muted);font-size:12px;padding:8px;">No pitchers in collection</div>';
