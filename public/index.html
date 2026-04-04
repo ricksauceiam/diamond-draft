@@ -2966,13 +2966,59 @@ function toggleLineup(cardId){
   renderChallengeOv();
 }
 
-function openChallengeOv(){
+async function openChallengeOv(){
   lineup=[null,null,null,null];
   selectedRival=null;selectedRivalId=null;selectedRivalName=null;
   _pendingAcceptId=null;_pendingAcceptFromName=null;
   const ov=document.getElementById('ch-ov');
   ov.style.display='flex';
+
+  // Show loading screen first
+  const pitchEl=document.getElementById('ch-pitchers');
+  const hitEl=document.getElementById('ch-hitters');
+  if(pitchEl) pitchEl.innerHTML=`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px;">
+      <div style="width:36px;height:36px;border:3px solid rgba(108,99,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);">Loading players...</div>
+      <div style="font-size:12px;color:var(--muted);">Fetching today's matchups & season stats</div>
+    </div>`;
+  if(hitEl) hitEl.innerHTML='';
+
+  // Load tonight's games + probable pitchers if not already loaded
+  if(!window._tonightGames || window._tonightGames.length === 0 || !window._probablePitcherIds){
+    await loadTonightGames();
+  }
+
+  // Pre-warm season pts cache for all collection players
+  const col = userData.collection.map(c=>({...c,player:getPlayer(c.id)})).filter(c=>c.player);
+  window._seasonPtsCache = window._seasonPtsCache||{};
+  const uncached = col.filter(i=>{
+    const mid = String(i.player?.mlbamId||i.player?.id||'');
+    return mid && window._seasonPtsCache[mid]===undefined;
+  });
+
+  if(uncached.length > 0){
+    if(pitchEl) pitchEl.innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px;">
+        <div style="width:36px;height:36px;border:3px solid rgba(108,99,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);">Loading season stats...</div>
+        <div style="font-size:12px;color:var(--muted);">0 / ${uncached.length} players</div>
+      </div>`;
+    let loaded = 0;
+    for(const item of uncached){
+      const mid = String(item.player?.mlbamId||item.player?.id||'');
+      const pts = await getSeasonFantasyPts(mid);
+      if(pts!=null) window._seasonPtsCache[mid] = pts;
+      loaded++;
+      // Update progress
+      const prog = pitchEl?.querySelector('div:last-child');
+      if(prog) prog.textContent = loaded + ' / ' + uncached.length + ' players';
+    }
+  }
+
+  // Now render with all data ready
   renderChallengeOv();
+
   const inp=document.getElementById('rival-search');
   if(inp)inp.value='';
   const launchBtn=document.getElementById('ch-launch');
@@ -3173,30 +3219,16 @@ function renderChallengeOv(){
   const hc=document.getElementById('ch-h-count');
   if(pc)pc.textContent=pitcherItems.length+' available';
   if(hc)hc.textContent=hitterItems.length+' available';
-  // Async load season pts, cache them, then re-sort hitters
-  setTimeout(async()=>{
+  // Season pts already pre-warmed in openChallengeOv — just populate the spans
+  setTimeout(()=>{
     window._seasonPtsCache = window._seasonPtsCache||{};
-    const allItems = [...pitcherItems, ...hitterItems];
-    let hitterNeedsResort = false;
-    for(const item of allItems){
+    [...pitcherItems, ...hitterItems].forEach(item=>{
       const mid = String(item.player?.mlbamId||item.player?.id||'');
-      if(!mid) continue;
+      if(!mid) return;
       const el = document.getElementById('spts-'+mid);
-      // Skip if already cached
-      if(window._seasonPtsCache[mid]!==undefined){
-        if(el) el.textContent = ' · ' + window._seasonPtsCache[mid].toFixed(1) + ' pts season';
-        continue;
-      }
-      const pts = await getSeasonFantasyPts(mid);
-      if(pts!=null){
-        window._seasonPtsCache[mid] = pts;
-        if(el) el.textContent = ' · ' + pts.toFixed(1) + ' pts season';
-        if(!PITCHER_POS.has(item.player.position||item.player.pos||'')) hitterNeedsResort = true;
-      }
-    }
-    // Re-render once all pts are loaded to apply correct hitter sort
-    if(hitterNeedsResort) renderChallengeOv();
-  }, 100);
+      if(el && window._seasonPtsCache[mid]!=null) el.textContent = ' · ' + window._seasonPtsCache[mid].toFixed(1) + ' pts season';
+    });
+  }, 50);
 
   const filled2=lineup.filter(Boolean).length;
   const btn2=document.getElementById('ch-launch');
