@@ -2903,16 +2903,16 @@ function playerRow(item, dimmed){
   const inLineup = lineup.includes(String(item.id));
   const opacity = dimmed ? 'opacity:.4;' : '';
   const highlight = inLineup ? `border-color:var(--accent);background:rgba(108,99,255,.12);` : '';
-  return `<div data-cid="${item.id}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid ${inLineup ? 'var(--accent)' : 'var(--border)'};margin-bottom:6px;cursor:pointer;transition:all .15s;${opacity}${highlight}" onmouseenter="if(!this.dataset.selected)this.style.borderColor='var(--accent)'" onmouseleave="if(!this.dataset.selected)this.style.borderColor='${inLineup ? 'var(--accent)' : 'var(--border)'}'">
-    <div style="width:40px;height:54px;border-radius:7px;overflow:hidden;flex-shrink:0;border:${elite ? '2px solid #FFD700' : '1px solid rgba(255,255,255,.1)'};">
+  return `<div data-cid="${item.id}" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid ${inLineup ? 'var(--accent)' : 'var(--border)'};margin-bottom:8px;cursor:pointer;transition:all .15s;${opacity}${highlight}" onmouseenter="if(!this.dataset.selected)this.style.borderColor='var(--accent)'" onmouseleave="if(!this.dataset.selected)this.style.borderColor='${inLineup ? 'var(--accent)' : 'var(--border)'}'">
+    <div style="width:52px;height:68px;border-radius:9px;overflow:hidden;flex-shrink:0;border:${elite ? '2px solid #FFD700' : '1px solid rgba(255,255,255,.1)'};">
       <img src="${playerPhoto(p)}" style="width:100%;height:100%;object-fit:cover;object-position:50% 10%;" onerror="this.parentElement.style.background='#161622';this.style.display='none'" loading="lazy">
     </div>
     <div style="flex:1;min-width:0;">
-      <div style="display:flex;align-items:center;gap:5px;overflow:hidden;">
-        <div style="font-size:12px;font-weight:800;color:${elite ? '#FFD700' : '#fff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite ? '👑 ' : ''}${p.lastName || p.name || '—'}</div>
-        ${(()=>{ const isPP=window._probablePitcherIds?.has(String(p.mlbamId||p.id)); return isPP ? '<span style="font-size:9px;font-weight:900;color:#FF8C00;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.4);border-radius:4px;padding:1px 4px;flex-shrink:0;letter-spacing:.3px;">PP</span>' : ''; })()}
+      <div style="display:flex;align-items:center;gap:6px;overflow:hidden;">
+        <div style="font-size:15px;font-weight:800;color:${elite ? '#FFD700' : '#fff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite ? '👑 ' : ''}${p.lastName || p.name || '—'}</div>
+        ${(()=>{ const isPP=window._probablePitcherIds?.has(String(p.mlbamId||p.id)); return isPP ? '<span style="font-size:10px;font-weight:900;color:#FF8C00;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.4);border-radius:4px;padding:2px 5px;flex-shrink:0;letter-spacing:.3px;">PP</span>' : ''; })()}
       </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:1px;">${p.position || p.pos || '—'} · ${p.team || '—'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">${p.position || p.pos || '—'} · ${p.team || '—'}</div>
       ${(()=>{
         const teamId = String(p.currentTeamId||'');
         const abbr = (p.team||'').toUpperCase();
@@ -2920,11 +2920,11 @@ function playerRow(item, dimmed){
         if(!playsToday) return '';
         const opp = getOpponent(p);
         const oppStr = opp ? (opp.home ? 'vs '+opp.opp : '@ '+opp.opp) + ' · ' + opp.time + ' ET' : 'Playing today';
-        if(dimmed) return '<div style="font-size:10px;font-weight:700;color:#ff4757;margin-top:2px;">Game started — not eligible</div>';
-        const seasonPtsEl = '<span id="spts-'+String(p.mlbamId||p.id)+'" style="color:var(--accent);"></span>';
-        if(pts > 0) return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${oppStr} · <span style="color:var(--success);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
-        if(pts < 0) return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${oppStr} · <span style="color:var(--danger);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
-        return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${oppStr}</div>${seasonPtsEl}`;
+        if(dimmed) return '<div style="font-size:12px;font-weight:700;color:#ff4757;margin-top:3px;">Game started — not eligible</div>';
+        const seasonPtsEl = '<span id="spts-'+String(p.mlbamId||p.id)+'" style="color:var(--accent);font-size:12px;font-weight:700;"></span>';
+        if(pts > 0) return `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${oppStr} · <span style="color:var(--success);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
+        if(pts < 0) return `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${oppStr} · <span style="color:var(--danger);font-weight:700;">${pts.toFixed(1)} pts today</span></div>${seasonPtsEl}`;
+        return `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${oppStr}</div>${seasonPtsEl}`;
       })()}
     </div>
     <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;" title="${rarity}"></div>
