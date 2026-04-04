@@ -2811,16 +2811,34 @@ async function submitAcceptLineup(){
 function isPlayingTonight(player){
   if(!player) return false;
   if(tonightTeams.size === 0 && (!window._tonightTeamIds || window._tonightTeamIds.size === 0)) return true;
-  // Check abbreviation
   const team = (player.team || player.teamAbbr || '').toUpperCase();
   if(team && tonightTeams.has(team)) return true;
-  // Check team ID (most reliable — players from live API have currentTeamId)
   const teamId = String(player.currentTeamId || player.teamId || '');
   if(teamId && window._tonightTeamIds?.has(teamId)) return true;
-  // Check full team name
   const teamName = (player.teamName || '').toLowerCase();
   if(teamName && window._tonightTeamNames?.has(teamName)) return true;
   return false;
+}
+
+function isGameUpcoming(player){
+  // Returns true only if the player's game hasn't started yet
+  if(!player) return false;
+  if(!window._tonightGames || window._tonightGames.length === 0) return true; // no game info, allow
+  const team = (player.team||'').toUpperCase();
+  const teamId = String(player.currentTeamId||'');
+  const game = window._tonightGames.find(g=>{
+    const awayId = String(g.teams?.away?.team?.id||'');
+    const homeId = String(g.teams?.home?.team?.id||'');
+    const awayAbbr = (g.teams?.away?.team?.abbreviation||'').toUpperCase();
+    const homeAbbr = (g.teams?.home?.team?.abbreviation||'').toUpperCase();
+    return (teamId && (awayId===teamId||homeId===teamId)) || (team && (awayAbbr===team||homeAbbr===team));
+  });
+  if(!game) return false; // not playing tonight
+  const state = game.status?.abstractGameState||'';
+  const detail = game.status?.detailedState||'';
+  // Only allow if game hasn't started
+  const isScheduled = state==='Preview' || detail.includes('Scheduled') || detail.includes('Pre-Game') || detail.includes('Warmup');
+  return isScheduled;
 }
 
 function playerRow(item, dimmed){
@@ -2845,6 +2863,7 @@ function playerRow(item, dimmed){
         const abbr = (p.team||'').toUpperCase();
         const playsToday = window._tonightTeamIds?.has(teamId) || tonightTeams.has(abbr);
         if(!playsToday) return '';
+        if(dimmed) return '<div style="font-size:10px;font-weight:700;color:#ff4757;margin-top:2px;">Game started — not eligible</div>';
         if(pts > 0) return `<div style="font-size:10px;font-weight:700;color:var(--success);margin-top:2px;">${pts.toFixed(1)} pts</div>`;
         if(pts < 0) return `<div style="font-size:10px;font-weight:700;color:var(--danger);margin-top:2px;">${pts.toFixed(1)} pts</div>`;
         return `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Playing today</div>`;
@@ -3051,10 +3070,11 @@ function renderChallengeOv(){
   const availCards=col.filter(item=>{
     if(inBattleSet.has(String(item.id)))return false;
     if(!hasGames)return true;
-    return isPlayingTonight(item.player);
+    // Only allow players whose game hasn't started yet
+    return isGameUpcoming(item.player);
   });
   const otherCards=hasGames
-    ? col.filter(item=>!isPlayingTonight(item.player)&&!inBattleSet.has(String(item.id)))
+    ? col.filter(item=>!isGameUpcoming(item.player)&&!inBattleSet.has(String(item.id)))
     : col.filter(item=>inBattleSet.has(String(item.id)));
 
   const pitcherItems=availCards.filter(item=>PITCHER_POS.has(item.player.position||item.player.pos||''));
