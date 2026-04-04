@@ -1140,6 +1140,98 @@ function switchAuthTab(t){document.querySelectorAll('.auth-tab').forEach((a,i)=>
 async function doLogin(){const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;document.getElementById('auth-err').textContent='';const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doRegister(){const e=document.getElementById('re').value.trim(),p=document.getElementById('rp').value;document.getElementById('auth-err').textContent='';if(p.length<6){document.getElementById('auth-err').textContent='Password must be 6+ characters';return;}const{data,error}=await sb.auth.signUp({email:e,password:p});if(error){document.getElementById('auth-err').textContent=error.message;return;}currentUser=data.user;await initSession();}
 async function doLogout(){await sb.auth.signOut();currentUser=null;userData=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');document.body.classList.remove('app-ready');}
+
+// ── CARDS TABLE SYNC ─────────────────────────────────────────────────────────
+
+async function loadCardsFromSupabase(){
+  if(!currentUser) return;
+  try {
+    const {data, error} = await sb.from('cards')
+      .select('card_id,copies,won_from,is_new,stashed,level')
+      .eq('user_id', currentUser.id);
+    if(error || !data) return;
+    // Replace userData.collection with Supabase cards
+    userData.collection = data.map(row=>({
+      id: row.card_id,
+      copies: row.copies||1,
+      wonFrom: row.won_from||null,
+      isNew: row.is_new||false,
+      stashed: row.stashed||false,
+      level: row.level||0,
+    }));
+    // Rebuild stash from cards
+    userData.stash = data.filter(r=>r.stashed).map(r=>r.card_id);
+    console.log('Cards loaded from Supabase:', userData.collection.length);
+  } catch(e){ console.warn('loadCardsFromSupabase:', e); }
+}
+
+async function syncCardsToSupabase(){
+  if(!currentUser) return;
+  try {
+    const rows = userData.collection.map(c=>({
+      user_id: currentUser.id,
+      card_id: c.id,
+      copies: c.copies||1,
+      won_from: c.wonFrom||null,
+      is_new: c.isNew||false,
+      stashed: userData.stash?.includes(c.id)||false,
+      level: c.level||0,
+      updated_at: new Date().toISOString(),
+    }));
+    if(!rows.length) return;
+    await sb.from('cards').upsert(rows, {onConflict:'user_id,card_id'});
+  } catch(e){ console.warn('syncCardsToSupabase:', e); }
+}
+
+async function awardCardToSupabase(cardId, wonFrom=null){
+  if(!currentUser) return;
+  try {
+    // Check if card exists
+    const {data} = await sb.from('cards')
+      .select('card_id,copies')
+      .eq('user_id', currentUser.id)
+      .eq('card_id', String(cardId))
+      .single();
+    if(data){
+      await sb.from('cards').update({
+        copies: (data.copies||1)+1,
+        won_from: wonFrom||data.won_from,
+        updated_at: new Date().toISOString()
+      }).eq('user_id', currentUser.id).eq('card_id', String(cardId));
+    } else {
+      await sb.from('cards').insert({
+        user_id: currentUser.id,
+        card_id: String(cardId),
+        copies: 1,
+        won_from: wonFrom,
+        is_new: true,
+        updated_at: new Date().toISOString()
+      });
+    }
+  } catch(e){ console.warn('awardCardToSupabase:', e); }
+}
+
+async function removeCardFromSupabase(cardId){
+  if(!currentUser) return;
+  try {
+    const {data} = await sb.from('cards')
+      .select('card_id,copies')
+      .eq('user_id', currentUser.id)
+      .eq('card_id', String(cardId))
+      .single();
+    if(!data) return;
+    if((data.copies||1) > 1){
+      await sb.from('cards').update({
+        copies: data.copies-1,
+        updated_at: new Date().toISOString()
+      }).eq('user_id', currentUser.id).eq('card_id', String(cardId));
+    } else {
+      await sb.from('cards').delete()
+        .eq('user_id', currentUser.id).eq('card_id', String(cardId));
+    }
+  } catch(e){ console.warn('removeCardFromSupabase:', e); }
+}
+
 async function initSession(){
   // Load from Supabase, fallback to localStorage for migration
   let remoteData = null;
@@ -1210,7 +1302,8 @@ async function saveData(){
   } catch(e) { console.warn('saveData error:', e); }
   // Also keep localStorage as cache for instant load
   localStorage.setItem(`dd_${currentUser.id}`, JSON.stringify(userData));
-  // Sync profile stats
+  // Sync cards table and profile
+  syncCardsToSupabase();
   upsertProfile();
 }
 function savePackSession(){
@@ -1762,7 +1855,13 @@ function resetCollection(){
   renderCollection();
   showToast('Collection reset. Open packs to start fresh!');
 }
-function awardCard(raw){const col=userData.collection,ex=col.find(c=>c.id===raw.id);if(ex){ex.copies=(ex.copies||1)+1;}else{col.push({id:raw.id,copies:1});}}
+function awardCard(raw){
+  const col=userData.collection;
+  const ex=col.find(c=>c.id===raw.id);
+  if(ex){ ex.copies=(ex.copies||1)+1; }
+  else { col.push({id:raw.id,copies:1,isNew:true}); }
+  awardCardToSupabase(raw.id); // sync to cards table
+}
 let selectedCards = new Set();
 let stashSelecting = false;
 let selectModeOn = false;
@@ -4176,7 +4275,6 @@ async function transferCardsInSupabase(battleId, iWon, myName, rivalName, myLine
   try {
     console.log('Starting card transfer — iWon:', iWon, 'battle:', battleId);
 
-    // Get battle to find user IDs
     const {data: battle} = await sb.from('challenges')
       .select('from_id,to_id,from_name,to_name')
       .eq('id', battleId).single();
@@ -4185,74 +4283,61 @@ async function transferCardsInSupabase(battleId, iWon, myName, rivalName, myLine
     const iAmFrom = battle.from_name === myName;
     const myId = currentUser.id;
     const rivalId = iAmFrom ? battle.to_id : battle.from_id;
-
     if(!rivalId){ console.warn('No rival ID found'); return; }
 
-    const loserLineup  = iWon ? rivalLineup : myLineup;
-    const winnerLineup = iWon ? myLineup : rivalLineup;
-    const loserId  = iWon ? rivalId : myId;
-    const winnerId = iWon ? myId : rivalId;
+    const loserLineup = iWon ? rivalLineup : myLineup;
+    const loserId     = iWon ? rivalId : myId;
+    const winnerId    = iWon ? myId : rivalId;
+    const winnerName  = iWon ? myName : rivalName;
+    const loserName   = iWon ? rivalName : myName;
 
-    // 1. Update loser: remove their lineup cards
-    const {data: loserRow} = await sb.from('user_data').select('data').eq('user_id', loserId).single();
-    if(loserRow?.data){
-      const loserData = {...loserRow.data};
-      const loserCol = [...(loserData.collection||[])];
-      loserLineup.forEach(cardId=>{
-        const p = getPlayer(cardId);
-        const cid = String(p?.id||p?.mlbamId||cardId);
-        const idx = loserCol.findIndex(c=>c.id===cid);
-        if(idx === -1) return;
-        if((loserCol[idx].copies||1) > 1) loserCol[idx].copies--;
-        else loserCol.splice(idx, 1);
-      });
-      loserData.collection = loserCol;
-      await sb.from('user_data').upsert(
-        {user_id: loserId, data: loserData, updated_at: new Date().toISOString()},
-        {onConflict: 'user_id'}
-      );
-      console.log('Loser cards removed:', loserLineup.length);
-    }
+    const now = new Date().toISOString();
 
-    // 2. Update winner: add loser's cards with wonFrom tag
-    if(iWon){
-      // My local userData already has the cards — just save it
-      await sb.from('user_data').upsert(
-        {user_id: winnerId, data: userData, updated_at: new Date().toISOString()},
-        {onConflict: 'user_id'}
-      );
-      console.log('Winner (me) cards saved to Supabase');
-    } else {
-      // Rival won — add my lineup cards to their Supabase user_data
-      const {data: winnerRow} = await sb.from('user_data').select('data').eq('user_id', winnerId).single();
-      if(winnerRow?.data){
-        const winnerData = {...winnerRow.data};
-        const winnerCol = [...(winnerData.collection||[])];
-        loserLineup.forEach(cardId=>{
-          const p = getPlayer(cardId);
-          if(!p) return;
-          const cid = String(p.id||p.mlbamId||cardId);
-          const existing = winnerCol.find(c=>c.id===cid);
-          if(existing) existing.copies = (existing.copies||1) + 1;
-          else winnerCol.push({id: cid, copies: 1, isNew: true, wonFrom: myName});
-        });
-        winnerData.collection = winnerCol;
-        await sb.from('user_data').upsert(
-          {user_id: winnerId, data: winnerData, updated_at: new Date().toISOString()},
-          {onConflict: 'user_id'}
-        );
-        console.log('Winner (rival) cards updated in Supabase');
+    // 1. Remove loser's lineup cards from cards table
+    for(const cardId of loserLineup){
+      const cid = String(cardId);
+      const {data: row} = await sb.from('cards')
+        .select('copies').eq('user_id', loserId).eq('card_id', cid).single();
+      if(!row) continue;
+      if((row.copies||1) > 1){
+        await sb.from('cards').update({copies: row.copies-1, updated_at: now})
+          .eq('user_id', loserId).eq('card_id', cid);
+      } else {
+        await sb.from('cards').delete().eq('user_id', loserId).eq('card_id', cid);
       }
+    }
+    console.log('✅ Loser cards removed:', loserLineup.length);
+
+    // 2. Add loser's cards to winner's cards table
+    for(const cardId of loserLineup){
+      const cid = String(cardId);
+      const {data: row} = await sb.from('cards')
+        .select('copies').eq('user_id', winnerId).eq('card_id', cid).single();
+      if(row){
+        await sb.from('cards').update({copies: (row.copies||1)+1, won_from: loserName, updated_at: now})
+          .eq('user_id', winnerId).eq('card_id', cid);
+      } else {
+        await sb.from('cards').insert({
+          user_id: winnerId, card_id: cid, copies: 1,
+          won_from: loserName, is_new: true, updated_at: now
+        });
+      }
+    }
+    console.log('✅ Winner cards added:', loserLineup.length, 'wonFrom:', loserName);
+
+    // 3. Also sync winner's full local collection if that's us
+    if(iWon){
+      await syncCardsToSupabase();
     }
 
     console.log('✅ Card transfer complete');
-    showToast('Card transfer complete!');
+    showToast('🏆 Cards transferred!');
   } catch(e){
     console.warn('transferCardsInSupabase error:', e);
   }
 }
 
-function showBattleResult(battle){
+async function showBattleResult(battle){
   const myName = (currentUser?.email||'').split('@')[0];
   const rivalName = battle.rivalName||battle.rival||'Rival';
   const youTotal = (battle.youLineup||[]).map(id=>getPlayer(id)).filter(Boolean)
@@ -4265,33 +4350,36 @@ function showBattleResult(battle){
   // ── Card transfer ──────────────────────────────────────────────
   if(!tied){
     if(won){
-      // Add rival's cards to my local collection
+      // Add rival's cards to my local collection with wonFrom tag
       (battle.rivalLineup||[]).forEach(cardId=>{
         const p = getPlayer(cardId);
-        if(!p) return;
-        const cid = String(p.id||p.mlbamId||cardId);
-        const existing = userData.collection.find(c=>c.id===cid);
+        const cid = String(cardId); // use original cardId as stored in collection
+        const altId = p ? String(p.mlbamId||p.id) : null;
+        // Try to find by cardId or mlbamId
+        const existing = userData.collection.find(c=>c.id===cid||(altId&&c.id===altId));
         if(existing){
           existing.copies=(existing.copies||1)+1;
-          if(!existing.wonFrom) existing.wonFrom = rivalName;
+          existing.wonFrom = rivalName;
+          console.log('Updated existing card:', existing.id, 'wonFrom:', rivalName);
         } else {
-          userData.collection.push({id:cid, copies:1, isNew:true, wonFrom:rivalName});
+          const newEntry = {id: cid, copies:1, isNew:true, wonFrom:rivalName};
+          userData.collection.push(newEntry);
+          console.log('Added new card:', cid, 'wonFrom:', rivalName);
         }
       });
     } else {
       // I lost — remove my lineup cards from local collection
       (battle.youLineup||[]).forEach(cardId=>{
         const p = getPlayer(cardId);
-        if(!p) return;
-        const cid = String(p.id||p.mlbamId||cardId);
-        const i = userData.collection.findIndex(c=>c.id===cid);
-        if(i === -1) return;
+        const cid = p ? String(p.id||p.mlbamId||cardId) : String(cardId);
+        const i = userData.collection.findIndex(c=>c.id===cid||c.id===String(p?.mlbamId));
+        if(i === -1){ console.log('Card not found to remove:', cid); return; }
         if((userData.collection[i].copies||1) > 1) userData.collection[i].copies--;
         else userData.collection.splice(i, 1);
       });
     }
-    saveData();
-    // Sync both sides in Supabase (winner gets cards, loser loses them)
+    // Save locally first, then sync to Supabase
+    await saveData();
     if(battle.id){
       transferCardsInSupabase(battle.id, won, myName, rivalName, battle.youLineup||[], battle.rivalLineup||[]);
     }
