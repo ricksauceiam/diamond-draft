@@ -2003,6 +2003,43 @@ return `<div class="mbig-mini-card" style="box-shadow:0 0 8px ${glow};border-col
 }
 
 
+
+async function testFinishBattle(battleId){
+  if(!isAdmin()){ showToast('Admin only'); return; }
+  if(!confirm('Finish this battle now for testing? This will trigger the full result + card transfer flow.')) return;
+
+  // Find the battle
+  const battle = (window._activeBattles||[]).find(b=>b.id===battleId);
+  if(!battle){ showToast('Battle not found'); return; }
+
+  const isFrom = battle.from_id === currentUser.id;
+  const myLineup = (isFrom ? battle.from_lineup : battle.to_lineup)||[];
+  const rivalLineup = (isFrom ? battle.to_lineup : battle.from_lineup)||[];
+  const rivalName = isFrom ? battle.to_name : battle.from_name;
+
+  // Calculate current scores
+  const myScore = myLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+  const rivalScore = rivalLineup.map(id=>getPlayer(id)).filter(Boolean).reduce((t,p)=>t+getPlayerLivePoints(p.mlbamId),0);
+
+  showToast('Finishing battle...');
+
+  // Call showBattleResult with the battle object
+  const battleObj = {
+    id: battleId,
+    rivalName,
+    rival: rivalName,
+    youLineup: myLineup,
+    rivalLineup: rivalLineup,
+    status: 'completed',
+    sentAt: battle.created_at
+  };
+
+  // Remove from active battles
+  window._activeBattles = (window._activeBattles||[]).filter(b=>b.id!==battleId);
+
+  showBattleResult(battleObj);
+}
+
 function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, myScore, rivalScore, leading){
   const myName = (currentUser?.email||'').split('@')[0];
   const youColor = myScore > rivalScore ? '#00d48a' : myScore < rivalScore ? '#ff4757' : '#e8e8f0';
@@ -2086,6 +2123,7 @@ function buildActiveBattleCard(battleId, rivalName, myLineup, rivalLineup, mySco
     <div style="padding:6px 14px 12px;text-align:center;">
       <span style="font-size:11px;color:#6a6a8a;">Tap for full matchup →</span>
     </div>
+    ${isAdmin() ? '<div id="test-btn-' + battleId + '" data-bid="' + battleId + '" style="padding:0 14px 12px;"></div>' : ''}
   </div>`;
 }
 
@@ -4414,6 +4452,17 @@ function renderMatchups(){
   allItems.sort((a,b)=>a.priority-b.priority||b.sortKey-a.sortKey);
   const html = allItems.map(i=>i.html).join('');
   document.getElementById('mlist').innerHTML = html || '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:2rem;margin-bottom:10px;">⚔️</div><p style="font-weight:700;margin-bottom:6px;">No battles yet</p><p style="font-size:13px;">Challenge a player to get started!</p><button class="btn-p" style="margin-top:14px;padding:10px 22px;font-size:13px;" onclick="openChallengeOv()">Find a Player →</button></div>';
+  // Inject admin test buttons after render
+  if(isAdmin()){
+    document.querySelectorAll('[data-bid]').forEach(div=>{
+      const bid = div.dataset.bid;
+      const btn = document.createElement('button');
+      btn.textContent = '⚡ Finish Battle (Test)';
+      btn.style.cssText = 'width:100%;padding:10px;background:linear-gradient(135deg,#ff4757,#ff6b9d);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;';
+      btn.onclick = function(e){ e.stopPropagation(); testFinishBattle(bid); };
+      div.appendChild(btn);
+    });
+  }
 
   // Completed battle history
   const myName=(currentUser?.email||'').split('@')[0];
