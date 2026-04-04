@@ -3001,39 +3001,37 @@ async function renderLeaderboard(){
   listEl.innerHTML = '';
 
   try {
-    // Fetch profiles, user_data (for card counts), and battles in parallel
+    const myName = (currentUser?.email||'').split('@')[0];
+
+    // Fetch profiles, user_data, and battles in parallel
     const [{data: profiles}, {data: allUserData}, {data: battles}] = await Promise.all([
-      sb.from('profiles').select('id,username,card_count,cards_taken'),
+      sb.from('profiles').select('username,card_count,cards_taken'),
       sb.from('user_data').select('user_id,data'),
       sb.from('challenges').select('from_name,to_name,result,status').eq('status','completed')
     ]);
 
-    // Build profile map (username → stats)
+    // Build profile map keyed by username
     const profileMap = {};
-    (profiles||[]).forEach(p=>{ if(p.username) profileMap[p.username] = p; });
+    (profiles||[]).forEach(p=>{ if(p.username) profileMap[p.username] = {...p}; });
 
-    // Build userId → username map from profiles
-    const userIdToName = {};
-    (profiles||[]).forEach(p=>{ if(p.username && p.id) userIdToName[p.id] = p.username; });
+    // Enrich from user_data — match by user_id via auth, use current user as anchor
+    // For current user we always have the mapping
+    if(allUserData){
+      allUserData.forEach(row=>{
+        // Match current user by their known user_id
+        if(currentUser && row.user_id === currentUser.id){
+          if(!profileMap[myName]) profileMap[myName] = {username: myName};
+          const col = row.data?.collection||[];
+          profileMap[myName].card_count = col.length;
+          profileMap[myName].cards_taken = col.filter(c=>c.wonFrom).length;
+        }
+      });
+    }
 
-    // Enrich with actual collection data from user_data rows
-    (allUserData||[]).forEach(row=>{
-      // Try to match by user_id via profiles
-      const username = userIdToName[row.user_id];
-      const col = row.data?.collection||[];
-      const taken = col.filter(c=>c.wonFrom).length;
-      const target = username || null;
-      if(target){
-        if(!profileMap[target]) profileMap[target] = {username: target};
-        profileMap[target].card_count = col.length;
-        profileMap[target].cards_taken = taken;
-      }
-    });
-
-    // For current user, always use live localStorage data as most accurate
-    const myProf = profileMap[myName] || (profileMap[myName]={username:myName});
-    myProf.card_count = userData?.collection?.length||0;
-    myProf.cards_taken = (userData?.collection||[]).filter(c=>c.wonFrom).length;
+    // Always use live data for current user
+    if(!profileMap[myName]) profileMap[myName] = {username: myName};
+    profileMap[myName].card_count = userData?.collection?.length||0;
+    profileMap[myName].cards_taken = (userData?.collection||[]).filter(c=>c.wonFrom).length;
 
     // Tally wins
     const winsMap = {};
@@ -3043,8 +3041,6 @@ async function renderLeaderboard(){
       const winnerName = result.winner==='from' ? b.from_name : result.winner==='to' ? b.to_name : null;
       if(winnerName) winsMap[winnerName] = (winsMap[winnerName]||0) + 1;
     });
-
-    const myName = (currentUser?.email||'').split('@')[0];
 
     // Build unified player list from profiles + battle participants
     const nameSet = new Set(Object.keys(profileMap));
@@ -4137,6 +4133,67 @@ function launchConfetti(won){
   }, 16);
 }
 
+
+async function transferCardsInSupabase(battleId, won, myName, rivalName, winnerLineup, loserLineup, winnerScore, loserScore){
+  try {
+    // Find the loser's user_id from the battle record
+    const {data: battle} = await sb.from('challenges')
+      .select('from_id,to_id,from_name,to_name')
+      .eq('id', battleId)
+      .single();
+    if(!battle) return;
+
+    const iFrom = battle.from_name === myName;
+    const loserId = iFrom ? battle.to_id : battle.from_id;
+    const winnerId = iFrom ? battle.from_id : battle.to_id;
+
+    if(!loserId) return;
+
+    // Load loser's user_data from Supabase
+    const {data: loserRow} = await sb.from('user_data')
+      .select('data')
+      .eq('user_id', loserId)
+      .single();
+
+    if(!loserRow?.data) return;
+
+    const loserData = loserRow.data;
+    const loserCol = loserData.collection || [];
+
+    // Remove one copy of each lineup card from loser
+    loserLineup.forEach(cardId=>{
+      const p = getPlayer(cardId);
+      if(!p) return;
+      const cid = String(p.id||p.mlbamId||cardId);
+      const idx = loserCol.findIndex(c=>c.id===cid);
+      if(idx === -1) return;
+      if((loserCol[idx].copies||1) > 1){
+        loserCol[idx].copies--;
+      } else {
+        loserCol.splice(idx, 1);
+      }
+    });
+
+    // Add winner's lineup cards to loser (battle-won marker)
+    // Actually: winner takes loser cards, loser loses them — winner gains them
+    // Winner's collection already updated locally — save to Supabase
+    await sb.from('user_data').upsert(
+      {user_id: loserId, data: {...loserData, collection: loserCol}, updated_at: new Date().toISOString()},
+      {onConflict: 'user_id'}
+    );
+
+    // Save winner's updated collection to Supabase too
+    await sb.from('user_data').upsert(
+      {user_id: winnerId, data: userData, updated_at: new Date().toISOString()},
+      {onConflict: 'user_id'}
+    );
+
+    console.log('Card transfer complete — loser lost', loserLineup.length, 'cards');
+  } catch(e){
+    console.warn('transferCardsInSupabase error:', e);
+  }
+}
+
 function showBattleResult(battle){
   const myName = (currentUser?.email||'').split('@')[0];
   const rivalName = battle.rivalName||battle.rival||'Rival';
@@ -4148,22 +4205,29 @@ function showBattleResult(battle){
   const tied = youTotal === rivalTotal;
 
   // ── Card transfer ──────────────────────────────────────────────
-  // Winner gets a copy of each of the loser's lineup cards
-  const prizeLineup = won ? (battle.rivalLineup||[]) : (battle.youLineup||[]);
-  const prizeCards = prizeLineup.map(id=>getPlayer(id)).filter(Boolean);
+  const loserLineup = won ? (battle.rivalLineup||[]) : [];
+  const winnerLineup = won ? (battle.youLineup||[]) : [];
 
-  if(won && prizeCards.length){
-    prizeCards.forEach(p=>{
-      const cardId = p.id||String(p.mlbamId);
-      const existing = userData.collection.find(c=>c.id===cardId||c.id===String(p.mlbamId||p.id));
+  if(won && loserLineup.length){
+    // Add loser's cards to winner's local collection
+    loserLineup.forEach(cardId=>{
+      const p = getPlayer(cardId);
+      if(!p) return;
+      const cid = String(p.id||p.mlbamId||cardId);
+      const existing = userData.collection.find(c=>c.id===cid);
       if(existing){
         existing.copies=(existing.copies||1)+1;
-        if(!existing.wonFrom) existing.wonFrom = rivalName; // tag only first time
+        if(!existing.wonFrom) existing.wonFrom = rivalName;
       } else {
-        userData.collection.push({id:cardId, copies:1, isNew:true, wonFrom:rivalName});
+        userData.collection.push({id:cid, copies:1, isNew:true, wonFrom:rivalName});
       }
     });
     saveData();
+
+    // Also update loser's collection in Supabase — remove their lineup cards
+    if(battle.id){
+      transferCardsInSupabase(battle.id, won, myName, rivalName, winnerLineup, loserLineup, youTotal, rivalTotal);
+    }
   }
 
   // ── Update record ──────────────────────────────────────────────
@@ -4173,6 +4237,7 @@ function showBattleResult(battle){
 
   // ── Mark complete in Supabase ──────────────────────────────────
   if(battle.id){
+    const winnerId = won ? 'from' : 'to';
     sb.from('challenges').update({
       status:'completed',
       result:{
