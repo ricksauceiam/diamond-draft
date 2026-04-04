@@ -2858,7 +2858,7 @@ function playerRow(item, dimmed){
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:center;gap:5px;overflow:hidden;">
         <div style="font-size:12px;font-weight:800;color:${elite ? '#FFD700' : '#fff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${elite ? '👑 ' : ''}${p.lastName || p.name || '—'}</div>
-        ${window._probablePitcherIds?.has(String(p.mlbamId||p.id)) ? '<span style="font-size:9px;font-weight:900;color:#FF8C00;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.4);border-radius:4px;padding:1px 4px;flex-shrink:0;">PP</span>' : ''}
+        ${(()=>{ const isPP=window._probablePitcherIds?.has(String(p.mlbamId||p.id)); return isPP ? '<span style="font-size:9px;font-weight:900;color:#FF8C00;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.4);border-radius:4px;padding:1px 4px;flex-shrink:0;letter-spacing:.3px;">PP</span>' : ''; })()}
       </div>
       <div style="font-size:10px;color:var(--muted);margin-top:1px;">${p.position || p.pos || '—'} · ${p.team || '—'}</div>
       ${(()=>{
