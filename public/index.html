@@ -3606,12 +3606,22 @@ let livePollTimer = null;
 
 async function loadTonightGames(){
   const today = todayStr();
+  // Clear stale scores whenever we reload tonight's games
+  liveScores = {};
+  window._liveStats = {};
   try {
     // Use our Vercel proxy
     const r = await fetch(`/api/mlb?endpoint=/schedule?sportId=1,17&date=${today}&hydrate=roster&_=${Date.now()}`);
     if(!r.ok) throw new Error('API error');
     const data = await r.json();
-    const games = data?.dates?.[0]?.games || [];
+    // Find exact date match to avoid yesterday's data
+    const dateEntry = (data?.dates||[]).find(d=>d.date===today) || data?.dates?.[0];
+    const returnedDate = dateEntry?.date;
+    // If API returned wrong date, use empty games (no stale data)
+    const games = (returnedDate === today) ? (dateEntry?.games||[]) : [];
+    if(returnedDate && returnedDate !== today){
+      console.log('loadTonightGames: API returned', returnedDate, 'not', today, '— clearing scores');
+    }
     tonightGameIds = games.map(g => g.gamePk);
     window._tonightGames = games; // store for opponent lookup
     // Build set of team abbreviations playing tonight (simpler + more reliable)
@@ -3816,6 +3826,8 @@ function updateLiveBattleScores(){
 }
 
 function startLivePoll(){
+  liveScores = {}; // clear any stale scores from previous day
+  window._liveStats = {};
   loadTonightGames().then(()=>refreshLiveScores());
   livePollTimer = setInterval(refreshLiveScores, 60000);
 }
