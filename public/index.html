@@ -1526,7 +1526,7 @@ function positionLabel(pos){
     'SS':'Shortstop','LF':'Left Field','CF':'Center Field','RF':'Right Field',
     'OF':'Outfield','DH':'Designated Hitter',
     'SP':'Starting Pitcher','RP':'Relief Pitcher','CL':'Closer','CP':'Closer',
-    'P':'Pitcher','IF':'Infielder'
+    'P':'Pitcher','IF':'Infielder','SP/RP':'Starting Pitcher','RP/SP':'Relief Pitcher'
   };
   return map[(pos||'').toUpperCase()] || pos || '—';
 }
@@ -2913,12 +2913,11 @@ function playerRow(item, dimmed){
         ${(()=>{ const isPP=window._probablePitcherIds?.has(String(p.mlbamId||p.id)); return isPP ? '<span style="font-size:10px;font-weight:900;color:#FF8C00;background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.4);border-radius:4px;padding:2px 5px;flex-shrink:0;letter-spacing:.3px;">PP</span>' : ''; })()}
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:2px;">${(()=>{
-        const pos = (p.position||p.pos||'').toUpperCase();
-        const isP = PITCHER_POS.has(pos);
-        if(!isP) return (p.position||p.pos||'—') + ' · ' + (p.team||'—');
+        const rawPos = p.position||p.pos||'';
         const isPP = window._probablePitcherIds?.has(String(p.mlbamId||p.id));
-        const role = isPP ? 'Starting Pitcher' : (pos==='SP'||pos==='SP/RP') ? 'Starting Pitcher' : (pos==='RP'||pos==='CP'||pos==='CL'||pos==='RP/SP') ? 'Relief Pitcher' : 'Pitcher';
-        return role + ' · ' + (p.team||'—');
+        // If position is generic P but they're a probable pitcher, show Starting Pitcher
+        if((rawPos.toUpperCase()==='P') && isPP) return 'Starting Pitcher · ' + (p.team||'—');
+        return positionLabel(rawPos) + ' · ' + (p.team||'—');
       })()}</div>
       ${(()=>{
         const teamId = String(p.currentTeamId||'');
