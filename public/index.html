@@ -2973,16 +2973,43 @@ async function openChallengeOv(){
   const ov=document.getElementById('ch-ov');
   ov.style.display='flex';
 
-  // Show loading screen first
+
   const pitchEl=document.getElementById('ch-pitchers');
   const hitEl=document.getElementById('ch-hitters');
-  if(pitchEl) pitchEl.innerHTML=`
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px;">
-      <div style="width:36px;height:36px;border:3px solid rgba(108,99,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
-      <div style="font-size:13px;font-weight:700;color:var(--text);">Loading players...</div>
-      <div style="font-size:12px;color:var(--muted);">Fetching today's matchups & season stats</div>
-    </div>`;
   if(hitEl) hitEl.innerHTML='';
+
+  const battleMessages = [
+    '⚾ Scouting tonight\'s lineup...',
+    '📊 Crunching season stats...',
+    '🔥 Optimizing your roster...',
+    '⚡ Getting ready for battle...',
+    '🏆 Building your war chest...',
+    '💪 Let\'s dominate...',
+    '🎯 Locking in the starters...',
+    '😤 Time to make them pay...',
+  ];
+
+  function showBattleLoader(msg){
+    if(!pitchEl) return;
+    pitchEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:20px;grid-column:1/-1;">
+        <div style="position:relative;width:70px;height:70px;">
+          <div style="position:absolute;inset:0;border-radius:50%;border:3px solid rgba(108,99,255,.15);"></div>
+          <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:#6c63ff;border-right-color:#ff6b9d;animation:spin .9s linear infinite;"></div>
+          <div style="position:absolute;inset:8px;border-radius:50%;border:2px solid transparent;border-top-color:#ff6b9d;animation:spin .6s linear infinite reverse;"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">⚾</div>
+        </div>
+        <div id="battle-loader-msg" style="font-size:15px;font-weight:800;color:var(--text);text-align:center;letter-spacing:.2px;">${msg}</div>
+      </div>`;
+  }
+
+  showBattleLoader(battleMessages[0]);
+  let msgIdx = 0;
+  const msgTimer = setInterval(()=>{
+    msgIdx = (msgIdx+1) % battleMessages.length;
+    const el = document.getElementById('battle-loader-msg');
+    if(el){ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>{ el.textContent=battleMessages[msgIdx]; el.style.opacity='1'; }, 300); }
+  }, 900);
 
   // Load tonight's games + probable pitchers if not already loaded
   if(!window._tonightGames || window._tonightGames.length === 0 || !window._probablePitcherIds){
@@ -2998,25 +3025,18 @@ async function openChallengeOv(){
   });
 
   if(uncached.length > 0){
-    if(pitchEl) pitchEl.innerHTML=`
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px;">
-        <div style="width:36px;height:36px;border:3px solid rgba(108,99,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
-        <div style="font-size:13px;font-weight:700;color:var(--text);">Loading season stats...</div>
-        <div style="font-size:12px;color:var(--muted);">0 / ${uncached.length} players</div>
-      </div>`;
+    showBattleLoader(battleMessages[Math.floor(Math.random()*battleMessages.length)]);
     let loaded = 0;
     for(const item of uncached){
       const mid = String(item.player?.mlbamId||item.player?.id||'');
       const pts = await getSeasonFantasyPts(mid);
       if(pts!=null) window._seasonPtsCache[mid] = pts;
       loaded++;
-      // Update progress
-      const prog = pitchEl?.querySelector('div:last-child');
-      if(prog) prog.textContent = loaded + ' / ' + uncached.length + ' players';
     }
   }
 
-  // Now render with all data ready
+  // Stop the message timer and render
+  clearInterval(msgTimer);
   renderChallengeOv();
 
   const inp=document.getElementById('rival-search');
