@@ -474,9 +474,7 @@ const _origGoTab = window.goTab;
                 <span class="odds-pill" style="background:rgba(191,64,255,.15);color:var(--epic)">12% Epic</span>
                 <span class="odds-pill" style="background:rgba(255,215,0,.15);color:var(--legendary)">4% Legendary</span>
               </div>
-              <button class="pack-cta" id="pb1" onclick="openPackOv(0)" style="background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:14px;padding:12px;">Open Pack 1</button>
-              <button class="pack-cta sec" id="pb2" onclick="openPackOv(1)" style="margin-top:6px;">Open Pack 2</button>
-              <button class="pack-cta sec" id="pb3" onclick="openPackOv(2)" style="margin-top:6px;">Open Pack 3</button>
+              <div id="pack-btn-area"></div>
             </div>
             <!-- Purchase card -->
             <div class="pack-card" id="hp2" style="background:linear-gradient(135deg,#0f0f1a,#1a1a0a);border-color:rgba(255,215,0,.25);position:relative;overflow:hidden;">
@@ -1326,14 +1324,22 @@ function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.get
 function isAdmin(){ return (currentUser?.email||'').toLowerCase() === 'michal.perconte@gmail.com'; }
 
 function goTab(id){document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.mob-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById(`tab-${id}`)?.classList.add('active');if(id==='home')renderHome();if(id==='collection'){getInBattleIds().then(()=>renderCollection());}if(id==='matchups'){fetchBattleHistory();renderMatchups();}if(id==='leaderboard')renderLeaderboard();if(id==='scores')loadScores();if(id==='allcards')loadAllCards();}
-function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';document.getElementById('mob-u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge'),pl=userData.packsOpened[0]?0:1;pb.style.display=pl>0?'':'none';pb.textContent=pl;[0,1,2].forEach(i=>{
-    const opened=userData.packsOpened[i];
-    const btn=document.getElementById('pb'+(i+1));
-    if(!btn)return;
-    if(opened){btn.textContent='✅ Pack '+(i+1)+' Opened';btn.className='pack-cta sec';}
-    else{btn.textContent='Open Pack '+(i+1);btn.className='pack-cta';}
-    btn.onclick=()=>openPackOv(i);
-  });const ml=document.getElementById('home-matchups');ml.innerHTML='<div style="color:var(--muted);font-size:13px;padding:14px 0">No live battles yet. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
+function renderHome(){if(!userData)return;const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';document.getElementById('home-greet').textContent=greet+', '+(currentUser.email?.split('@')[0]||'')+' 👋';document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('streak-num').textContent=userData.streak||0;const now=new Date(),tom=new Date(now);tom.setDate(tom.getDate()+1);tom.setHours(0,0,0,0);const diff=tom-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);document.getElementById('next-reset').innerHTML=`Next reset in <span>${h}h ${m}m</span>`;const col=userData.collection;document.getElementById('st-total').textContent=col.reduce((s,c)=>s+(c.copies||1),0);document.getElementById('st-unique').textContent=col.length;document.getElementById('st-mythic').textContent=col.filter(c=>getPlayer(c.id)?.rarity==='MYTHIC').length;document.getElementById('u-cards').textContent=col.length+' cards';document.getElementById('mob-u-cards').textContent=col.length+' cards';const pb=document.getElementById('pack-badge');
+  const allOpened = userData.packsOpened.every(Boolean);
+  const nextUnopened = userData.packsOpened.findIndex(o=>!o);
+  const packsLeft = userData.packsOpened.filter(o=>!o).length;
+  if(pb){ pb.style.display=packsLeft>0?'':'none'; pb.textContent=packsLeft; }
+  const packBtnArea = document.getElementById('pack-btn-area');
+  if(packBtnArea){
+    if(allOpened){
+      const now=new Date(), tom=new Date(now);
+      tom.setDate(tom.getDate()+1); tom.setHours(0,0,0,0);
+      const diff=tom-now, h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000);
+      packBtnArea.innerHTML = '<div style="text-align:center;padding:14px 0;"><div style="font-size:1.5rem;margin-bottom:6px;">✅</div><div style="font-weight:800;font-size:14px;margin-bottom:4px;">All packs opened!</div><div style="font-size:12px;color:var(--muted);">New packs in <span style="color:var(--accent);font-weight:700;">'+h+'h '+m+'m</span></div></div>';
+    } else {
+      packBtnArea.innerHTML = '<button onclick="openPackOv('+nextUnopened+')" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px;">⚾ Open Pack '+(nextUnopened+1)+' of 3</button>'+(packsLeft>1?'<div style="text-align:center;margin-top:8px;font-size:11px;color:var(--muted);">'+packsLeft+' packs remaining today</div>':'');
+    }
+  }const ml=document.getElementById('home-matchups');ml.innerHTML='<div style="color:var(--muted);font-size:13px;padding:14px 0">No live battles yet. <button onclick="openChallengeOv()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-weight:700">Start one →</button></div>';}
 function rarityLabel(l){return RARITY_ORDER[(l||1)-1]||'COMMON';}
 
 // Cache for season stats
